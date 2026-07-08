@@ -1,0 +1,49 @@
+# ── Python ──
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Virtual environments ──
+.venv/
+venv/
+env/
+ENV/
+
+# ── Secrets — NEVER commit these ──
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# ── Database files ──
+*.db
+*.sqlite
+*.sqlite3
+platform.db
+
+# ── Node / Frontend ──
+node_modules/
+frontend/node_modules/
+frontend/dist/
+.cache/
+
+# ── OS ──
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE ──
+.vscode/settings.json
+.idea/
+*.suo
+*.user
+
+# ── Logs ──
+*.log
+logs/
