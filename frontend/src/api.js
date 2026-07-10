@@ -135,6 +135,22 @@ export const api = {
   listDifficultiesPublic: () => fetch(`${BASE}/difficulties`, { headers: authHeaders() }).then(handle),
   listChallengeTypesPublic: () => fetch(`${BASE}/challenge-types`, { headers: authHeaders() }).then(handle),
 
+  // ---------- Rooms ----------
+  listRooms: (params = {}) => {
+    const qs = new URLSearchParams(params).toString()
+    return fetch(`${BASE}/rooms${qs ? `?${qs}` : ''}`, { headers: authHeaders() }).then(handle)
+  },
+  getRoom: (slug) => fetch(`${BASE}/rooms/${slug}`, { headers: authHeaders() }).then(handle),
+
+  // Lab layers are static on the frontend — no separate endpoint needed
+  LAB_LAYERS: [
+    { slug: 'plc',   label: 'PLC',   color: 'var(--warning)',   icon: '⚙️' },
+    { slug: 'scada', label: 'SCADA', color: 'var(--defensive)', icon: '🖥️' },
+    { slug: 'icsim', label: 'ICSim', color: 'var(--offensive)', icon: '🚗' },
+    { slug: 'wazuh', label: 'Wazuh', color: 'var(--mitigation)',icon: '🛡️' },
+    { slug: 'risk',  label: 'Risk',  color: 'var(--combined)',  icon: '⚠️' },
+  ],
+
   // Admin-only mutation
   listCategories: () => fetch(`${BASE}/admin/categories`, { headers: authHeaders() }).then(handle),
 

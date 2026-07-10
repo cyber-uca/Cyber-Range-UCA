@@ -114,6 +114,7 @@ class ChallengeCard(BaseModel):
     points: int
     time_limit_minutes: int
     tags: Optional[str]
+    lab_layer: Optional[str]
 
     class Config:
         from_attributes = True
@@ -130,6 +131,7 @@ class ChallengeDetail(BaseModel):
     points: int
     time_limit_minutes: int
     tags: Optional[str]
+    lab_layer: Optional[str]
     vms: List[ChallengeVMOut]
 
     class Config:
@@ -146,9 +148,50 @@ class ChallengeCreate(BaseModel):
     points: int = 100
     time_limit_minutes: int = 90
     tags: Optional[str] = None
-    flag: str  # plaintext, hashed server-side
+    lab_layer: Optional[str] = None
+    flag: str
     vm_template_ids: List[str] = []
-    hints: List[dict] = []  # [{"content": str, "cost": int}]
+    hints: List[dict] = []
+
+
+# ---------- Rooms ----------
+class RoomChallengeOut(BaseModel):
+    order: int
+    challenge: ChallengeCard
+
+    class Config:
+        from_attributes = True
+
+
+class RoomOut(BaseModel):
+    id: str
+    slug: str
+    title: str
+    description: Optional[str]
+    category: CategoryOut
+    lab_layer: Optional[str]
+    difficulty: str
+    is_published: bool
+    sort_order: int
+    challenge_count: int = 0
+
+    class Config:
+        from_attributes = True
+
+
+class RoomDetail(BaseModel):
+    id: str
+    slug: str
+    title: str
+    description: Optional[str]
+    category: CategoryOut
+    lab_layer: Optional[str]
+    difficulty: str
+    is_published: bool
+    challenges: List[RoomChallengeOut]
+
+    class Config:
+        from_attributes = True
 
 
 class ChallengeImport(BaseModel):

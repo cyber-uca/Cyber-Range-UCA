@@ -73,6 +73,42 @@ class User(Base):
     environments = relationship("Environment",    back_populates="user")
 
 
+class Room(Base):
+    """
+    A Room groups several challenges into a themed lab (TryHackMe-style).
+    Rooms have a category (offensive/defensive/mitigation/risk) and a
+    lab_layer that indicates the ICS technology stack being practised.
+    """
+    __tablename__ = "rooms"
+    id          = Column(String(36),  primary_key=True, default=gen_uuid)
+    slug        = Column(String(128), unique=True, nullable=False)
+    title       = Column(String(256), nullable=False)
+    description = Column(Text,        nullable=True)
+    category_id = Column(String(36),  ForeignKey("categories.id"), nullable=False)
+    lab_layer   = Column(String(64),  nullable=True)   # plc | scada | icsim | wazuh | risk
+    difficulty  = Column(String(32),  default="medium") # easy | medium | hard
+    image_url   = Column(String(512), nullable=True)
+    is_published = Column(Boolean,    default=False)
+    sort_order  = Column(Integer,     default=0)
+    created_at  = Column(DateTime,    default=datetime.utcnow)
+
+    category   = relationship("Category")
+    challenges = relationship("RoomChallenge", back_populates="room",
+                              order_by="RoomChallenge.order", cascade="all, delete-orphan")
+
+
+class RoomChallenge(Base):
+    """Ordered many-to-many: a challenge can live in one room at a specific order position."""
+    __tablename__ = "room_challenges"
+    id           = Column(String(36), primary_key=True, default=gen_uuid)
+    room_id      = Column(String(36), ForeignKey("rooms.id"),      nullable=False)
+    challenge_id = Column(String(36), ForeignKey("challenges.id"), nullable=False)
+    order        = Column(Integer,    default=0)
+
+    room      = relationship("Room",      back_populates="challenges")
+    challenge = relationship("Challenge")
+
+
 class VMTemplate(Base):
     __tablename__ = "vm_templates"
     id                  = Column(String(36),  primary_key=True, default=gen_uuid)
@@ -95,6 +131,7 @@ class Challenge(Base):
     points           = Column(Integer,     default=100)
     time_limit_minutes = Column(Integer,   default=90)
     tags             = Column(String(512), nullable=True)
+    lab_layer        = Column(String(64),  nullable=True)   # plc | scada | icsim | wazuh | risk
     flag_hash        = Column(String(256), nullable=False)
     is_published     = Column(Boolean,     default=False)
     created_by       = Column(String(36),  ForeignKey("users.id"), nullable=True)
