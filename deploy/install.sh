@@ -6,7 +6,13 @@ APP_USER="cyberrange"
 DB_NAME="cyberrange"
 DB_USER="cyberrange_user"
 DB_PASS="CyberRange2026!"
-REPO_URL="https://github.com/arrach-imane/Cyber-Range-UCA.git"
+GITHUB_USER="arrach-imane"
+GITHUB_REPO="Cyber-Range-UCA"
+
+# Accept token via env var or first argument:
+#   sudo GITHUB_TOKEN=ghp_xxx bash deploy/install.sh
+#   sudo bash deploy/install.sh ghp_xxx
+GITHUB_TOKEN="${GITHUB_TOKEN:-$1}"
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
 log()  { echo -e "${GREEN}[+]${NC} $1"; }
@@ -14,6 +20,10 @@ warn() { echo -e "${YELLOW}[!]${NC} $1"; }
 err()  { echo -e "${RED}[x]${NC} $1"; exit 1; }
 
 [ "$EUID" -ne 0 ] && err "Run as root: sudo bash deploy/install.sh"
+[ -z "$GITHUB_TOKEN" ] && err "GitHub token required. Usage: sudo GITHUB_TOKEN=ghp_xxx bash deploy/install.sh"
+
+# Build authenticated clone URL (token never written to disk)
+REPO_URL="https://${GITHUB_TOKEN}@github.com/${GITHUB_USER}/${GITHUB_REPO}.git"
 
 VM_IP=$(hostname -I | awk '{print $1}')
 log "VM IP: $VM_IP"
@@ -165,7 +175,7 @@ echo -e "  URL      : ${YELLOW}http://${VM_IP}${NC}"
 echo -e "  API docs : ${YELLOW}http://${VM_IP}/docs${NC}"
 echo ""
 echo -e "${YELLOW}Next step — add your Proxmox token:${NC}"
-echo "  sudo nano ${APP_DIR}/platform/backend/.env"
+echo "  sudo nano ${APP_DIR}/backend/.env"
 echo "  Set: PROXMOX_TOKEN_VALUE=070c622f-a663-467d-8850-4910ecdac9d3"
 echo "  Then: sudo systemctl restart cyberrange-backend"
 echo ""

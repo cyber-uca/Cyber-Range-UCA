@@ -15,12 +15,33 @@ can reach the Proxmox API directly — no VPN needed.
 
 ## What the install script does
 1. Installs Python 3.11, Node 20, MySQL, Nginx
-2. Clones the repo from GitHub
+2. Clones the repo from GitHub (requires a token — see below)
 3. Creates a Python virtualenv and installs backend deps
 4. Builds the React frontend
-5. Configures Nginx as reverse proxy (port 80 → backend :8000, frontend :5173)
+5. Configures Nginx as reverse proxy (port 80 → backend :8000, frontend static)
 6. Creates systemd services so everything auto-starts on reboot
 7. Seeds the database
+
+## Private repo — GitHub token setup
+
+The repo is private so the install script needs a GitHub Personal Access Token (PAT).
+
+1. Go to **GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens**
+2. Click **Generate new token**
+3. Set expiration (90 days is fine for a lab)
+4. Under **Repository access** select only `Cyber-Range-UCA`
+5. Under **Permissions → Repository permissions** set **Contents** to `Read-only`
+6. Generate and copy the token (starts with `ghp_`)
+
+Pass the token when running the script — it is never written to disk:
+```bash
+sudo GITHUB_TOKEN=ghp_xxxxxxxxxxxx bash deploy/install.sh
+```
+
+Or as a positional argument:
+```bash
+sudo bash deploy/install.sh ghp_xxxxxxxxxxxx
+```
 
 ## Access after deployment
 - Platform: http://<VM_IP>  (or your domain if you set one up)
