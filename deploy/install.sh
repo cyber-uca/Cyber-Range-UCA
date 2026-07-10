@@ -37,7 +37,7 @@ apt-get update -qq && apt-get upgrade -y -qq
 log "Installing system dependencies..."
 apt-get install -y -qq \
     git curl wget gnupg2 ca-certificates \
-    python3.11 python3.11-venv python3.11-dev python3-pip \
+    python3 python3-venv python3-dev python3-pip \
     mysql-server nginx \
     build-essential libssl-dev libffi-dev
 
@@ -70,7 +70,7 @@ mysql -e "FLUSH PRIVILEGES;"
 log "Setting up Python backend..."
 cd "$APP_DIR/platform/backend"
 
-python3.11 -m venv venv
+python3 -m venv venv
 source venv/bin/activate
 pip install -q --upgrade pip
 pip install -q -r requirements.txt
@@ -100,8 +100,8 @@ chown "$APP_USER":"$APP_USER" .env
 chmod 600 .env
 
 # Run migrations and seed
-sudo -u "$APP_USER" bash -c "cd $APP_DIR/platform/backend && source venv/bin/activate && python -c 'from app.database import Base, engine; Base.metadata.create_all(bind=engine)'"
-sudo -u "$APP_USER" bash -c "cd $APP_DIR/platform/backend && source venv/bin/activate && python -c 'import app.seed'"
+sudo -u "$APP_USER" bash -c "cd $APP_DIR/platform/backend && source venv/bin/activate && python -c 'from app.database import Base, engine; Base.metadata.create_all(bind=engine); print(\"Tables created\")'  "
+sudo -u "$APP_USER" bash -c "cd $APP_DIR/platform/backend && source venv/bin/activate && python -c 'import sys; sys.path.insert(0,\".\"); import app.seed' "
 
 deactivate
 
@@ -128,8 +128,7 @@ After=network.target mysql.service
 User=$APP_USER
 WorkingDirectory=$APP_DIR/platform/backend
 Environment="PATH=$APP_DIR/platform/backend/venv/bin"
-ExecStart=$APP_DIR/platform/backend/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
-Restart=always
+ExecStart=$APP_DIR/platform/backend/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2Restart=always
 RestartSec=5
 
 [Install]
