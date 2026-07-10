@@ -49,7 +49,7 @@ mysql -e "GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'localhost';"
 mysql -e "FLUSH PRIVILEGES;"
 
 log "Setting up Python backend..."
-cd "$APP_DIR/platform/backend"
+cd "$APP_DIR/backend"
 python3 -m venv venv
 source venv/bin/activate
 pip install --upgrade pip
@@ -86,7 +86,7 @@ python3 -c "import sys; sys.path.insert(0,'.'); import app.seed"
 deactivate
 
 log "Building frontend..."
-cd "$APP_DIR/platform/frontend"
+cd "$APP_DIR/frontend"
 npm install
 npm run build
 
@@ -98,9 +98,9 @@ After=network.target mysql.service
 
 [Service]
 User=${APP_USER}
-WorkingDirectory=${APP_DIR}/platform/backend
-Environment=PATH=${APP_DIR}/platform/backend/venv/bin:/usr/bin:/bin
-ExecStart=${APP_DIR}/platform/backend/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+WorkingDirectory=${APP_DIR}/backend
+Environment=PATH=${APP_DIR}/backend/venv/bin:/usr/bin:/bin
+ExecStart=${APP_DIR}/backend/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
 Restart=always
 RestartSec=5
 
@@ -118,7 +118,7 @@ server {
     listen 80;
     server_name _;
 
-    root ${APP_DIR}/platform/frontend/dist;
+    root ${APP_DIR}/frontend/dist;
     index index.html;
 
     location / {
