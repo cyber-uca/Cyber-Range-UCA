@@ -30,7 +30,7 @@ deactivate
 
 log "Rebuilding frontend..."
 cd "$APP_DIR/frontend"
-npm install -q
+npm ci --legacy-peer-deps
 npm run build
 
 log "Restarting backend service..."
