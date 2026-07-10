@@ -24,7 +24,28 @@ function Topbar() {
   const { user } = useAuth()
   return (
     <div className="topbar">
+      {/* scanline accent */}
+      <div style={{
+        position: 'absolute', left: 0, right: 0, height: 1, pointerEvents: 'none',
+        background: 'linear-gradient(90deg, transparent, rgba(0,194,230,0.18), transparent)',
+        animation: 'scanline 9s linear infinite', top: 0,
+      }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginRight: 'auto' }}>
+        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)', boxShadow: '0 0 6px var(--success)' }} />
+        <span style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+          LIVE · {user?.role?.toUpperCase()}
+        </span>
+      </div>
       {user.role === 'learner' && <span className="xp-pill">{user.points} XP</span>}
+      <div style={{
+        width: 30, height: 30, borderRadius: '50%',
+        background: 'var(--combined-dim)', color: 'var(--combined)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontWeight: 700, fontSize: 11, border: '1px solid rgba(155,124,240,0.3)',
+        fontFamily: 'var(--font-mono)',
+      }}>
+        {user?.name?.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase()}
+      </div>
     </div>
   )
 }
