@@ -7,7 +7,7 @@ from .routers import auth, challenges, environments, vm_templates, tutor, admin,
 Base.metadata.create_all(bind=engine)
 test_connection()
 
-app = FastAPI(title="Cyber Range Platform API", version="0.1.0")
+app = FastAPI(title="Cyber Range Framework API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
