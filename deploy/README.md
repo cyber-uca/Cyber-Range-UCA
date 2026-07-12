@@ -1,4 +1,4 @@
-# AutoRange Cyber Range — Deployment Guide (Option B)
+# AutoRange Cyber Range — Deployment Guide 
 
 ## Architecture
 A dedicated Ubuntu VM runs on Proxmox and hosts the entire platform.
@@ -11,7 +11,7 @@ can reach the Proxmox API directly — no VPN needed.
 - RAM: 4 GB
 - Disk: 20 GB
 - Network: same bridge as your Proxmox nodes (e.g. vmbr0)
-- Static IP: e.g. 192.168.37.50 (pick a free IP in your lab subnet)
+- Static IP: e.g. 192.168.37.50 
 
 ## What the install script does
 1. Installs Python 3.11, Node 20, MySQL, Nginx
