@@ -5,18 +5,36 @@ import { api } from '../api.js'
 const ANIM = `
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
 `
 const diffColor = { easy:'var(--mitigation)', medium:'var(--warning)', hard:'var(--offensive)' }
 
-/* ─── tiny spinner ─────────────────────────────────────────────────────── */
 function Spin({ size=12 }) {
   return <div style={{ width:size, height:size, border:'2px solid currentColor',
     borderTopColor:'transparent', borderRadius:'50%', animation:'spin .7s linear infinite', flexShrink:0 }} />
 }
 
-/* ─── MCQ parser ──────────────────────────────────────────────────────── */
+/* ─── countdown ─────────────────────────────────────────────────────────── */
+function useCountdown(expiresAt) {
+  const calc = () => expiresAt
+    ? Math.max(0, Math.floor((new Date(expiresAt) - Date.now()) / 1000))
+    : null
+  const [secs, setSecs] = useState(calc)
+  useEffect(() => {
+    if (!expiresAt) return
+    setSecs(calc())
+    const id = setInterval(() => setSecs(calc()), 1000)
+    return () => clearInterval(id)
+  }, [expiresAt])
+  return secs
+}
+function fmt(secs) {
+  if (secs === null) return null
+  const m = Math.floor(secs / 60), s = secs % 60
+  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+}
+
+/* ─── MCQ parser ─────────────────────────────────────────────────────────── */
 function parseDesc(text) {
   const lines = text.split('\n'), blocks = []
   let i = 0
@@ -57,21 +75,15 @@ function parseDesc(text) {
   return blocks
 }
 
-/* ─── MCQ renderer ─────────────────────────────────────────────────────── */
+/* ─── MCQ renderer ───────────────────────────────────────────────────────── */
 function TaskBody({ challenge }) {
   const blocks = parseDesc(challenge.description)
   const isMCQ = /^Q\d+\.\s/m.test(challenge.description)
-  if (!isMCQ) return (
-    <p style={{ color:'var(--text-muted)', fontSize:13, lineHeight:1.85, margin:0 }}>
-      {challenge.description}
-    </p>
-  )
+  if (!isMCQ) return <p style={{ color:'var(--text-muted)', fontSize:13, lineHeight:1.85, margin:0 }}>{challenge.description}</p>
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
       {blocks.map((b,i) => {
-        if (b.type==='prose') return (
-          <p key={i} style={{ color:'var(--text-muted)', fontSize:13, lineHeight:1.85, margin:0 }}>{b.text}</p>
-        )
+        if (b.type==='prose') return <p key={i} style={{ color:'var(--text-muted)', fontSize:13, lineHeight:1.85, margin:0 }}>{b.text}</p>
         if (b.type==='cmd') return (
           <div key={i} style={{ fontFamily:'var(--font-mono)', fontSize:12, background:'#04070C',
             border:'1px solid var(--border)', borderRadius:8, padding:'8px 14px', color:'#00C2E6' }}>{b.text}</div>
@@ -82,7 +94,7 @@ function TaskBody({ challenge }) {
             {b.lines.map((l,j) => {
               const [name, ...rest] = l.split('—').map(s=>s.trim())
               return (
-                <div key={j} style={{ display:'flex', gap:12, fontSize:12, padding:'4px 0', borderBottom: j<b.lines.length-1?'1px solid var(--border)':'none' }}>
+                <div key={j} style={{ display:'flex', gap:12, fontSize:12, padding:'4px 0', borderBottom:j<b.lines.length-1?'1px solid var(--border)':'none' }}>
                   <span style={{ color:'var(--text)', fontWeight:600, minWidth:110 }}>{name}</span>
                   <span style={{ color:'var(--text-muted)', fontFamily:'var(--font-mono)', fontSize:11 }}>{rest.join(' — ')}</span>
                 </div>
@@ -94,9 +106,9 @@ function TaskBody({ challenge }) {
           <div key={i} style={{ background:'rgba(155,124,240,0.05)', border:'1px solid rgba(155,124,240,0.2)', borderRadius:10, padding:'12px 16px' }}>
             <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'.08em', color:'var(--combined)', fontWeight:700, marginBottom:8 }}>Log Files</div>
             {b.lines.map((l,j) => {
-              const [fname, ...rest] = l.split('—').map(s=>s.trim())
+              const [fname,...rest] = l.split('—').map(s=>s.trim())
               return (
-                <div key={j} style={{ display:'flex', gap:12, fontSize:12, padding:'5px 0', borderBottom: j<b.lines.length-1?'1px solid var(--border)':'none' }}>
+                <div key={j} style={{ display:'flex', gap:12, fontSize:12, padding:'5px 0', borderBottom:j<b.lines.length-1?'1px solid var(--border)':'none' }}>
                   <span style={{ fontFamily:'var(--font-mono)', color:'var(--combined)', minWidth:100, fontSize:11 }}>{fname}</span>
                   <span style={{ color:'var(--text-muted)' }}>{rest.join(' — ')}</span>
                 </div>
@@ -132,29 +144,28 @@ function TaskBody({ challenge }) {
   )
 }
 
-/* ─── VM card ──────────────────────────────────────────────────────────── */
-function VMCard({ vmTemplate, envVm, onStart, starting }) {
+/* ─── VM Card ────────────────────────────────────────────────────────────── */
+function VMCard({ vmTemplate, envVm, env, onStart, onStop, starting, stopping }) {
   const running = envVm?.status === 'running'
   const ip = envVm?.ip_address
+  const secsLeft = useCountdown(running && env?.expires_at ? env.expires_at : null)
+  const urgent  = secsLeft !== null && secsLeft < 300
+  const warn    = secsLeft !== null && secsLeft < 900
   const [consoleUrl, setConsoleUrl] = useState(null)
   const [loadingConsole, setLoadingConsole] = useState(false)
 
   const openConsole = async () => {
-    // If we already have the URL, just open it
     if (consoleUrl) { window.open(consoleUrl, '_blank'); return }
     if (!envVm?.id) return
     setLoadingConsole(true)
     try {
-      // We need the environment id — stored on envVm parent env
       const data = await api.getConsoleUrl(envVm.environment_id, envVm.id)
       setConsoleUrl(data.console_url)
       window.open(data.console_url, '_blank')
-    } catch (err) {
-      // Fallback: build URL directly from proxmox_vmid + node if available
+    } catch {
       if (envVm.proxmox_vmid && envVm.proxmox_node) {
         const url = `https://192.168.37.20:8006/?console=kvm&novnc=1&vmid=${envVm.proxmox_vmid}&node=${envVm.proxmox_node}&lang=en`
-        setConsoleUrl(url)
-        window.open(url, '_blank')
+        setConsoleUrl(url); window.open(url, '_blank')
       }
     } finally { setLoadingConsole(false) }
   }
@@ -162,16 +173,16 @@ function VMCard({ vmTemplate, envVm, onStart, starting }) {
   return (
     <div style={{
       background: running ? 'rgba(20,201,168,0.07)' : 'rgba(13,24,38,0.75)',
-      border: `1px solid ${running ? 'rgba(20,201,168,0.35)' : 'var(--border)'}`,
+      border: `1px solid ${running ? (urgent ? 'rgba(240,82,74,0.5)' : 'rgba(20,201,168,0.35)') : 'var(--border)'}`,
       borderRadius:12, padding:'14px 16px', transition:'all .2s',
     }}>
+      {/* name + status row */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10 }}>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           <div style={{ width:36, height:36, borderRadius:9, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center',
             background: running ? 'rgba(20,201,168,0.15)' : 'var(--accent-dim)',
-            border: `1px solid ${running ? 'rgba(20,201,168,0.35)' : 'rgba(0,194,230,0.2)'}` }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-              stroke={running ? 'var(--mitigation)' : 'var(--accent)'} strokeWidth="2">
+            border:`1px solid ${running ? 'rgba(20,201,168,0.35)' : 'rgba(0,194,230,0.2)'}` }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={running ? 'var(--mitigation)' : 'var(--accent)'} strokeWidth="2">
               <rect x="2" y="3" width="20" height="14" rx="2"/>
               <line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
             </svg>
@@ -181,40 +192,68 @@ function VMCard({ vmTemplate, envVm, onStart, starting }) {
             <div style={{ fontSize:11, color:'var(--text-muted)', fontFamily:'var(--font-mono)', marginTop:2 }}>
               {vmTemplate.zone}
               {running && ip && <span style={{ color:'var(--mitigation)', marginLeft:8 }}>· {ip}</span>}
-              {running && envVm?.proxmox_vmid && (
-                <span style={{ color:'var(--text-dim)', marginLeft:8 }}>vmid:{envVm.proxmox_vmid}</span>
-              )}
+              {running && envVm?.proxmox_vmid && <span style={{ color:'var(--text-dim)', marginLeft:8 }}>vmid:{envVm.proxmox_vmid}</span>}
             </div>
           </div>
         </div>
-
         {running ? (
-          <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:6 }}>
-            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-              <div style={{ width:8, height:8, borderRadius:'50%', background:'var(--success)',
-                boxShadow:'0 0 6px var(--success)', animation:'pulse 2s infinite' }} />
-              <span style={{ fontSize:11, color:'var(--mitigation)', fontWeight:700 }}>RUNNING</span>
-            </div>
-            <button
-              onClick={openConsole}
-              disabled={loadingConsole}
-              style={{ padding:'6px 14px', borderRadius:7, fontSize:11, fontWeight:700, cursor:'pointer',
-                background:'var(--accent-dim)', color:'var(--accent)',
-                border:'1px solid rgba(0,194,230,0.35)', display:'flex', alignItems:'center', gap:5 }}>
-              {loadingConsole ? <><Spin size={10}/> Opening…</> : <>🖥 Open Console</>}
-            </button>
+          <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+            <div style={{ width:8, height:8, borderRadius:'50%', background:'var(--success)', boxShadow:'0 0 6px var(--success)', animation:'pulse 2s infinite' }} />
+            <span style={{ fontSize:11, color:'var(--mitigation)', fontWeight:700 }}>RUNNING</span>
           </div>
         ) : (
           <button onClick={onStart} disabled={starting}
-            style={{ padding:'7px 16px', borderRadius:8, fontSize:12, fontWeight:700, cursor: starting ? 'wait' : 'pointer',
-              background: starting ? 'var(--surface-2)' : 'var(--accent)',
-              color: starting ? 'var(--text-muted)' : 'var(--on-accent)',
+            style={{ padding:'7px 16px', borderRadius:8, fontSize:12, fontWeight:700,
+              cursor: starting?'wait':'pointer',
+              background: starting?'var(--surface-2)':'var(--accent)',
+              color: starting?'var(--text-muted)':'var(--on-accent)',
               border:'none', display:'flex', alignItems:'center', gap:6,
-              boxShadow: starting ? 'none' : '0 0 12px rgba(0,194,230,0.3)' }}>
+              boxShadow: starting?'none':'0 0 12px rgba(0,194,230,0.3)' }}>
             {starting ? <><Spin /> Starting…</> : <>▶ Start {vmTemplate.name}</>}
           </button>
         )}
       </div>
+
+      {/* running controls: timer + console + stop */}
+      {running && (
+        <div style={{ marginTop:12, display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, flexWrap:'wrap' }}>
+          {/* countdown timer */}
+          {secsLeft !== null && (
+            <div style={{ display:'flex', alignItems:'center', gap:6,
+              background: urgent?'rgba(240,82,74,0.1)':warn?'rgba(245,166,35,0.1)':'rgba(13,24,38,0.5)',
+              border:`1px solid ${urgent?'rgba(240,82,74,0.3)':warn?'rgba(245,166,35,0.3)':'var(--border)'}`,
+              borderRadius:8, padding:'5px 12px' }}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                stroke={urgent?'var(--offensive)':warn?'var(--warning)':'var(--text-dim)'} strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <span style={{ fontFamily:'var(--font-mono)', fontSize:12, fontWeight:700,
+                color: urgent?'var(--offensive)':warn?'var(--warning)':'var(--text-muted)' }}>
+                {fmt(secsLeft)}
+              </span>
+              <span style={{ fontSize:10, color:'var(--text-dim)' }}>remaining</span>
+            </div>
+          )}
+          <div style={{ display:'flex', gap:6 }}>
+            <button onClick={openConsole} disabled={loadingConsole}
+              style={{ padding:'6px 12px', borderRadius:7, fontSize:11, fontWeight:700, cursor:'pointer',
+                background:'var(--accent-dim)', color:'var(--accent)',
+                border:'1px solid rgba(0,194,230,0.35)', display:'flex', alignItems:'center', gap:5 }}>
+              {loadingConsole ? <><Spin size={10}/> Opening…</> : <>🖥 Console</>}
+            </button>
+            <button onClick={onStop} disabled={stopping}
+              style={{ padding:'6px 12px', borderRadius:7, fontSize:11, fontWeight:700,
+                cursor: stopping?'wait':'pointer',
+                background: stopping?'var(--surface-2)':'var(--offensive-dim)',
+                color: stopping?'var(--text-muted)':'var(--offensive)',
+                border:`1px solid ${stopping?'var(--border)':'rgba(240,82,74,0.35)'}`,
+                display:'flex', alignItems:'center', gap:5 }}>
+              {stopping ? <><Spin size={10}/> Stopping…</> : <>⏹ Stop</>}
+            </button>
+          </div>
+        </div>
+      )}
+
       {running && vmTemplate.default_tools && (
         <div style={{ marginTop:10, fontSize:11, color:'var(--text-dim)', borderTop:'1px solid var(--border)', paddingTop:8 }}>
           Tools: <span style={{ fontFamily:'var(--font-mono)', color:'var(--text-muted)' }}>{vmTemplate.default_tools}</span>
@@ -224,7 +263,7 @@ function VMCard({ vmTemplate, envVm, onStart, starting }) {
   )
 }
 
-/* ─── hints ─────────────────────────────────────────────────────────────── */
+/* ─── Hints ──────────────────────────────────────────────────────────────── */
 function Hints({ challengeId }) {
   const [hints, setHints] = useState([])
   const [shown, setShown] = useState({})
@@ -240,7 +279,7 @@ function Hints({ challengeId }) {
             : <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                 <span style={{ fontSize:12, color:'var(--text-muted)' }}>Hint #{h.order+1}</span>
                 <button className="btn-secondary" style={{ fontSize:11, padding:'5px 12px' }}
-                  onClick={() => setShown(p => ({...p,[h.id]:true}))}>
+                  onClick={() => setShown(p=>({...p,[h.id]:true}))}>
                   Reveal {h.cost > 0 && <span style={{ color:'var(--offensive)', marginLeft:4 }}>−{h.cost} pts</span>}
                 </button>
               </div>
@@ -251,20 +290,17 @@ function Hints({ challengeId }) {
   )
 }
 
-/* ─── main page ─────────────────────────────────────────────────────────── */
+/* ─── Main page ──────────────────────────────────────────────────────────── */
 export default function RoomLab() {
   const { slug } = useParams()
-  const [room, setRoom] = useState(null)
-  const [challenges, setChallenges] = useState({})   // id → full ChallengeDetail
-  const [activeIdx, setActiveIdx] = useState(0)
-  // per-challenge: { env, envVms, logs, starting, flagValue, flagResult }
-  const [ts, setTs] = useState({})
+  const [room, setRoom]           = useState(null)
+  const [challenges, setChallenges] = useState({})
+  const [activeIdx, setActiveIdx]   = useState(0)
+  const [ts, setTs]                 = useState({})
   const logRef = useRef(null)
 
-  // fetch room
   useEffect(() => { api.getRoom(slug).then(setRoom).catch(()=>{}) }, [slug])
 
-  // fetch full challenge detail for every task as soon as room loads
   useEffect(() => {
     if (!room) return
     room.challenges.forEach(rc => {
@@ -275,51 +311,55 @@ export default function RoomLab() {
     })
   }, [room])
 
-  const get = id => ts[id] ?? { env:null, envVms:[], logs:['$ ready — use Start buttons to provision VMs'], starting:{}, flagValue:'', flagResult:null }
+  const get = id => ts[id] ?? { env:null, envVms:[], logs:['$ ready — press Start to provision VMs'], starting:{}, stopping:{}, flagValue:'', flagResult:null }
   const put = (id, patch) => setTs(p => ({...p, [id]: {...get(id), ...patch}}))
   const log = (id, line) => setTs(p => {
     const prev = p[id] ?? get(id)
     return {...p, [id]: {...prev, logs:[...prev.logs, line]}}
   })
 
-  // scroll log to bottom whenever it updates
-  useEffect(() => {
-    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight
-  }, [ts])
+  useEffect(() => { if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight }, [ts])
 
-  /* start one VM independently — reuses existing env for this challenge */
+  /* start one VM */
   const startVM = async (challenge, vmTpl) => {
     const id = challenge.id
-    const s = get(id)
-
-    // already running for this template?
-    const alreadyRunning = s.envVms.find(
-      e => e.vm_template?.id === vmTpl.id || e.vm_template?.name === vmTpl.name
-    )
-    if (alreadyRunning?.status === 'running') {
-      log(id, `$ ${vmTpl.name} is already running`)
-      return
-    }
-
-    put(id, { starting: { ...get(id).starting, [vmTpl.id]: true } })
-    log(id, `$ provisioning ${vmTpl.name} (VMID ${vmTpl.proxmox_template_id ?? '?'}) on Proxmox…`)
+    const already = get(id).envVms.find(e => e.vm_template?.id===vmTpl.id || e.vm_template?.name===vmTpl.name)
+    if (already?.status==='running') { log(id, `$ ${vmTpl.name} already running`); return }
+    put(id, { starting: {...get(id).starting, [vmTpl.id]: true} })
+    log(id, `$ provisioning ${vmTpl.name} on Proxmox…`)
     try {
       const env = await api.startSingleVM(id, vmTpl.id)
-      const envVms = (env.vms ?? []).map(v => ({ ...v, environment_id: env.id }))
-      const vm = envVms.find(v => v.vm_template?.name === vmTpl.name)
-      const ip = vm?.ip_address ? ` · ${vm.ip_address}` : ''
-      log(id, `$ ✓ ${vmTpl.name} running${ip}`)
-      put(id, { env, envVms, starting: { ...get(id).starting, [vmTpl.id]: false } })
+      const envVms = (env.vms ?? []).map(v => ({...v, environment_id: env.id}))
+      const vm = envVms.find(v => v.vm_template?.name===vmTpl.name)
+      log(id, `$ ✓ ${vmTpl.name} running${vm?.ip_address ? ' · '+vm.ip_address : ''}`)
+      put(id, { env, envVms, starting: {...get(id).starting, [vmTpl.id]: false} })
     } catch(err) {
       log(id, `$ [ERROR] ${err.message}`)
-      put(id, { starting: { ...get(id).starting, [vmTpl.id]: false } })
+      put(id, { starting: {...get(id).starting, [vmTpl.id]: false} })
+    }
+  }
+
+  /* stop one VM */
+  const stopVM = async (challenge, vmTpl) => {
+    const id = challenge.id
+    put(id, { stopping: {...get(id).stopping, [vmTpl.id]: true} })
+    log(id, `$ stopping ${vmTpl.name}…`)
+    try {
+      await api.stopVM(id, vmTpl.id)
+      log(id, `$ ✓ ${vmTpl.name} stopped`)
+      const envVms = get(id).envVms.map(v =>
+        (v.vm_template?.id===vmTpl.id || v.vm_template?.name===vmTpl.name) ? {...v, status:'stopped'} : v
+      )
+      put(id, { envVms, stopping: {...get(id).stopping, [vmTpl.id]: false} })
+    } catch(err) {
+      log(id, `$ [ERROR] ${err.message}`)
+      put(id, { stopping: {...get(id).stopping, [vmTpl.id]: false} })
     }
   }
 
   /* submit flag */
   const submitFlag = async (challenge) => {
-    const id = challenge.id
-    const val = get(id).flagValue
+    const id = challenge.id, val = get(id).flagValue
     try {
       const result = await api.submitFlag(id, val)
       put(id, { flagResult: result })
@@ -327,20 +367,19 @@ export default function RoomLab() {
         log(id, `$ [✓] Correct! +${result.points_awarded} XP`)
         setTimeout(() => setActiveIdx(i => Math.min(i+1, (room?.challenges?.length??1)-1)), 1000)
       } else {
-        log(id, `$ [✗] Incorrect — try again`)
+        log(id, '$ [✗] Incorrect — try again')
       }
     } catch(err) {
-      put(id, { flagResult:{ is_correct:false, message:err.message, points_awarded:0 }})
+      put(id, { flagResult: {is_correct:false, message:err.message, points_awarded:0} })
     }
   }
 
-  /* ── loading ── */
+  /* loading */
   if (!room) return (
     <div style={{ minHeight:'100vh', background:'var(--bg)', display:'flex', alignItems:'center', justifyContent:'center' }}>
       <style>{ANIM}</style>
       <div style={{ textAlign:'center' }}>
-        <div style={{ width:36, height:36, border:'2px solid var(--accent)', borderTopColor:'transparent',
-          borderRadius:'50%', animation:'spin .8s linear infinite', margin:'0 auto 12px' }}/>
+        <div style={{ width:36, height:36, border:'2px solid var(--accent)', borderTopColor:'transparent', borderRadius:'50%', animation:'spin .8s linear infinite', margin:'0 auto 12px' }}/>
         <span style={{ color:'var(--text-muted)', fontSize:13 }}>Loading lab…</span>
       </div>
     </div>
@@ -351,8 +390,8 @@ export default function RoomLab() {
   const card     = rc?.challenge
   const full     = card ? challenges[card.id] : null
   const state    = card ? get(card.id) : null
-  const lyr      = api.LAB_LAYERS.find(l => l.slug === room.lab_layer)
-  const totalXP  = tasks.reduce((s,r) => s + (r.challenge?.points??0), 0)
+  const lyr      = api.LAB_LAYERS.find(l => l.slug===room.lab_layer)
+  const totalXP  = tasks.reduce((s,r) => s+(r.challenge?.points??0), 0)
   const earnedXP = tasks.reduce((s,r) => {
     const res = r.challenge ? ts[r.challenge.id]?.flagResult : null
     return s + (res?.is_correct ? (r.challenge?.points??0) : 0)
@@ -363,11 +402,10 @@ export default function RoomLab() {
     <div style={{ minHeight:'100vh', background:'var(--bg)', display:'flex', flexDirection:'column' }}>
       <style>{ANIM}</style>
 
-      {/* ── topbar ── */}
+      {/* topbar */}
       <div style={{ height:50, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'space-between',
         padding:'0 20px', borderBottom:'1px solid var(--border)',
-        background:'rgba(13,24,38,0.97)', backdropFilter:'blur(16px)',
-        position:'sticky', top:0, zIndex:100 }}>
+        background:'rgba(13,24,38,0.97)', backdropFilter:'blur(16px)', position:'sticky', top:0, zIndex:100 }}>
         <div style={{ display:'flex', alignItems:'center', gap:14 }}>
           <Link to={`/rooms/${slug}`} style={{ fontSize:12, color:'var(--text-muted)' }}>← {room.title}</Link>
           <div style={{ width:1, height:16, background:'var(--border)' }}/>
@@ -386,10 +424,10 @@ export default function RoomLab() {
         </div>
       </div>
 
-      {/* ── body ── */}
+      {/* body */}
       <div style={{ flex:1, display:'flex', overflow:'hidden' }}>
 
-        {/* left sidebar — task list */}
+        {/* task sidebar */}
         <div style={{ width:240, flexShrink:0, borderRight:'1px solid var(--border)',
           background:'rgba(10,18,30,0.97)', overflowY:'auto', padding:'14px 10px' }}>
           <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'.1em',
@@ -397,27 +435,27 @@ export default function RoomLab() {
             Tasks ({tasks.length})
           </div>
           {tasks.map((r,idx) => {
-            const c = r.challenge; if(!c) return null
+            const c = r.challenge; if (!c) return null
             const solved = ts[c.id]?.flagResult?.is_correct
             const active = idx===activeIdx
             return (
               <div key={c.id} onClick={()=>setActiveIdx(idx)}
                 style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 10px',
                   borderRadius:10, marginBottom:4, cursor:'pointer',
-                  background: active ? 'var(--accent-dim)' : 'transparent',
-                  border: `1px solid ${active ? 'rgba(0,194,230,0.25)' : 'transparent'}`,
+                  background: active?'var(--accent-dim)':'transparent',
+                  border:`1px solid ${active?'rgba(0,194,230,0.25)':'transparent'}`,
                   transition:'all .15s' }}>
                 <div style={{ width:26, height:26, borderRadius:'50%', flexShrink:0,
                   display:'flex', alignItems:'center', justifyContent:'center',
                   fontSize:11, fontWeight:800, fontFamily:'var(--font-mono)',
-                  background: solved ? 'var(--mitigation-dim)' : active ? 'var(--accent-dim)' : 'var(--surface-2)',
-                  color: solved ? 'var(--mitigation)' : active ? 'var(--accent)' : 'var(--text-dim)',
-                  border: `1px solid ${solved ? 'rgba(20,201,168,0.3)' : active ? 'rgba(0,194,230,0.3)' : 'var(--border)'}` }}>
+                  background: solved?'var(--mitigation-dim)':active?'var(--accent-dim)':'var(--surface-2)',
+                  color: solved?'var(--mitigation)':active?'var(--accent)':'var(--text-dim)',
+                  border:`1px solid ${solved?'rgba(20,201,168,0.3)':active?'rgba(0,194,230,0.3)':'var(--border)'}` }}>
                   {solved ? '✓' : String(idx+1).padStart(2,'0')}
                 </div>
                 <div style={{ minWidth:0 }}>
-                  <div style={{ fontSize:12, fontWeight: active?700:500,
-                    color: active?'var(--text)':'var(--text-muted)',
+                  <div style={{ fontSize:12, fontWeight:active?700:500,
+                    color:active?'var(--text)':'var(--text-muted)',
                     overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                     {c.title}
                   </div>
@@ -440,17 +478,15 @@ export default function RoomLab() {
 
             {/* center — content */}
             <div style={{ overflowY:'auto', padding:'22px 28px', borderRight:'1px solid var(--border)' }}>
-              {/* task header */}
               <div style={{ marginBottom:20 }}>
-                <div style={{ fontSize:11, color:'var(--text-dim)', fontWeight:700,
-                  textTransform:'uppercase', letterSpacing:'.08em', marginBottom:4 }}>
+                <div style={{ fontSize:11, color:'var(--text-dim)', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:4 }}>
                   Task {activeIdx+1} of {tasks.length}
                 </div>
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
                   <h2 style={{ margin:0, fontSize:18, fontWeight:800 }}>{card.title}</h2>
                   <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
                     <div style={{ display:'flex', alignItems:'center', gap:5 }}>
-                      <div style={{ width:7, height:7, borderRadius:'50%', background: diffColor[card.difficulty?.slug]??'var(--accent)' }}/>
+                      <div style={{ width:7, height:7, borderRadius:'50%', background:diffColor[card.difficulty?.slug]??'var(--accent)' }}/>
                       <span style={{ fontSize:11, color:'var(--text-muted)', textTransform:'capitalize' }}>{card.difficulty?.name}</span>
                     </div>
                     <span style={{ fontFamily:'var(--font-mono)', color:'var(--warning)', fontWeight:700, fontSize:14 }}>{card.points} XP</span>
@@ -458,15 +494,8 @@ export default function RoomLab() {
                 </div>
               </div>
 
-              {/* MCQ body */}
-              {full
-                ? <TaskBody challenge={full}/>
-                : <div style={{ display:'flex', alignItems:'center', gap:10, color:'var(--text-dim)', fontSize:13 }}>
-                    <Spin size={14}/> Loading task…
-                  </div>
-              }
+              {full ? <TaskBody challenge={full}/> : <div style={{ display:'flex', alignItems:'center', gap:10, color:'var(--text-dim)', fontSize:13 }}><Spin size={14}/> Loading…</div>}
 
-              {/* objectives */}
               {full?.objectives && (
                 <div style={{ marginTop:20, background:'rgba(13,24,38,0.55)', border:'1px solid var(--border)', borderRadius:12, padding:'14px 16px' }}>
                   <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'.08em', color:'var(--text-dim)', fontWeight:700, marginBottom:10 }}>What you will learn</div>
@@ -491,10 +520,10 @@ export default function RoomLab() {
                     fontFamily:'var(--font-mono)', fontSize:11, color:'#4ADE80', whiteSpace:'pre-wrap' }}>
                     {state.logs.map((l,i) => (
                       <div key={i} style={{ marginBottom:2, color:
-                        l.includes('[ERROR]') ? 'var(--offensive)' :
-                        l.includes('[✓]') ? 'var(--success)' :
-                        l.includes('[✗]') ? 'var(--offensive)' :
-                        l.startsWith('$') ? '#00C2E6' : '#4ADE80' }}>{l}</div>
+                        l.includes('[ERROR]')?'var(--offensive)':
+                        l.includes('[✓]')?'var(--success)':
+                        l.includes('[✗]')?'var(--offensive)':
+                        l.startsWith('$')?'#00C2E6':'#4ADE80' }}>{l}</div>
                     ))}
                     <span style={{ animation:'blink 1s step-end infinite', color:'var(--text-dim)' }}>█</span>
                   </div>
@@ -515,16 +544,15 @@ export default function RoomLab() {
                 </div>
                 {state.flagResult && (
                   <div style={{ marginTop:10, padding:'10px 14px', borderRadius:8, fontSize:13,
-                    background: state.flagResult.is_correct ? 'var(--mitigation-dim)' : 'var(--offensive-dim)',
-                    color: state.flagResult.is_correct ? 'var(--mitigation)' : 'var(--offensive)',
-                    border:`1px solid ${state.flagResult.is_correct ? 'rgba(20,201,168,0.3)':'rgba(240,82,74,0.3)'}` }}>
+                    background: state.flagResult.is_correct?'var(--mitigation-dim)':'var(--offensive-dim)',
+                    color: state.flagResult.is_correct?'var(--mitigation)':'var(--offensive)',
+                    border:`1px solid ${state.flagResult.is_correct?'rgba(20,201,168,0.3)':'rgba(240,82,74,0.3)'}` }}>
                     {state.flagResult.is_correct ? '✓ Correct!' : '✗ '+state.flagResult.message}
                     {state.flagResult.points_awarded>0 && ` · +${state.flagResult.points_awarded} XP`}
                   </div>
                 )}
               </div>
 
-              {/* hints */}
               {full && <Hints challengeId={full.id}/>}
             </div>
 
@@ -534,24 +562,24 @@ export default function RoomLab() {
                 color:'var(--text-dim)', fontWeight:700, marginBottom:14 }}>
                 Virtual Machines ({vms.length})
               </div>
-
-              {vms.length === 0 && !full && (
+              {vms.length===0 && !full && (
                 <div style={{ display:'flex', alignItems:'center', gap:8, color:'var(--text-dim)', fontSize:12 }}>
                   <Spin size={12}/> Loading VM list…
                 </div>
               )}
-
-              {vms.length === 0 && full && (
-                <p style={{ color:'var(--text-dim)', fontSize:12 }}>No VMs configured for this task.</p>
+              {vms.length===0 && full && (
+                <p style={{ color:'var(--text-dim)', fontSize:12 }}>No VMs for this task.</p>
               )}
-
               {vms.map(v => (
                 <div key={v.vm_template.id} style={{ marginBottom:10 }}>
                   <VMCard
                     vmTemplate={v.vm_template}
+                    env={state.env}
                     envVm={state.envVms.find(e => e.vm_template?.id===v.vm_template.id || e.vm_template?.name===v.vm_template.name)}
                     onStart={() => full && startVM(full, v.vm_template)}
-                    starting={state.starting?.[v.vm_template.id] === true}
+                    onStop={() => full && stopVM(full, v.vm_template)}
+                    starting={state.starting?.[v.vm_template.id]===true}
+                    stopping={state.stopping?.[v.vm_template.id]===true}
                   />
                 </div>
               ))}

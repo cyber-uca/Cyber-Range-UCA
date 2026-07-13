@@ -153,6 +153,57 @@ def start_single_vm(
     db.commit()
     db.refresh(env)
     return env
+
+
+class StopVMPayload(BaseModel):
+    vm_template_id: str
+
+
+@router.post("/{challenge_id}/stop-vm")
+def stop_single_vm(
+    challenge_id: str,
+    payload: StopVMPayload,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Stop and destroy a single VM within the challenge's environment."""
+    env = db.query(models.Environment).filter(
+        models.Environment.user_id == current_user.id,
+        models.Environment.challenge_id == challenge_id,
+        models.Environment.status.in_([
+            models.EnvironmentStatus.RUNNING,
+            models.EnvironmentStatus.PROVISIONING,
+        ]),
+    ).first()
+    if not env:
+        raise HTTPException(status_code=404, detail="No active environment for this challenge")
+
+    vm = db.query(models.EnvironmentVM).filter(
+        models.EnvironmentVM.environment_id == env.id,
+        models.EnvironmentVM.vm_template_id == payload.vm_template_id,
+        models.EnvironmentVM.status == "running",
+    ).first()
+    if not vm:
+        raise HTTPException(status_code=404, detail="VM not running")
+
+    if vm.proxmox_vmid and vm.proxmox_node:
+        try:
+            get_gateway().destroy_vm(vm.proxmox_node, vm.proxmox_vmid)
+        except Exception as e:
+            logger.warning(f"destroy_vm error: {e}")
+
+    vm.status = "stopped"
+    # if all VMs are stopped, mark env as destroyed
+    all_stopped = all(v.status != "running" for v in env.vms)
+    if all_stopped:
+        env.status = models.EnvironmentStatus.DESTROYED
+        env.destroyed_at = datetime.utcnow()
+    db.commit()
+    db.refresh(env)
+    return {"status": "stopped", "vm_template_id": payload.vm_template_id}
+
+
+@router.get("/{environment_id}", response_model=schemas.EnvironmentOut)
 def get_environment(environment_id: str, db: Session = Depends(get_db),
                      current_user: models.User = Depends(get_current_user)):
     env = db.query(models.Environment).filter(models.Environment.id == environment_id).first()

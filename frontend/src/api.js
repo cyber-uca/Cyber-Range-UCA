@@ -65,6 +65,13 @@ export const api = {
       body: JSON.stringify({ vm_template_id: vmTemplateId }),
     }).then(handle),
 
+  stopVM: (challengeId, vmTemplateId) =>
+    fetch(`${BASE}/environments/${challengeId}/stop-vm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ vm_template_id: vmTemplateId }),
+    }).then(handle),
+
   getEnvironment: (id) => fetch(`${BASE}/environments/${id}`, { headers: authHeaders() }).then(handle),
 
   getConsoleUrl: (envId, vmId) =>
