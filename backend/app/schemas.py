@@ -53,6 +53,7 @@ class VMTemplateOut(BaseModel):
     name: str
     description: Optional[str]
     zone: str
+    proxmox_template_id: int
     default_tools: Optional[str]
 
     class Config:
