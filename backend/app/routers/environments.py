@@ -1,6 +1,9 @@
 import json
 import os
+import logging
 from datetime import datetime, timedelta
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -113,8 +116,10 @@ def get_console_url(
     current_user: models.User = Depends(get_current_user),
 ):
     """
-    Returns the Proxmox noVNC console URL for a specific VM in an environment.
-    The learner's browser opens this URL in a new tab or iframe.
+    Returns a fully authenticated Proxmox noVNC console URL.
+    Generates a short-lived Proxmox ticket + CSRF token server-side
+    so the learner's browser opens the VM console directly without
+    ever seeing the Proxmox login screen.
     """
     env = db.query(models.Environment).filter(models.Environment.id == environment_id).first()
     if not env:
@@ -131,24 +136,77 @@ def get_console_url(
     if not vm.proxmox_vmid or not vm.proxmox_node:
         raise HTTPException(status_code=400, detail="VM not yet provisioned")
 
-    proxmox_host = os.getenv("PROXMOX_HOST", "192.168.37.20")
+    proxmox_host  = os.getenv("PROXMOX_HOST", "192.168.37.20")
+    proxmox_user  = os.getenv("PROXMOX_USER", "root@pam")
+    token_name    = os.getenv("PROXMOX_TOKEN_NAME", "cyberrange")
+    token_value   = os.getenv("PROXMOX_TOKEN_VALUE", "")
+    verify_ssl    = os.getenv("PROXMOX_VERIFY_SSL", "false").lower() == "true"
 
-    # Proxmox noVNC console URL — opens directly in browser, no auth token needed
-    # when accessed from within the same network
-    console_url = (
-        f"https://{proxmox_host}:8006/"
-        f"?console=kvm&novnc=1"
-        f"&vmid={vm.proxmox_vmid}"
-        f"&node={vm.proxmox_node}"
-        f"&resize=off&lang=en"
-    )
+    # ── Request a Proxmox session ticket using the API token ────────────────
+    # Proxmox supports two auth paths:
+    #   1. username/password  → returns ticket + CSRFPreventionToken
+    #   2. API token          → does NOT return a ticket (tokens can't generate tickets)
+    # noVNC requires a ticket, so we must use password auth here.
+    # We fall back to the API token auth URL format if no password is available.
+
+    proxmox_password = os.getenv("PROXMOX_PASSWORD", "")
+
+    ticket = None
+    csrf   = None
+
+    if proxmox_password:
+        try:
+            import urllib.request, urllib.parse, ssl, json as _json
+            ctx = ssl.create_default_context()
+            if not verify_ssl:
+                ctx.check_hostname = False
+                ctx.verify_mode    = ssl.CERT_NONE
+
+            payload = urllib.parse.urlencode({
+                "username": proxmox_user,
+                "password": proxmox_password,
+            }).encode()
+
+            req = urllib.request.Request(
+                f"https://{proxmox_host}:8006/api2/json/access/ticket",
+                data=payload, method="POST",
+            )
+            with urllib.request.urlopen(req, context=ctx, timeout=8) as resp:
+                data   = _json.loads(resp.read())
+                ticket = data["data"]["ticket"]
+                csrf   = data["data"]["CSRFPreventionToken"]
+        except Exception as e:
+            logger.warning(f"Could not obtain Proxmox ticket: {e}")
+
+    if ticket and csrf:
+        # Fully authenticated URL — no login screen
+        console_url = (
+            f"https://{proxmox_host}:8006/?"
+            f"console=kvm&novnc=1"
+            f"&vmid={vm.proxmox_vmid}"
+            f"&node={vm.proxmox_node}"
+            f"&resize=off&lang=en"
+            f"&ticket={urllib.parse.quote(ticket)}"
+            f"&csrf={urllib.parse.quote(csrf)}"
+        )
+    else:
+        # Fallback — learner may need to log in once manually
+        logger.warning("Falling back to unauthenticated noVNC URL (add PROXMOX_PASSWORD to .env for auto-auth)")
+        console_url = (
+            f"https://{proxmox_host}:8006/?"
+            f"console=kvm&novnc=1"
+            f"&vmid={vm.proxmox_vmid}"
+            f"&node={vm.proxmox_node}"
+            f"&resize=off&lang=en"
+        )
 
     return {
         "console_url": console_url,
-        "vmid": vm.proxmox_vmid,
-        "node": vm.proxmox_node,
-        "vm_name": vm.vm_template.name,
-        "ip_address": vm.ip_address,
+        "vmid":        vm.proxmox_vmid,
+        "node":        vm.proxmox_node,
+        "vm_name":     vm.vm_template.name,
+        "ip_address":  vm.ip_address,
+        "authenticated": bool(ticket),
     }
 
 
