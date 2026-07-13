@@ -90,6 +90,16 @@ if db.query(models.VMTemplate).count() == 0:
         models.VMTemplate(name="HMI VM",           zone="OT_Net",       proxmox_template_id=9008,
                           description="Human-Machine Interface connected to PLC/SCADA",
                           default_tools="WinCC, FactoryTalk, VNC"),
+        # ── Room 1 Accidental Risk VMs ─────────────────────────────────────
+        models.VMTemplate(name="icsimrisk",        zone="CAN_Net",      proxmox_template_id=9010,
+                          description="Vehicle VM for Accidental Risk Room 1 — ICSim + infotainment unit (192.168.37.47)",
+                          default_tools="ICSim, OTA client, /opt/ota-lab/"),
+        models.VMTemplate(name="riskroom1wazuh",   zone="SOC_Net",      proxmox_template_id=9011,
+                          description="Wazuh SIEM VM for Accidental Risk Room 1 — dashboard at https://192.168.37.49",
+                          default_tools="Wazuh dashboard, alert rules, file integrity monitoring"),
+        models.VMTemplate(name="accriskroom1",     zone="OT_Net",       proxmox_template_id=9012,
+                          description="OTA Server VM for Accidental Risk Room 1 — journalctl -u ota-server (192.168.37.48)",
+                          default_tools="OTA server, systemd journal, firmware packages"),
     ]
     db.add_all(templates)
     db.commit()
@@ -240,6 +250,160 @@ if db.query(models.Challenge).count() == 0:
              flag="FLAG{stride_ot_model_2026}",
              vms=["Monitoring VM"],
              hints=[("Map each STRIDE category to a specific OT protocol (Modbus, DNP3, CAN).", 15)]),
+
+        # ── Accidental Risk — Room 1: Interrupted OTA Update ───────────────
+        dict(title="Task 1 — Discover",
+             cat="risk", diff="easy", lab_layer="risk", points=15, time=10,
+             tags="Accidental Risk,OTA,Investigation",
+             desc="""You are on the Automotive Cybersecurity Incident Response Team. Open the Vehicle VM and observe both running windows: the ICSim CAN-bus dashboard and the infotainment unit. Spend time with both before forming an opinion.
+
+Machine access:
+  Vehicle VM   — 192.168.37.47  (user: ubuntudesktop / ubuntudesktop)
+  OTA Server   — 192.168.37.48  (user: otaserver / otaserver)
+  Wazuh        — 192.168.37.49  (user: wazuh / wazuh)  →  https://192.168.37.49
+
+Q1. Which subsystem is affected?
+  A) Engine management
+  B) Infotainment system
+  C) Steering system
+  D) Lighting system
+
+Q2. Based only on what you observe, what is the most accurate statement?
+  A) The entire vehicle has failed
+  B) Only one subsystem appears affected
+  C) This is clearly a cyberattack
+  D) Nothing can be concluded yet
+
+Submit ANSWER_B_B when you have answered both questions correctly.""",
+             obj="Distinguish affected vs. functional subsystems; apply initial scope assessment before touching logs.",
+             flag="ANSWER_B_B",
+             vms=["icsimrisk", "accriskroom1", "riskroom1wazuh"],
+             hints=[("Focus on what still works, not just what is broken. The boundary between the two tells you more than either alone.", 0)]),
+
+        dict(title="Task 2 — Collect Evidence",
+             cat="risk", diff="easy", lab_layer="risk", points=25, time=10,
+             tags="Accidental Risk,OTA,Log Analysis",
+             desc="""Read the OTA client logs on the Vehicle VM at /opt/ota-lab/logs/ — four files, each written by a different part of the update process.
+
+  update.log   — the client's own account of the update attempt
+  battery.log  — a measurement taken repeatedly during install
+  install.log  — lower-level detail from the actual firmware write
+  auth.log     — what the client found checking for suspicious logins
+
+Also check: OTA Server journal with `journalctl -u ota-server`, and the Wazuh dashboard at https://192.168.37.49.
+
+Q3. Which two files, together, best explain why the update actually stopped?
+  A) auth.log and the package directory
+  B) update.log and battery.log
+  C) install.log and the OTA Server access log only
+  D) The Wazuh dashboard alone
+
+Q4. What sequence best matches the evidence?
+  A) Malware corrupted the firmware
+  B) The OTA server crashed
+  C) Battery dropped too low during installation, so it aborted
+  D) A remote attacker interrupted the update
+
+Submit ANSWER_B_C when you have answered both questions correctly.""",
+             obj="Read and correlate multiple log sources; distinguish causal evidence from noise.",
+             flag="ANSWER_B_C",
+             vms=["icsimrisk", "accriskroom1", "riskroom1wazuh"],
+             hints=[("One file usually says what happened. A different one tends to say why.", 0)]),
+
+        dict(title="Task 3 — Analyze",
+             cat="risk", diff="medium", lab_layer="risk", points=30, time=10,
+             tags="Accidental Risk,OTA,Cross-Correlation",
+             desc="""A single log is a claim. Several independent sources that agree without having coordinated are close to a fact. Cross-check the Vehicle VM logs against the OTA Server journal and the Wazuh dashboard. Ask what an attacker's fingerprints would look like across all three — and whether you are seeing any of them.
+
+Q5. Which of these, if found, would support the "not an attack" conclusion?
+  A) High CPU usage on the OTA Server
+  B) No malware, no unauthorized logins, no file integrity alerts, plus a real battery drop during install
+  C) A firewall rule change
+  D) An unusually large firmware file
+
+Q6. Which security property was primarily affected?
+  A) Confidentiality
+  B) Availability
+  C) Authenticity
+  D) Non-repudiation
+
+Q7. How would you classify this incident?
+  A) Deliberate attack
+  B) Environmental risk
+  C) Accidental risk
+  D) Regulatory issue
+
+Submit ANSWER_B_B_C when you have answered all three questions correctly.""",
+             obj="Cross-correlate evidence across independent sources; classify incidents using standard risk taxonomy.",
+             flag="ANSWER_B_B_C",
+             vms=["icsimrisk", "accriskroom1", "riskroom1wazuh"],
+             hints=[("Look for what is absent as much as what is present. No attack fingerprints across three independent sources is itself strong evidence.", 0)]),
+
+        dict(title="Task 4 — Decide",
+             cat="risk", diff="medium", lab_layer="risk", points=20, time=5,
+             tags="Accidental Risk,OTA,Decision Making",
+             desc="""Your team lead needs a decision that matches the evidence, not the loudest reaction. Overreacting wastes engineering time and can damage customer trust. Underreacting to a real attack is worse. Weigh the real options against what you have actually established.
+
+Q8. What should the engineering team do first?
+  A) Launch a full cyber incident response
+  B) Replace the infotainment ECU
+  C) Roll back or safely reinstall the firmware once the battery issue is resolved
+  D) Disconnect the vehicle from the network
+
+Submit ANSWER_C when you have answered correctly.""",
+             obj="Proportional incident response; match remediation to confirmed root cause.",
+             flag="ANSWER_C",
+             vms=["icsimrisk", "accriskroom1", "riskroom1wazuh"],
+             hints=[("Match the response to what you have actually confirmed, not to worst-case assumptions.", 0)]),
+
+        dict(title="Task 5 — Mitigate",
+             cat="risk", diff="medium", lab_layer="risk", points=20, time=5,
+             tags="Accidental Risk,OTA,Mitigation",
+             desc="""An incident is a free lesson about a gap in the system. This fleet had more than one — or a failed update could not have left a vehicle with no way back to a working state.
+
+Q9. Which single change would have prevented this specific incident from happening at all?
+  A) A more detailed log format
+  B) Enforcing a minimum battery level before allowing installation to start
+  C) A faster download connection
+  D) A bigger firmware file size limit
+
+Q10. Which additional measures reduce the risk of a similar incident going forward?
+  A) Automatic rollback + firmware integrity verification before reboot
+  B) A louder error beep
+  C) Disabling OTA updates permanently
+  D) Increasing the firmware file size
+
+Submit ANSWER_B_A when you have answered both questions correctly.""",
+             obj="Distinguish preventive from detective controls; identify systemic gaps from a single failure.",
+             flag="ANSWER_B_A",
+             vms=["icsimrisk", "accriskroom1", "riskroom1wazuh"],
+             hints=[("Think about which changes would have genuinely prevented this, versus which would only have made it easier to diagnose afterward.", 0)]),
+
+        dict(title="Task 6 — Apply",
+             cat="risk", diff="hard", lab_layer="risk", points=40, time=10,
+             tags="Accidental Risk,OTA,Hands-On Fix",
+             desc="""This is where it stops being theoretical. You have real terminal access to the Vehicle VM. Its OTA client reads its configuration from a real file — whatever you set here genuinely changes how it behaves on the next attempt.
+
+On the Vehicle VM, edit the live config:
+  sudo nano /opt/ota-lab/config/ota.conf
+
+Set a minimum_battery threshold with real margin, and turn rollback_enabled and verify_before_reboot to true. Then trigger a genuine retry:
+  python3 /opt/ota-lab/ota_client.py --retry
+
+Check /opt/ota-lab/logs/ again to see what actually happened.
+
+Q11. Which mitigation would have prevented this incident before it even started?
+  A) User notification before installation
+  B) Enforcing a minimum battery level before allowing the OTA installation
+  C) A larger battery icon on the dashboard
+  D) Restarting the OTA server daily
+
+When the retry succeeds and the infotainment recovers, the OTA client prints a confirmation token. Submit it as your flag.""",
+             obj="Apply configuration-level mitigations in a live environment; validate that a fix actually changes system behavior.",
+             flag="FLAG{ota_retry_success_battery_enforced}",
+             vms=["icsimrisk", "accriskroom1", "riskroom1wazuh"],
+             hints=[("Set minimum_battery to at least 50 in ota.conf before retrying.", 10),
+                    ("Both rollback_enabled and verify_before_reboot must be true for the client to accept the config.", 15)]),
     ]
 
     challenge_objs = {}
@@ -323,12 +487,19 @@ if db.query(models.Room).count() == 0:
              challenges=["OT Threat Hunting with Wazuh", "ICS Incident Response"]),
 
         # ── Risk path — 4 modules ──────────────────────────────────────────
-        # Module 1: Accidental Risk
-        dict(slug="accidental-risk-intro", title="ICS Risk Assessment",
+        # Module 1: Accidental Risk — Room 1 (live)
+        dict(slug="accidental-risk-ota", title="Interrupted OTA Update",
              cat="risk", layer="risk", module="Accidental Risk",
-             diff="easy", order=9,
-             desc="Apply IEC 62443 risk assessment to an OT environment. Identify accidental failure scenarios, assess likelihood and consequence, and build a risk matrix.",
-             challenges=["ICS Risk Assessment Fundamentals"]),
+             diff="medium", order=9,
+             desc="A vehicle's infotainment failed after an OTA update. Was it an accident or an attack? Investigate three real machines, cross-correlate logs and Wazuh alerts, then apply a live fix.",
+             challenges=[
+                 "Task 1 — Discover",
+                 "Task 2 — Collect Evidence",
+                 "Task 3 — Analyze",
+                 "Task 4 — Decide",
+                 "Task 5 — Mitigate",
+                 "Task 6 — Apply",
+             ]),
 
         # Module 2: Environmental Risk (placeholder — rooms to be added)
         dict(slug="environmental-risk-intro", title="Environmental Threat Modelling",
