@@ -60,6 +60,9 @@ export const api = {
 
   getEnvironment: (id) => fetch(`${BASE}/environments/${id}`, { headers: authHeaders() }).then(handle),
 
+  getConsoleUrl: (envId, vmId) =>
+    fetch(`${BASE}/environments/${envId}/console/${vmId}`, { headers: authHeaders() }).then(handle),
+
   resetEnvironment: (id) =>
     fetch(`${BASE}/environments/${id}/reset`, { method: 'POST', headers: authHeaders() }).then(handle),
 

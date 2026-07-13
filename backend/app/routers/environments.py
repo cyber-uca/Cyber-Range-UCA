@@ -1,4 +1,5 @@
 import json
+import os
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -102,6 +103,53 @@ def reset_environment(environment_id: str, db: Session = Depends(get_db),
     db.commit()
     db.refresh(env)
     return env
+
+
+@router.get("/{environment_id}/console/{vm_id}")
+def get_console_url(
+    environment_id: str,
+    vm_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Returns the Proxmox noVNC console URL for a specific VM in an environment.
+    The learner's browser opens this URL in a new tab or iframe.
+    """
+    env = db.query(models.Environment).filter(models.Environment.id == environment_id).first()
+    if not env:
+        raise HTTPException(status_code=404, detail="Environment not found")
+    if env.user_id != current_user.id and current_user.role == models.Role.LEARNER:
+        raise HTTPException(status_code=403, detail="Not your environment")
+
+    vm = db.query(models.EnvironmentVM).filter(
+        models.EnvironmentVM.id == vm_id,
+        models.EnvironmentVM.environment_id == environment_id,
+    ).first()
+    if not vm:
+        raise HTTPException(status_code=404, detail="VM not found in this environment")
+    if not vm.proxmox_vmid or not vm.proxmox_node:
+        raise HTTPException(status_code=400, detail="VM not yet provisioned")
+
+    proxmox_host = os.getenv("PROXMOX_HOST", "192.168.37.20")
+
+    # Proxmox noVNC console URL — opens directly in browser, no auth token needed
+    # when accessed from within the same network
+    console_url = (
+        f"https://{proxmox_host}:8006/"
+        f"?console=kvm&novnc=1"
+        f"&vmid={vm.proxmox_vmid}"
+        f"&node={vm.proxmox_node}"
+        f"&resize=off&lang=en"
+    )
+
+    return {
+        "console_url": console_url,
+        "vmid": vm.proxmox_vmid,
+        "node": vm.proxmox_node,
+        "vm_name": vm.vm_template.name,
+        "ip_address": vm.ip_address,
+    }
 
 
 @router.post("/{environment_id}/destroy")

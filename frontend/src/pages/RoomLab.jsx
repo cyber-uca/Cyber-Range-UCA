@@ -136,6 +136,28 @@ function TaskBody({ challenge }) {
 function VMCard({ vmTemplate, envVm, onStart, starting }) {
   const running = envVm?.status === 'running'
   const ip = envVm?.ip_address
+  const [consoleUrl, setConsoleUrl] = useState(null)
+  const [loadingConsole, setLoadingConsole] = useState(false)
+
+  const openConsole = async () => {
+    // If we already have the URL, just open it
+    if (consoleUrl) { window.open(consoleUrl, '_blank'); return }
+    if (!envVm?.id) return
+    setLoadingConsole(true)
+    try {
+      // We need the environment id — stored on envVm parent env
+      const data = await api.getConsoleUrl(envVm.environment_id, envVm.id)
+      setConsoleUrl(data.console_url)
+      window.open(data.console_url, '_blank')
+    } catch (err) {
+      // Fallback: build URL directly from proxmox_vmid + node if available
+      if (envVm.proxmox_vmid && envVm.proxmox_node) {
+        const url = `https://192.168.37.20:8006/?console=kvm&novnc=1&vmid=${envVm.proxmox_vmid}&node=${envVm.proxmox_node}&lang=en`
+        setConsoleUrl(url)
+        window.open(url, '_blank')
+      }
+    } finally { setLoadingConsole(false) }
+  }
 
   return (
     <div style={{
@@ -159,15 +181,28 @@ function VMCard({ vmTemplate, envVm, onStart, starting }) {
             <div style={{ fontSize:11, color:'var(--text-muted)', fontFamily:'var(--font-mono)', marginTop:2 }}>
               {vmTemplate.zone}
               {running && ip && <span style={{ color:'var(--mitigation)', marginLeft:8 }}>· {ip}</span>}
+              {running && envVm?.proxmox_vmid && (
+                <span style={{ color:'var(--text-dim)', marginLeft:8 }}>vmid:{envVm.proxmox_vmid}</span>
+              )}
             </div>
           </div>
         </div>
 
         {running ? (
-          <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-            <div style={{ width:8, height:8, borderRadius:'50%', background:'var(--success)',
-              boxShadow:'0 0 6px var(--success)', animation:'pulse 2s infinite' }} />
-            <span style={{ fontSize:11, color:'var(--mitigation)', fontWeight:700 }}>RUNNING</span>
+          <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:6 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+              <div style={{ width:8, height:8, borderRadius:'50%', background:'var(--success)',
+                boxShadow:'0 0 6px var(--success)', animation:'pulse 2s infinite' }} />
+              <span style={{ fontSize:11, color:'var(--mitigation)', fontWeight:700 }}>RUNNING</span>
+            </div>
+            <button
+              onClick={openConsole}
+              disabled={loadingConsole}
+              style={{ padding:'6px 14px', borderRadius:7, fontSize:11, fontWeight:700, cursor:'pointer',
+                background:'var(--accent-dim)', color:'var(--accent)',
+                border:'1px solid rgba(0,194,230,0.35)', display:'flex', alignItems:'center', gap:5 }}>
+              {loadingConsole ? <><Spin size={10}/> Opening…</> : <>🖥 Open Console</>}
+            </button>
           </div>
         ) : (
           <button onClick={onStart} disabled={starting}
@@ -269,7 +304,9 @@ export default function RoomLab() {
       const vm = env.vms?.[0]
       const ip = vm?.ip_address ? ` · ${vm.ip_address}` : ''
       log(id, `$ ✓ ${vmTpl.name} running${ip}`)
-      put(id, { env, envVms: env.vms ?? [], starting:null })
+      // attach environment_id to each vm so the console endpoint can use it
+      const envVms = (env.vms ?? []).map(v => ({ ...v, environment_id: env.id }))
+      put(id, { env, envVms, starting:null })
     } catch(err) {
       log(id, `$ [ERROR] ${err.message}`)
       put(id, { starting:null })

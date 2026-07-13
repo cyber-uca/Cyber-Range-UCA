@@ -234,6 +234,8 @@ class EnvironmentVMOut(BaseModel):
     id: str
     vm_template: VMTemplateOut
     ip_address: Optional[str]
+    proxmox_vmid: Optional[int]
+    proxmox_node: Optional[str]
     status: str
 
     class Config:
