@@ -103,6 +103,22 @@ def create_vm_template(
     return template
 
 
+@router.patch("/vm-templates/{template_id}", response_model=schemas.VMTemplateOut)
+def update_vm_template(
+    template_id: str,
+    payload: VMTemplateCreate,
+    db: Session = Depends(get_db), current_user: models.User = Depends(require_role(models.Role.ADMIN)),
+):
+    template = db.query(models.VMTemplate).filter(models.VMTemplate.id == template_id).first()
+    if not template:
+        raise HTTPException(status_code=404, detail="VM template not found")
+    for field, value in payload.model_dump().items():
+        setattr(template, field, value)
+    db.commit()
+    db.refresh(template)
+    return template
+
+
 @router.delete("/vm-templates/{template_id}")
 def delete_vm_template(
     template_id: str,

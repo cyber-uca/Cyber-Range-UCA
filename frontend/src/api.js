@@ -129,6 +129,13 @@ export const api = {
   adminDeleteVmTemplate: (id) =>
     fetch(`${BASE}/admin/vm-templates/${id}`, { method: 'DELETE', headers: authHeaders() }).then(handle),
 
+  adminUpdateVmTemplate: (id, data) =>
+    fetch(`${BASE}/admin/vm-templates/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(data),
+    }).then(handle),
+
   // ---------- Categories & Difficulties (data-driven taxonomy) ----------
   // Public reads - any authenticated user (Dashboard, Library filters, Creator picker)
   listCategoriesPublic: () => fetch(`${BASE}/categories`, { headers: authHeaders() }).then(handle),
