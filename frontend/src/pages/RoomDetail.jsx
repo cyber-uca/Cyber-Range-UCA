@@ -92,6 +92,12 @@ export default function RoomDetail() {
                 <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: s.color, fontSize: 13, textTransform: 'capitalize' }}>{s.value}</span>
               </div>
             ))}
+            <button className="btn-primary"
+              onClick={() => navigate(`/rooms/${room.slug}/lab`)}
+              style={{ marginTop: 4, padding: '12px', fontSize: 14, fontWeight: 800, borderRadius: 12,
+                animation: 'glowPulse 3s ease-in-out infinite', width: '100%' }}>
+              Join Room →
+            </button>
           </div>
         </div>
       </div>

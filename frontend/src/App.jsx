@@ -17,6 +17,7 @@ import AdminTaxonomy from './pages/AdminTaxonomy.jsx'
 import AdminSettings from './pages/AdminSettings.jsx'
 import Roadmap from './pages/Roadmap.jsx'
 import RoomDetail from './pages/RoomDetail.jsx'
+import RoomLab from './pages/RoomLab.jsx'
 import LandingPage from './pages/LandingPage.jsx'
 
 export const AuthContext = createContext(null)
@@ -88,6 +89,7 @@ function AppRoutes() {
       <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>} />
       <Route path="/roadmap" element={<RequireAuth><Roadmap /></RequireAuth>} />
       <Route path="/rooms/:slug" element={<RequireAuth><RoomDetail /></RequireAuth>} />
+      <Route path="/rooms/:slug/lab" element={<RequireAuthBare><RoomLab /></RequireAuthBare>} />
       <Route path="/challenges" element={<RequireAuth><ChallengeLibrary /></RequireAuth>} />
       <Route path="/challenges/:id" element={<RequireAuth><ChallengeDetail /></RequireAuth>} />
       <Route path="/leaderboard" element={<RequireAuth><Leaderboard /></RequireAuth>} />
