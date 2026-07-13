@@ -1,6 +1,7 @@
 @echo off
-cd /d "C:\Users\imane\Desktop\Cyber range\platform design\cyber-range-platform\platform"
-git add deploy/ backend/app/gateway/adapters/proxmox_adapter.py backend/app/models.py backend/.env.example
-git commit -m "feat: add deploy scripts and Proxmox adapter for Option B deployment"
-git push https://arrach-imane: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@github.com/arrach-imane/Cyber-Range-UCA.git main
-echo Done.
+REM Push changes to GitHub.
+REM Authentication is handled by your Git credential manager or SSH key.
+REM Run: gh auth login   (if using GitHub CLI)
+REM  or:  git remote set-url origin git@github.com:arrach-imane/Cyber-Range-UCA.git  (SSH)
+
+git push origin main

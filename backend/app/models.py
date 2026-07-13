@@ -198,8 +198,19 @@ class EnvironmentVM(Base):
     vm_template = relationship("VMTemplate")
 
 
+class HintUnlock(Base):
+    __tablename__ = "hint_unlocks"
+    id           = Column(String(36), primary_key=True, default=gen_uuid)
+    user_id      = Column(String(36), ForeignKey("users.id"),      nullable=False)
+    challenge_id = Column(String(36), ForeignKey("challenges.id"), nullable=False)
+    hint_id      = Column(String(36), ForeignKey("hints.id"),      nullable=False)
+    unlocked_at  = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")
+    hint = relationship("Hint")
+
+
 class FlagSubmission(Base):
-    __tablename__ = "flag_submissions"
     id              = Column(String(36),  primary_key=True, default=gen_uuid)
     user_id         = Column(String(36),  ForeignKey("users.id"),      nullable=False)
     challenge_id    = Column(String(36),  ForeignKey("challenges.id"), nullable=False)

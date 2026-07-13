@@ -156,7 +156,7 @@ def start_single_vm(
     ).first()
     if already:
         db.refresh(env)
-        return env
+        return _env_out(env)
 
     # Provision and start the VM
     provisioned = get_gateway().clone_vm(
@@ -246,6 +246,8 @@ def reset_environment(environment_id: str, db: Session = Depends(get_db),
     env = db.query(models.Environment).filter(models.Environment.id == environment_id).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
+    if env.user_id != current_user.id and current_user.role == models.Role.LEARNER:
+        raise HTTPException(status_code=403, detail="Not your environment")
 
     for vm in env.vms:
         if vm.proxmox_vmid:
@@ -372,6 +374,8 @@ def destroy_environment(environment_id: str, db: Session = Depends(get_db),
     env = db.query(models.Environment).filter(models.Environment.id == environment_id).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
+    if env.user_id != current_user.id and current_user.role == models.Role.LEARNER:
+        raise HTTPException(status_code=403, detail="Not your environment")
 
     env.status = models.EnvironmentStatus.DESTROYING
     db.commit()

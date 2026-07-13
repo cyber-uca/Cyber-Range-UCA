@@ -266,21 +266,37 @@ function VMCard({ vmTemplate, envVm, env, onStart, onStop, starting, stopping })
 /* ─── Hints ──────────────────────────────────────────────────────────────── */
 function Hints({ challengeId }) {
   const [hints, setHints] = useState([])
-  const [shown, setShown] = useState({})
-  useEffect(() => { api.getHints(challengeId).then(setHints).catch(()=>{}) }, [challengeId])
+  const [unlocking, setUnlocking] = useState({})
+
+  const load = () => api.getHints(challengeId).then(setHints).catch(()=>{})
+  useEffect(() => { load() }, [challengeId])
+
+  const unlock = async (h) => {
+    setUnlocking(p => ({...p, [h.id]: true}))
+    try {
+      await api.unlockHint(challengeId, h.id)
+      load()  // reload to get content
+    } catch(err) {
+      alert(err.message)
+    } finally {
+      setUnlocking(p => ({...p, [h.id]: false}))
+    }
+  }
+
   if (!hints.length) return null
   return (
     <div style={{ marginTop:20 }}>
       <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'.08em', color:'var(--text-dim)', fontWeight:700, marginBottom:10 }}>Hints</div>
       {hints.map(h => (
         <div key={h.id} className="hint-item" style={{ marginBottom:8 }}>
-          {shown[h.id]
+          {h.unlocked
             ? <span style={{ fontSize:13, color:'var(--text)', lineHeight:1.6 }}>{h.content}</span>
             : <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                 <span style={{ fontSize:12, color:'var(--text-muted)' }}>Hint #{h.order+1}</span>
                 <button className="btn-secondary" style={{ fontSize:11, padding:'5px 12px' }}
-                  onClick={() => setShown(p=>({...p,[h.id]:true}))}>
-                  Reveal {h.cost > 0 && <span style={{ color:'var(--offensive)', marginLeft:4 }}>−{h.cost} pts</span>}
+                  disabled={unlocking[h.id]}
+                  onClick={() => unlock(h)}>
+                  {unlocking[h.id] ? 'Unlocking…' : <>Unlock {h.cost > 0 && <span style={{ color:'var(--offensive)', marginLeft:4 }}>−{h.cost} pts</span>}</>}
                 </button>
               </div>
           }

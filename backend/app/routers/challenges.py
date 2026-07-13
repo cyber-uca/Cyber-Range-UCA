@@ -108,6 +108,8 @@ def update_challenge(
     challenge = db.query(models.Challenge).filter(models.Challenge.id == challenge_id).first()
     if not challenge:
         raise HTTPException(status_code=404, detail="Challenge not found")
+    if current_user.role != models.Role.ADMIN and challenge.created_by != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only edit your own challenges")
 
     challenge.title = payload.title
     challenge.description = payload.description
@@ -144,6 +146,8 @@ def delete_challenge(
     challenge = db.query(models.Challenge).filter(models.Challenge.id == challenge_id).first()
     if not challenge:
         raise HTTPException(status_code=404, detail="Challenge not found")
+    if current_user.role != models.Role.ADMIN and challenge.created_by != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only delete your own challenges")
     db.delete(challenge)
     db.commit()
     return {"status": "deleted"}
@@ -283,14 +287,79 @@ def publish_challenge(
     return challenge
 
 
-@router.get("/{challenge_id}/hints", response_model=List[schemas.HintOut])
+@router.get("/{challenge_id}/hints")
 def list_hints(challenge_id: str, db: Session = Depends(get_db),
                 current_user: models.User = Depends(get_current_user)):
-    """Returns hint metadata (cost) but the frontend should only reveal
-    `content` after the learner explicitly unlocks it and pays the cost -
-    handle that transaction in a dedicated unlock endpoint for a real
-    deployment. Simplified here for clarity."""
-    return db.query(models.Hint).filter(models.Hint.challenge_id == challenge_id).order_by(models.Hint.order).all()
+    """
+    Returns hints for a challenge. Content is hidden until the learner
+    explicitly unlocks each hint via POST /challenges/{id}/hints/{hint_id}/unlock.
+    Tutors and admins always see full content.
+    """
+    hints = db.query(models.Hint).filter(
+        models.Hint.challenge_id == challenge_id
+    ).order_by(models.Hint.order).all()
+
+    # Check which hints this user has already unlocked
+    unlocked_ids = set()
+    if current_user.role == models.Role.LEARNER:
+        unlocked = db.query(models.HintUnlock).filter(
+            models.HintUnlock.user_id == current_user.id,
+            models.HintUnlock.challenge_id == challenge_id,
+        ).all()
+        unlocked_ids = {u.hint_id for u in unlocked}
+
+    result = []
+    for h in hints:
+        show_content = (current_user.role != models.Role.LEARNER) or (h.id in unlocked_ids)
+        result.append({
+            "id": h.id,
+            "order": h.order,
+            "cost": h.cost,
+            "content": h.content if show_content else None,
+            "unlocked": show_content,
+        })
+    return result
+
+
+@router.post("/{challenge_id}/hints/{hint_id}/unlock")
+def unlock_hint(
+    challenge_id: str,
+    hint_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Deduct points and mark hint as unlocked for this learner."""
+    hint = db.query(models.Hint).filter(
+        models.Hint.id == hint_id,
+        models.Hint.challenge_id == challenge_id,
+    ).first()
+    if not hint:
+        raise HTTPException(status_code=404, detail="Hint not found")
+
+    # Idempotent — already unlocked
+    already = db.query(models.HintUnlock).filter(
+        models.HintUnlock.user_id == current_user.id,
+        models.HintUnlock.hint_id == hint_id,
+    ).first()
+    if already:
+        return {"content": hint.content, "already_unlocked": True, "points_deducted": 0}
+
+    # Deduct points if penalty is enabled and user has enough
+    settings = db.query(models.PlatformSettings).filter_by(id="singleton").first()
+    points_deducted = 0
+    if settings and settings.hint_penalties_enabled and hint.cost > 0:
+        if current_user.points < hint.cost:
+            raise HTTPException(status_code=400, detail=f"Not enough points — need {hint.cost}, have {current_user.points}")
+        current_user.points -= hint.cost
+        points_deducted = hint.cost
+
+    db.add(models.HintUnlock(
+        user_id=current_user.id,
+        challenge_id=challenge_id,
+        hint_id=hint_id,
+    ))
+    db.commit()
+    return {"content": hint.content, "already_unlocked": False, "points_deducted": points_deducted}
 
 
 @router.post("/{challenge_id}/submit", response_model=schemas.FlagResult)

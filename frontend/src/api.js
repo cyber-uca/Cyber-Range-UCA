@@ -40,6 +40,12 @@ export const api = {
 
   getHints: (id) => fetch(`${BASE}/challenges/${id}/hints`, { headers: authHeaders() }).then(handle),
 
+  unlockHint: (challengeId, hintId) =>
+    fetch(`${BASE}/challenges/${challengeId}/hints/${hintId}/unlock`, {
+      method: 'POST',
+      headers: { ...authHeaders() },
+    }).then(handle),
+
   submitFlag: (id, value) =>
     fetch(`${BASE}/challenges/${id}/submit`, {
       method: 'POST',
