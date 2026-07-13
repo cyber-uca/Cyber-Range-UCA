@@ -19,6 +19,7 @@ def _enrich_room(room: models.Room) -> dict:
         "description": room.description,
         "category": room.category,
         "lab_layer": room.lab_layer,
+        "module": room.module,
         "difficulty": room.difficulty,
         "is_published": room.is_published,
         "sort_order": room.sort_order,
@@ -70,9 +71,10 @@ class RoomCreatePayload(_Base):
     description: Optional[str] = None
     category_id: str
     lab_layer: Optional[str] = None
+    module: Optional[str] = None
     difficulty: str = "medium"
     sort_order: int = 0
-    challenge_ids: List[str] = []   # ordered list of challenge IDs
+    challenge_ids: List[str] = []
 
 
 @router.post("", response_model=schemas.RoomDetail)
@@ -86,8 +88,8 @@ def create_room(
     room = models.Room(
         slug=payload.slug, title=payload.title, description=payload.description,
         category_id=payload.category_id, lab_layer=payload.lab_layer,
-        difficulty=payload.difficulty, sort_order=payload.sort_order,
-        is_published=False,
+        module=payload.module, difficulty=payload.difficulty,
+        sort_order=payload.sort_order, is_published=False,
     )
     db.add(room)
     db.flush()

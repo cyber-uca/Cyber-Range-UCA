@@ -86,6 +86,7 @@ class Room(Base):
     description = Column(Text,        nullable=True)
     category_id = Column(String(36),  ForeignKey("categories.id"), nullable=False)
     lab_layer   = Column(String(64),  nullable=True)   # plc | scada | icsim | wazuh | risk
+    module      = Column(String(128), nullable=True)   # e.g. "Accidental Risk", "Environmental Risk"
     difficulty  = Column(String(32),  default="medium") # easy | medium | hard
     image_url   = Column(String(512), nullable=True)
     is_published = Column(Boolean,    default=False)

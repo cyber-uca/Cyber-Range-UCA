@@ -170,6 +170,7 @@ class RoomOut(BaseModel):
     description: Optional[str]
     category: CategoryOut
     lab_layer: Optional[str]
+    module: Optional[str]
     difficulty: str
     is_published: bool
     sort_order: int
@@ -186,6 +187,7 @@ class RoomDetail(BaseModel):
     description: Optional[str]
     category: CategoryOut
     lab_layer: Optional[str]
+    module: Optional[str]
     difficulty: str
     is_published: bool
     challenges: List[RoomChallengeOut]

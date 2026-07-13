@@ -274,51 +274,82 @@ if db.query(models.Room).count() == 0:
     def ch(title): return db.query(models.Challenge).filter_by(title=title).first()
 
     ROOMS = [
-        # ICSim rooms
+        # ── ICSim rooms (Offensive path) ───────────────────────────────────
         dict(slug="icsim-basics", title="ICSim Basics",
-             cat="offensive", layer="icsim", diff="easy", order=1,
+             cat="offensive", layer="icsim", module="CAN Bus Fundamentals",
+             diff="easy", order=1,
              desc="Get started with the Instrument Cluster Simulator. Learn CAN bus fundamentals through hands-on traffic capture and analysis.",
              challenges=["CAN Bus Traffic Analysis"]),
         dict(slug="icsim-attack", title="CAN Bus Attack Lab",
-             cat="offensive", layer="icsim", diff="medium", order=2,
-             desc="Escalate from passive sniffing to active message injection against the ICSim. Unlock doors, spoof the speedometer, trigger alerts.",
+             cat="offensive", layer="icsim", module="CAN Bus Fundamentals",
+             diff="medium", order=2,
+             desc="Escalate from passive sniffing to active message injection. Unlock doors, spoof the speedometer, trigger alerts.",
              challenges=["CAN Bus Message Injection", "ICSim Fuzzing"]),
 
-        # PLC rooms
+        # ── PLC rooms (Offensive path) ─────────────────────────────────────
         dict(slug="plc-recon", title="PLC Reconnaissance",
-             cat="offensive", layer="plc", diff="easy", order=3,
+             cat="offensive", layer="plc", module="PLC Exploitation",
+             diff="easy", order=3,
              desc="Map and enumerate a soft PLC running OpenPLC via Modbus TCP. Discover registers, coils and device metadata without authentication.",
              challenges=["Modbus Protocol Enumeration"]),
         dict(slug="plc-attack", title="PLC Attack & Defense",
-             cat="offensive", layer="plc", diff="hard", order=4,
+             cat="offensive", layer="plc", module="PLC Exploitation",
+             diff="hard", order=4,
              desc="Exploit a soft PLC to force an emergency stop, then harden it against future attacks using Suricata ICS rules.",
              challenges=["PLC Ladder Logic Manipulation", "PLC Anomaly Detection"]),
 
-        # SCADA rooms
+        # ── SCADA rooms (Offensive path) ───────────────────────────────────
         dict(slug="scada-recon", title="SCADA Reconnaissance",
-             cat="offensive", layer="scada", diff="easy", order=5,
-             desc="Enumerate a ScadaBR SCADA server: exposed services, default credentials and process tags — the attacker's first steps into an OT network.",
+             cat="offensive", layer="scada", module="SCADA Protocol Attacks",
+             diff="easy", order=5,
+             desc="Enumerate a ScadaBR SCADA server: exposed services, default credentials and process tags.",
              challenges=["SCADA HMI Reconnaissance"]),
         dict(slug="scada-attack", title="SCADA Protocol Attacks",
-             cat="offensive", layer="scada", diff="hard", order=6,
-             desc="Craft and inject spoofed DNP3 packets to mislead the SCADA master. A deep dive into ICS protocol exploitation.",
+             cat="offensive", layer="scada", module="SCADA Protocol Attacks",
+             diff="hard", order=6,
+             desc="Craft and inject spoofed DNP3 packets to mislead the SCADA master.",
              challenges=["DNP3 Spoofing Attack", "SCADA Network Hardening"]),
 
-        # Wazuh rooms
+        # ── Wazuh rooms (Defensive path) ───────────────────────────────────
         dict(slug="wazuh-setup", title="Wazuh for OT Security",
-             cat="defensive", layer="wazuh", diff="easy", order=7,
+             cat="defensive", layer="wazuh", module="OT Security Monitoring",
+             diff="easy", order=7,
              desc="Deploy and configure Wazuh agents on OT assets. Learn how SIEM/XDR integrates with industrial environments.",
              challenges=["Wazuh Agent Deployment"]),
         dict(slug="wazuh-hunting", title="OT Threat Hunting",
-             cat="defensive", layer="wazuh", diff="medium", order=8,
+             cat="defensive", layer="wazuh", module="OT Security Monitoring",
+             diff="medium", order=8,
              desc="Build custom Wazuh rules to detect OT-specific attacks. Hunt for Modbus write anomalies and respond to live incidents.",
              challenges=["OT Threat Hunting with Wazuh", "ICS Incident Response"]),
 
-        # Risk rooms
-        dict(slug="risk-fundamentals", title="ICS Risk Fundamentals",
-             cat="risk", layer="risk", diff="easy", order=9,
-             desc="Apply IEC 62443 and STRIDE to assess risks in OT environments. Build risk matrices and threat models for industrial systems.",
-             challenges=["ICS Risk Assessment Fundamentals", "STRIDE Threat Modelling for OT"]),
+        # ── Risk path — 4 modules ──────────────────────────────────────────
+        # Module 1: Accidental Risk
+        dict(slug="accidental-risk-intro", title="ICS Risk Assessment",
+             cat="risk", layer="risk", module="Accidental Risk",
+             diff="easy", order=9,
+             desc="Apply IEC 62443 risk assessment to an OT environment. Identify accidental failure scenarios, assess likelihood and consequence, and build a risk matrix.",
+             challenges=["ICS Risk Assessment Fundamentals"]),
+
+        # Module 2: Environmental Risk (placeholder — rooms to be added)
+        dict(slug="environmental-risk-intro", title="Environmental Threat Modelling",
+             cat="risk", layer="risk", module="Environmental Risk",
+             diff="medium", order=10,
+             desc="Model environmental threats to ICS infrastructure — power outages, physical access failures, natural disasters — and map them to IEC 62443 security levels.",
+             challenges=[]),
+
+        # Module 3: Regulatory Risk (placeholder)
+        dict(slug="regulatory-risk-intro", title="OT Regulatory Compliance",
+             cat="risk", layer="risk", module="Regulatory Risk",
+             diff="medium", order=11,
+             desc="Navigate ICS regulatory frameworks (IEC 62443, NERC CIP, NIS2) and assess compliance gaps. Understand what non-compliance means in operational terms.",
+             challenges=[]),
+
+        # Module 4: Organizational Risk (placeholder)
+        dict(slug="organizational-risk-intro", title="STRIDE for OT Systems",
+             cat="risk", layer="risk", module="Organizational Risk",
+             diff="medium", order=12,
+             desc="Apply STRIDE threat modelling to an ICS architecture. Identify organizational risk factors — insider threats, supply chain, governance gaps.",
+             challenges=["STRIDE Threat Modelling for OT"]),
     ]
 
     for r in ROOMS:
@@ -326,8 +357,8 @@ if db.query(models.Room).count() == 0:
         room = models.Room(
             slug=r["slug"], title=r["title"], description=r["desc"],
             category_id=category.id, lab_layer=r["layer"],
-            difficulty=r["diff"], sort_order=r["order"],
-            is_published=True,
+            module=r.get("module"), difficulty=r["diff"],
+            sort_order=r["order"], is_published=True,
         )
         db.add(room)
         db.flush()
