@@ -58,6 +58,13 @@ export const api = {
       body: JSON.stringify(topology),
     }).then(handle),
 
+  startSingleVM: (challengeId, vmTemplateId) =>
+    fetch(`${BASE}/environments/${challengeId}/start-vm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ vm_template_id: vmTemplateId }),
+    }).then(handle),
+
   getEnvironment: (id) => fetch(`${BASE}/environments/${id}`, { headers: authHeaders() }).then(handle),
 
   getConsoleUrl: (envId, vmId) =>

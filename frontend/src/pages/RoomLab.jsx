@@ -275,7 +275,7 @@ export default function RoomLab() {
     })
   }, [room])
 
-  const get = id => ts[id] ?? { env:null, envVms:[], logs:['$ ready — use Start buttons to provision VMs'], starting:null, flagValue:'', flagResult:null }
+  const get = id => ts[id] ?? { env:null, envVms:[], logs:['$ ready — use Start buttons to provision VMs'], starting:{}, flagValue:'', flagResult:null }
   const put = (id, patch) => setTs(p => ({...p, [id]: {...get(id), ...patch}}))
   const log = (id, line) => setTs(p => {
     const prev = p[id] ?? get(id)
@@ -287,29 +287,32 @@ export default function RoomLab() {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight
   }, [ts])
 
-  /* start one VM independently */
+  /* start one VM independently — reuses existing env for this challenge */
   const startVM = async (challenge, vmTpl) => {
     const id = challenge.id
     const s = get(id)
-    // if env already exists, this VM is already provisioned — nothing to do
-    if (s.env) { log(id, `$ ${vmTpl.name} is already part of a running environment`); return }
-    put(id, { starting: vmTpl.id })
+
+    // already running for this template?
+    const alreadyRunning = s.envVms.find(
+      e => e.vm_template?.id === vmTpl.id || e.vm_template?.name === vmTpl.name
+    )
+    if (alreadyRunning?.status === 'running') {
+      log(id, `$ ${vmTpl.name} is already running`)
+      return
+    }
+
+    put(id, { starting: { ...get(id).starting, [vmTpl.id]: true } })
     log(id, `$ provisioning ${vmTpl.name} (VMID ${vmTpl.proxmox_template_id ?? '?'}) on Proxmox…`)
     try {
-      const topology = {
-        nodes:[{ node_id:`n0`, vm_template_id: vmTpl.id, x:100, y:150 }],
-        links:[],
-      }
-      const env = await api.startEnvironment(id, topology)
-      const vm = env.vms?.[0]
+      const env = await api.startSingleVM(id, vmTpl.id)
+      const envVms = (env.vms ?? []).map(v => ({ ...v, environment_id: env.id }))
+      const vm = envVms.find(v => v.vm_template?.name === vmTpl.name)
       const ip = vm?.ip_address ? ` · ${vm.ip_address}` : ''
       log(id, `$ ✓ ${vmTpl.name} running${ip}`)
-      // attach environment_id to each vm so the console endpoint can use it
-      const envVms = (env.vms ?? []).map(v => ({ ...v, environment_id: env.id }))
-      put(id, { env, envVms, starting:null })
+      put(id, { env, envVms, starting: { ...get(id).starting, [vmTpl.id]: false } })
     } catch(err) {
       log(id, `$ [ERROR] ${err.message}`)
-      put(id, { starting:null })
+      put(id, { starting: { ...get(id).starting, [vmTpl.id]: false } })
     }
   }
 
@@ -548,7 +551,7 @@ export default function RoomLab() {
                     vmTemplate={v.vm_template}
                     envVm={state.envVms.find(e => e.vm_template?.id===v.vm_template.id || e.vm_template?.name===v.vm_template.name)}
                     onStart={() => full && startVM(full, v.vm_template)}
-                    starting={state.starting === v.vm_template.id}
+                    starting={state.starting?.[v.vm_template.id] === true}
                   />
                 </div>
               ))}

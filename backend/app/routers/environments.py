@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
@@ -72,7 +73,86 @@ def start_environment(
     return env
 
 
-@router.get("/{environment_id}", response_model=schemas.EnvironmentOut)
+class SingleVMStart(BaseModel):
+    vm_template_id: str
+
+
+@router.post("/{challenge_id}/start-vm", response_model=schemas.EnvironmentOut)
+def start_single_vm(
+    challenge_id: str,
+    payload: SingleVMStart,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Start a single VM for a challenge.
+    - If no environment exists yet for this user+challenge, creates one.
+    - If an environment already exists (from a previous VM start), adds the
+      new VM to it.
+    - If this VM template is already running in the environment, returns the
+      existing environment unchanged.
+    This is what powers the per-VM Start buttons in the Room Lab page.
+    """
+    challenge = db.query(models.Challenge).filter(models.Challenge.id == challenge_id).first()
+    if not challenge:
+        raise HTTPException(status_code=404, detail="Challenge not found")
+
+    template = db.query(models.VMTemplate).filter(models.VMTemplate.id == payload.vm_template_id).first()
+    if not template:
+        raise HTTPException(status_code=404, detail="VM template not found")
+
+    # Find or create the environment for this user+challenge
+    env = db.query(models.Environment).filter(
+        models.Environment.user_id == current_user.id,
+        models.Environment.challenge_id == challenge_id,
+        models.Environment.status.in_([
+            models.EnvironmentStatus.RUNNING,
+            models.EnvironmentStatus.PROVISIONING,
+        ]),
+    ).first()
+
+    if env is None:
+        env = models.Environment(
+            user_id=current_user.id,
+            challenge_id=challenge_id,
+            status=models.EnvironmentStatus.PROVISIONING,
+            topology_json=json.dumps({"nodes": [], "links": []}),
+            started_at=datetime.utcnow(),
+            expires_at=datetime.utcnow() + timedelta(minutes=challenge.time_limit_minutes),
+        )
+        db.add(env)
+        db.flush()
+
+    # Check if this template is already running in this environment
+    already = db.query(models.EnvironmentVM).filter(
+        models.EnvironmentVM.environment_id == env.id,
+        models.EnvironmentVM.vm_template_id == template.id,
+        models.EnvironmentVM.status == "running",
+    ).first()
+    if already:
+        db.refresh(env)
+        return env
+
+    # Provision and start the VM
+    provisioned = get_gateway().clone_vm(
+        template_ref=template.proxmox_template_id,
+        name_hint=f"{template.name}-{env.id[:8]}",
+    )
+    get_gateway().start_vm(provisioned.node, provisioned.vmid)
+
+    db.add(models.EnvironmentVM(
+        environment_id=env.id,
+        vm_template_id=template.id,
+        proxmox_vmid=provisioned.vmid,
+        proxmox_node=provisioned.node,
+        ip_address=provisioned.ip_address,
+        status="running",
+    ))
+
+    env.status = models.EnvironmentStatus.RUNNING
+    db.commit()
+    db.refresh(env)
+    return env
 def get_environment(environment_id: str, db: Session = Depends(get_db),
                      current_user: models.User = Depends(get_current_user)):
     env = db.query(models.Environment).filter(models.Environment.id == environment_id).first()
