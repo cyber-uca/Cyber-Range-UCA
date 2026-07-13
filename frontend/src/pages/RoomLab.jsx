@@ -148,7 +148,7 @@ function TaskBody({ challenge }) {
 function VMCard({ vmTemplate, envVm, env, onStart, onStop, starting, stopping }) {
   const running = envVm?.status === 'running'
   const ip = envVm?.ip_address
-  const secsLeft = useCountdown(running && env?.expires_at ? env.expires_at : null)
+  const secsLeft = useCountdown(running && env?.expires_at_iso ? env.expires_at_iso : null)
   const urgent  = secsLeft !== null && secsLeft < 300
   const warn    = secsLeft !== null && secsLeft < 900
   const [consoleUrl, setConsoleUrl] = useState(null)

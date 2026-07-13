@@ -253,7 +253,7 @@ if db.query(models.Challenge).count() == 0:
 
         # ── Accidental Risk — Room 1: Interrupted OTA Update ───────────────
         dict(title="Task 1 — Discover",
-             cat="risk", diff="easy", lab_layer="risk", points=15, time=10,
+             cat="risk", diff="easy", lab_layer="risk", points=15, time=120,
              tags="Accidental Risk,OTA,Investigation",
              desc="""You are on the Automotive Cybersecurity Incident Response Team. Open the Vehicle VM and observe both running windows: the ICSim CAN-bus dashboard and the infotainment unit. Spend time with both before forming an opinion.
 
@@ -281,7 +281,7 @@ Submit ANSWER_B_B when you have answered both questions correctly.""",
              hints=[("Focus on what still works, not just what is broken. The boundary between the two tells you more than either alone.", 0)]),
 
         dict(title="Task 2 — Collect Evidence",
-             cat="risk", diff="easy", lab_layer="risk", points=25, time=10,
+             cat="risk", diff="easy", lab_layer="risk", points=25, time=120,
              tags="Accidental Risk,OTA,Log Analysis",
              desc="""Read the OTA client logs on the Vehicle VM at /opt/ota-lab/logs/ — four files, each written by a different part of the update process.
 
@@ -311,7 +311,7 @@ Submit ANSWER_B_C when you have answered both questions correctly.""",
              hints=[("One file usually says what happened. A different one tends to say why.", 0)]),
 
         dict(title="Task 3 — Analyze",
-             cat="risk", diff="medium", lab_layer="risk", points=30, time=10,
+             cat="risk", diff="medium", lab_layer="risk", points=30, time=120,
              tags="Accidental Risk,OTA,Cross-Correlation",
              desc="""A single log is a claim. Several independent sources that agree without having coordinated are close to a fact. Cross-check the Vehicle VM logs against the OTA Server journal and the Wazuh dashboard. Ask what an attacker's fingerprints would look like across all three — and whether you are seeing any of them.
 
@@ -340,7 +340,7 @@ Submit ANSWER_B_B_C when you have answered all three questions correctly.""",
              hints=[("Look for what is absent as much as what is present. No attack fingerprints across three independent sources is itself strong evidence.", 0)]),
 
         dict(title="Task 4 — Decide",
-             cat="risk", diff="medium", lab_layer="risk", points=20, time=5,
+             cat="risk", diff="medium", lab_layer="risk", points=20, time=120,
              tags="Accidental Risk,OTA,Decision Making",
              desc="""Your team lead needs a decision that matches the evidence, not the loudest reaction. Overreacting wastes engineering time and can damage customer trust. Underreacting to a real attack is worse. Weigh the real options against what you have actually established.
 
@@ -357,7 +357,7 @@ Submit ANSWER_C when you have answered correctly.""",
              hints=[("Match the response to what you have actually confirmed, not to worst-case assumptions.", 0)]),
 
         dict(title="Task 5 — Mitigate",
-             cat="risk", diff="medium", lab_layer="risk", points=20, time=5,
+             cat="risk", diff="medium", lab_layer="risk", points=20, time=120,
              tags="Accidental Risk,OTA,Mitigation",
              desc="""An incident is a free lesson about a gap in the system. This fleet had more than one — or a failed update could not have left a vehicle with no way back to a working state.
 
@@ -380,7 +380,7 @@ Submit ANSWER_B_A when you have answered both questions correctly.""",
              hints=[("Think about which changes would have genuinely prevented this, versus which would only have made it easier to diagnose afterward.", 0)]),
 
         dict(title="Task 6 — Apply",
-             cat="risk", diff="hard", lab_layer="risk", points=40, time=10,
+             cat="risk", diff="hard", lab_layer="risk", points=40, time=120,
              tags="Accidental Risk,OTA,Hands-On Fix",
              desc="""This is where it stops being theoretical. You have real terminal access to the Vehicle VM. Its OTA client reads its configuration from a real file — whatever you set here genuinely changes how it behaves on the next attempt.
 

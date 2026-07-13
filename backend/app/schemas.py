@@ -248,6 +248,8 @@ class EnvironmentOut(BaseModel):
     status: EnvironmentStatus
     started_at: Optional[datetime]
     expires_at: Optional[datetime]
+    expires_at_iso: Optional[str] = None   # UTC ISO string with Z suffix for frontend
+    time_limit_minutes: int = 90
     hints_used: int
     vms: List[EnvironmentVMOut]
 

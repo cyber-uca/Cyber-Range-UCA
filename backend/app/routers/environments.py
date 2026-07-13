@@ -17,6 +17,31 @@ from ..gateway.provisioning import get_gateway
 router = APIRouter(prefix="/environments", tags=["environments"])
 
 
+def _env_out(env: models.Environment) -> dict:
+    """Build the EnvironmentOut dict with a proper UTC ISO string for expires_at."""
+    return {
+        "id": env.id,
+        "challenge_id": env.challenge_id,
+        "status": env.status,
+        "started_at": env.started_at,
+        "expires_at": env.expires_at,
+        "expires_at_iso": env.expires_at.strftime("%Y-%m-%dT%H:%M:%SZ") if env.expires_at else None,
+        "time_limit_minutes": env.challenge.time_limit_minutes if env.challenge else 90,
+        "hints_used": env.hints_used,
+        "vms": [
+            {
+                "id": v.id,
+                "vm_template": v.vm_template,
+                "ip_address": v.ip_address,
+                "proxmox_vmid": v.proxmox_vmid,
+                "proxmox_node": v.proxmox_node,
+                "status": v.status,
+            }
+            for v in env.vms
+        ],
+    }
+
+
 @router.post("/{challenge_id}/start", response_model=schemas.EnvironmentOut)
 def start_environment(
     challenge_id: str,
@@ -70,7 +95,7 @@ def start_environment(
     env.status = models.EnvironmentStatus.RUNNING
     db.commit()
     db.refresh(env)
-    return env
+    return _env_out(env)
 
 
 class SingleVMStart(BaseModel):
@@ -152,7 +177,7 @@ def start_single_vm(
     env.status = models.EnvironmentStatus.RUNNING
     db.commit()
     db.refresh(env)
-    return env
+    return _env_out(env)
 
 
 class StopVMPayload(BaseModel):
@@ -211,7 +236,7 @@ def get_environment(environment_id: str, db: Session = Depends(get_db),
         raise HTTPException(status_code=404, detail="Environment not found")
     if env.user_id != current_user.id and current_user.role == models.Role.LEARNER:
         raise HTTPException(status_code=403, detail="Not your environment")
-    return env
+    return _env_out(env)
 
 
 @router.post("/{environment_id}/reset", response_model=schemas.EnvironmentOut)
@@ -236,7 +261,7 @@ def reset_environment(environment_id: str, db: Session = Depends(get_db),
     env.status = models.EnvironmentStatus.RUNNING
     db.commit()
     db.refresh(env)
-    return env
+    return _env_out(env)
 
 
 @router.get("/{environment_id}/console/{vm_id}")
