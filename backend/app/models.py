@@ -379,8 +379,8 @@ class UserQuestionAnswer(Base):
     id              = Column(String(36), primary_key=True, default=gen_uuid)
     user_id         = Column(String(36), ForeignKey("users.id"), nullable=False)
     question_id     = Column(String(36), ForeignKey("questions.id"), nullable=False)
-    submitted_value = Column(Text, nullable=True)        # raw submission
-    submitted_data  = Column(JSON, nullable=True)        # structured for multi-part answers
+    submitted_value = Column(Text, nullable=True)
+    submitted_data  = Column(JSON, nullable=True)
     is_correct      = Column(Boolean, default=False)
     points_awarded  = Column(Integer, default=0)
     attempt_number  = Column(Integer, default=1)
@@ -388,7 +388,8 @@ class UserQuestionAnswer(Base):
     reviewed_by     = Column(String(36), ForeignKey("users.id"), nullable=True)
     review_notes    = Column(Text, nullable=True)
 
-    user     = relationship("User", back_populates="question_answers", foreign_keys=[user_id])
+    user     = relationship("User", back_populates="question_answers",
+                            foreign_keys=[user_id])
     question = relationship("Question", back_populates="answers")
     reviewer = relationship("User", foreign_keys=[reviewed_by])
 
