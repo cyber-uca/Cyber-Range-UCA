@@ -1,12 +1,26 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../App.jsx'
+
+const NAV = [
+  { to: '/',          label: 'Dashboard',        end: true  },
+  { to: '/roadmap',   label: 'Roadmap'                      },
+  { to: '/challenges',label: 'Challenges'                   },
+  { to: '/leaderboard',label: 'Leaderboard'                 },
+]
+const TUTOR_NAV = [{ to: '/creator', label: 'Creator Studio' }]
+const ADMIN_NAV = [
+  { to: '/admin',              label: 'Overview',       end: true },
+  { to: '/admin/users',        label: 'Users'                    },
+  { to: '/admin/vm-templates', label: 'Infrastructure'           },
+  { to: '/admin/taxonomy',     label: 'Categories'               },
+  { to: '/admin/settings',     label: 'Settings'                 },
+]
 
 export default function Sidebar() {
   const { user, logout } = useAuth()
   if (!user) return null
-
-  const link = ({ isActive }) => `nav-link${isActive ? ' active' : ''}`
+  const cls = ({ isActive }) => 'nav-link' + (isActive ? ' active' : '')
   const initials = user.name.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase()
 
   return (
@@ -20,26 +34,21 @@ export default function Sidebar() {
       </div>
 
       <nav className="sidebar-nav">
-        <NavLink to="/" end className={link}>Dashboard</NavLink>
-        <NavLink to="/roadmap" className={link}>Learning Roadmap</NavLink>
-        <NavLink to="/challenges" className={link}>All Challenges</NavLink>
-        <NavLink to="/leaderboard" className={link}>Leaderboard</NavLink>
+        {NAV.map(n => (
+          <NavLink key={n.to} to={n.to} end={n.end} className={cls}>{n.label}</NavLink>
+        ))}
 
         {(user.role === 'tutor' || user.role === 'admin') && (
           <>
             <div className="sidebar-section">Teaching</div>
-            <NavLink to="/creator" className={link}>Challenge Creator</NavLink>
+            {TUTOR_NAV.map(n => <NavLink key={n.to} to={n.to} className={cls}>{n.label}</NavLink>)}
           </>
         )}
 
         {user.role === 'admin' && (
           <>
             <div className="sidebar-section">Admin</div>
-            <NavLink to="/admin" end className={link}>Overview</NavLink>
-            <NavLink to="/admin/users" className={link}>Users</NavLink>
-            <NavLink to="/admin/vm-templates" className={link}>Infrastructure</NavLink>
-            <NavLink to="/admin/taxonomy" className={link}>Categories</NavLink>
-            <NavLink to="/admin/settings" className={link}>Settings</NavLink>
+            {ADMIN_NAV.map(n => <NavLink key={n.to} to={n.to} end={n.end} className={cls}>{n.label}</NavLink>)}
           </>
         )}
       </nav>
@@ -51,7 +60,7 @@ export default function Sidebar() {
           <div className="user-role">{user.role}</div>
         </div>
         <button className="btn-ghost btn-sm" onClick={logout}
-          style={{ padding: '5px 10px', fontSize: 11, flexShrink: 0 }}>
+          style={{ padding: '5px 9px', fontSize: 11 }}>
           Out
         </button>
       </div>

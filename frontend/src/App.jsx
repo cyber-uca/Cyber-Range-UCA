@@ -28,14 +28,12 @@ function Topbar() {
   return (
     <div className="topbar">
       <div style={{ marginRight: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 6px var(--green)', animation: 'pulse 2.5s ease-in-out infinite' }} />
-        <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>Connected</span>
+        <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)', display: 'inline-block', boxShadow: '0 0 8px var(--green)', animation: 'pulse 2.5s ease-in-out infinite' }} />
+        <span style={{ fontSize: 12, color: 'var(--text-4)', fontFamily: 'var(--mono)' }}>LIVE</span>
       </div>
-      {user.role === 'learner' && (
-        <span className="xp-badge">{user.points} XP</span>
-      )}
-      <div style={{ width: 1, height: 18, background: 'var(--border)' }} />
-      <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{user.name}</span>
+      {user.role === 'learner' && <span className="xp-badge">{user.points} XP</span>}
+      <div style={{ width: 1, height: 16, background: 'var(--border)' }} />
+      <span style={{ fontSize: 13, color: 'var(--text-3)' }}>{user.name}</span>
       <button className="btn-ghost btn-sm" onClick={logout}>Sign out</button>
     </div>
   )
