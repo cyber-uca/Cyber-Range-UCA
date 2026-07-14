@@ -102,8 +102,7 @@ export default function RoomDetail() {
                 <div style={{ width:38, height:38, borderRadius:'50%', flexShrink:0,
                   background:'var(--surface-2)', border:'1px solid var(--border-md)',
                   display:'flex', alignItems:'center', justifyContent:'center',
-                  fontFamily:'var(--mono)', fontWeight:700, fontSize:13, color:'var(--cyan)', zIndex:2,
-                  background:'var(--surface-2)' }}>
+                  fontFamily:'var(--mono)', fontWeight:700, fontSize:13, color:'var(--cyan)', zIndex:2 }}>
                   {String(idx+1).padStart(2,'0')}
                 </div>
 
