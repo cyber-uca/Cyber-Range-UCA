@@ -1,28 +1,26 @@
 import React, { useEffect, useState } from 'react'
 import { api } from '../api.js'
 
-const blankForm = {
-  title: '', description: '', objectives: '',
-  category_id: '', difficulty_id: '', challenge_type: 'standard_flag',
-  points: 100, time_limit_minutes: 90, tags: '',
-  flag: '', vm_template_ids: [], hints: [],
+const blank = {
+  title:'', description:'', objectives:'',
+  category_id:'', difficulty_id:'', challenge_type:'standard_flag',
+  points:100, time_limit_minutes:90, tags:'',
+  flag:'', vm_template_ids:[], hints:[],
 }
 
-const ANIM = `@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}`
-
 export default function ChallengeCreator() {
-  const [tab, setTab] = useState('mine')
-  const [myChallenges, setMyChallenges] = useState([])
-  const [templates, setTemplates] = useState([])
-  const [categories, setCategories] = useState([])
-  const [difficulties, setDifficulties] = useState([])
+  const [tab,            setTab]            = useState('mine')
+  const [myChallenges,   setMyChallenges]   = useState([])
+  const [templates,      setTemplates]      = useState([])
+  const [categories,     setCategories]     = useState([])
+  const [difficulties,   setDifficulties]   = useState([])
   const [challengeTypes, setChallengeTypes] = useState(['standard_flag'])
-  const [form, setForm] = useState(blankForm)
-  const [editingId, setEditingId] = useState(null)
-  const [message, setMessage] = useState('')
-  const [msgType, setMsgType] = useState('success')
-  const [importPack, setImportPack] = useState('')
-  const [importFlag, setImportFlag] = useState('')
+  const [form,           setForm]           = useState(blank)
+  const [editingId,      setEditingId]      = useState(null)
+  const [message,        setMessage]        = useState('')
+  const [msgType,        setMsgType]        = useState('success')
+  const [importPack,     setImportPack]     = useState('')
+  const [importFlag,     setImportFlag]     = useState('')
 
   const refresh = () => api.listMyChallenges().then(setMyChallenges).catch(() => {})
 
@@ -34,49 +32,42 @@ export default function ChallengeCreator() {
     api.listChallengeTypesPublic().then(r => setChallengeTypes(r.registered_types)).catch(() => {})
   }, [])
 
-  const emptyForm = () => ({ ...blankForm, category_id: categories[0]?.id || '', difficulty_id: difficulties[0]?.id || '' })
-  const update = k => e => setForm({ ...form, [k]: e.target.value })
-  const toggleTemplate = id => setForm(f => ({ ...f, vm_template_ids: f.vm_template_ids.includes(id) ? f.vm_template_ids.filter(t => t !== id) : [...f.vm_template_ids, id] }))
-  const addHint = () => setForm(f => ({ ...f, hints: [...f.hints, { content: '', cost: 10 }] }))
-  const updateHint = (i, field, value) => setForm(f => { const hints = [...f.hints]; hints[i] = { ...hints[i], [field]: value }; return { ...f, hints } })
-  const removeHint = i => setForm(f => ({ ...f, hints: f.hints.filter((_, idx) => idx !== i) }))
+  const upd  = k => e => setForm(f => ({ ...f, [k]: e.target.value }))
+  const mkBlank = () => ({ ...blank, category_id:categories[0]?.id||'', difficulty_id:difficulties[0]?.id||'' })
+  const toggleTpl = id => setForm(f => ({ ...f, vm_template_ids: f.vm_template_ids.includes(id) ? f.vm_template_ids.filter(t=>t!==id) : [...f.vm_template_ids,id] }))
+  const addHint = () => setForm(f => ({ ...f, hints:[...f.hints,{content:'',cost:10}] }))
+  const updHint = (i,k,v) => setForm(f => { const h=[...f.hints]; h[i]={...h[i],[k]:v}; return {...f,hints:h} })
+  const rmHint  = i => setForm(f => ({ ...f, hints:f.hints.filter((_,j)=>j!==i) }))
 
-  const startNew = () => { setForm(emptyForm()); setEditingId(null); setTab('new') }
-
-  const startEdit = async challenge => {
-    setForm({
-      title: challenge.title, description: challenge.description,
-      objectives: challenge.objectives || '', category_id: challenge.category.id,
-      difficulty_id: challenge.difficulty.id, challenge_type: challenge.challenge_type,
-      points: challenge.points, time_limit_minutes: challenge.time_limit_minutes,
-      tags: challenge.tags || '', flag: '',
-      vm_template_ids: challenge.vms.map(v => v.vm_template.id), hints: [],
-    })
-    setEditingId(challenge.id)
-    setTab('new')
+  const startNew  = () => { setForm(mkBlank()); setEditingId(null); setTab('new') }
+  const startEdit = c => {
+    setForm({ title:c.title, description:c.description, objectives:c.objectives||'',
+      category_id:c.category.id, difficulty_id:c.difficulty.id, challenge_type:c.challenge_type,
+      points:c.points, time_limit_minutes:c.time_limit_minutes, tags:c.tags||'', flag:'',
+      vm_template_ids:c.vms.map(v=>v.vm_template.id), hints:[] })
+    setEditingId(c.id); setTab('new')
   }
 
   const submit = async e => {
     e.preventDefault(); setMessage('')
     try {
-      const payload = { ...form, points: Number(form.points), time_limit_minutes: Number(form.time_limit_minutes) }
+      const payload = { ...form, points:Number(form.points), time_limit_minutes:Number(form.time_limit_minutes) }
       if (editingId) { await api.updateChallenge(editingId, payload); setMessage('Challenge updated.') }
-      else { await api.createChallenge(payload); setMessage('Challenge created as draft.') }
+      else           { await api.createChallenge(payload);             setMessage('Challenge created as draft.') }
       setMsgType('success'); refresh(); setTab('mine')
-    } catch (err) { setMessage(err.message); setMsgType('error') }
+    } catch(err) { setMessage(err.message); setMsgType('error') }
   }
 
-  const publish = async id => { await api.publishChallenge(id); refresh() }
-  const remove = async id => { if (confirm('Delete this challenge?')) { await api.deleteChallenge(id); refresh() } }
-
+  const publish    = async id => { await api.publishChallenge(id); refresh() }
+  const remove     = async id => { if (confirm('Delete this challenge?')) { await api.deleteChallenge(id); refresh() } }
   const exportPack = async id => {
     const pack = await api.exportChallenge(id)
-    const blob = new Blob([JSON.stringify(pack, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a'); a.href = url
-    a.download = `${pack.title.replace(/\s+/g, '_').toLowerCase()}.pack.json`; a.click()
+    const blob = new Blob([JSON.stringify(pack,null,2)],{type:'application/json'})
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `${pack.title.replace(/\s+/g,'_').toLowerCase()}.pack.json`
+    a.click()
   }
-
   const doImport = async () => {
     setMessage('')
     try {
@@ -84,111 +75,88 @@ export default function ChallengeCreator() {
       await api.importChallenge(pack, importFlag)
       setMessage('Pack imported as a draft.'); setMsgType('success')
       setImportPack(''); setImportFlag(''); refresh(); setTab('mine')
-    } catch (err) { setMessage(err.message); setMsgType('error') }
+    } catch(err) { setMessage(err.message); setMsgType('error') }
   }
 
   return (
-    <div className="page">
-      <style>{ANIM}</style>
-
-      <div style={{ marginBottom: 24, animation: 'fadeUp .4s ease both' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--combined)', boxShadow: '0 0 8px var(--combined)' }} />
-          <span style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--combined)', fontWeight: 700 }}>Creator Studio</span>
-        </div>
+    <div className="page fade-up">
+      <div className="page-header">
         <h1>Challenge Creator</h1>
-        <p className="subtitle">Build, edit, publish and share challenges as portable packs.</p>
+        <p className="lead" style={{ marginTop:6 }}>Build, publish, and share challenges as portable packs.</p>
       </div>
 
-      <div className="tab-nav" style={{ animation: 'fadeUp .4s .05s ease both' }}>
-        <button className={tab === 'mine' ? 'active' : ''} onClick={() => setTab('mine')}>My Challenges</button>
-        <button className={tab === 'new' ? 'active' : ''} onClick={startNew}>{editingId ? 'Editing…' : 'New Challenge'}</button>
-        <button className={tab === 'import' ? 'active' : ''} onClick={() => setTab('import')}>Import Pack</button>
+      <div className="tab-nav">
+        <button className={tab==='mine'  ?'active':''} onClick={()=>setTab('mine')}>My Challenges</button>
+        <button className={tab==='new'   ?'active':''} onClick={startNew}>{editingId ? 'Editing…' : 'New Challenge'}</button>
+        <button className={tab==='import'?'active':''} onClick={()=>setTab('import')}>Import Pack</button>
       </div>
 
-      {message && (
-        <div style={{
-          padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16,
-          background: msgType === 'success' ? 'var(--mitigation-dim)' : 'var(--offensive-dim)',
-          color: msgType === 'success' ? 'var(--mitigation)' : 'var(--offensive)',
-          border: `1px solid ${msgType === 'success' ? 'rgba(20,201,168,0.3)' : 'rgba(240,82,74,0.3)'}`,
-        }}>{message}</div>
-      )}
+      {message && <div className={msgType==='success'?'alert-success':'alert-error'} style={{ marginBottom:16 }}>{message}</div>}
 
-      {/* ── MY CHALLENGES ── */}
-      {tab === 'mine' && (
-        <div style={{ animation: 'fadeUp .35s ease both' }}>
+      {/* ── My Challenges ── */}
+      {tab==='mine' && (
+        <div>
           {myChallenges.map(c => (
-            <div key={c.id} className="challenge-row">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <span className={c.is_published ? 'published-pill' : 'draft-pill'}>{c.is_published ? 'Published' : 'Draft'}</span>
-                <strong style={{ fontSize: 14 }}>{c.title}</strong>
-                <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>{c.category.name} · {c.difficulty.name}</span>
-                <span className="mono" style={{ color: 'var(--accent)', fontSize: 12 }}>{c.points} XP</span>
+            <div key={c.id} className="item-row">
+              <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+                <span style={{ fontSize:11, fontWeight:700, padding:'2px 8px', borderRadius:4,
+                  background: c.is_published ? 'var(--green-dim)' : 'var(--amber-dim)',
+                  color: c.is_published ? 'var(--green)' : 'var(--amber)',
+                  border: `1px solid ${c.is_published ? 'rgba(34,197,94,0.2)' : 'rgba(245,158,11,0.2)'}` }}>
+                  {c.is_published ? 'Published' : 'Draft'}
+                </span>
+                <strong style={{ fontSize:14 }}>{c.title}</strong>
+                <span style={{ color:'var(--text-muted)', fontSize:12 }}>{c.category.name} · {c.difficulty.name}</span>
+                <span style={{ fontFamily:'var(--mono)', color:'var(--amber)', fontSize:12, fontWeight:700 }}>{c.points} XP</span>
               </div>
-              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                <button className="btn-secondary" style={{ fontSize: 12, padding: '6px 12px' }} onClick={() => startEdit(c)}>Edit</button>
-                {!c.is_published && <button className="btn-primary" style={{ fontSize: 12, padding: '6px 12px' }} onClick={() => publish(c.id)}>Publish</button>}
-                <button className="btn-secondary" style={{ fontSize: 12, padding: '6px 12px' }} onClick={() => exportPack(c.id)}>Export</button>
-                <button className="btn-danger" style={{ fontSize: 12, padding: '6px 12px' }} onClick={() => remove(c.id)}>Delete</button>
+              <div style={{ display:'flex', gap:6, flexShrink:0 }}>
+                <button className="btn-secondary btn-sm" onClick={() => startEdit(c)}>Edit</button>
+                {!c.is_published && <button className="btn-primary btn-sm" onClick={() => publish(c.id)}>Publish</button>}
+                <button className="btn-secondary btn-sm" onClick={() => exportPack(c.id)}>Export</button>
+                <button className="btn-danger btn-sm" onClick={() => remove(c.id)}>Delete</button>
               </div>
             </div>
           ))}
           {myChallenges.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
-              <div style={{ fontSize: 32, marginBottom: 12, opacity: .3 }}>✦</div>
-              <div style={{ fontSize: 14, marginBottom: 8 }}>No challenges yet</div>
-              <button className="btn-primary" style={{ marginTop: 4 }} onClick={startNew}>Create your first →</button>
+            <div style={{ textAlign:'center', padding:'60px 0', color:'var(--text-muted)' }}>
+              <div style={{ fontSize:15, marginBottom:10 }}>You haven't created any challenges yet.</div>
+              <button className="btn-primary" onClick={startNew}>Create your first one →</button>
             </div>
           )}
         </div>
       )}
 
-      {/* ── NEW / EDIT ── */}
-      {tab === 'new' && (
-        <form onSubmit={submit} style={{ animation: 'fadeUp .35s ease both' }}>
+      {/* ── New / Edit ── */}
+      {tab==='new' && (
+        <form onSubmit={submit}>
           <div className="form-section">
-            <h2>Metadata</h2>
-            <div className="form-row"><label>Title</label><input value={form.title} onChange={update('title')} required placeholder="e.g. CAN Bus Injection Attack" /></div>
-            <div className="form-row"><label>Description</label><textarea rows={3} value={form.description} onChange={update('description')} required placeholder="What is this challenge about?" /></div>
-            <div className="form-row"><label>Objectives</label><textarea rows={2} value={form.objectives} onChange={update('objectives')} placeholder="What will learners practice?" /></div>
+            <h3>Details</h3>
+            <div className="form-row"><label>Title</label><input value={form.title} onChange={upd('title')} required placeholder="e.g. CAN Bus Injection" /></div>
+            <div className="form-row"><label>Description</label><textarea rows={3} value={form.description} onChange={upd('description')} required placeholder="What is this challenge about?" /></div>
+            <div className="form-row"><label>Objectives</label><textarea rows={2} value={form.objectives} onChange={upd('objectives')} placeholder="What will learners practice? (semicolon-separated)" /></div>
             <div className="form-grid">
-              <div className="form-row">
-                <label>Category</label>
-                <select value={form.category_id} onChange={update('category_id')}>
-                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-              </div>
-              <div className="form-row">
-                <label>Difficulty</label>
-                <select value={form.difficulty_id} onChange={update('difficulty_id')}>
-                  {difficulties.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                </select>
-              </div>
-              <div className="form-row">
-                <label>Challenge type</label>
-                <select value={form.challenge_type} onChange={update('challenge_type')}>
-                  {challengeTypes.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </div>
-              <div className="form-row"><label>Points</label><input type="number" value={form.points} onChange={update('points')} /></div>
-              <div className="form-row"><label>Time limit (min)</label><input type="number" value={form.time_limit_minutes} onChange={update('time_limit_minutes')} /></div>
+              <div className="form-row"><label>Category</label><select value={form.category_id} onChange={upd('category_id')}>{categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+              <div className="form-row"><label>Difficulty</label><select value={form.difficulty_id} onChange={upd('difficulty_id')}>{difficulties.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></div>
+              <div className="form-row"><label>Challenge type</label><select value={form.challenge_type} onChange={upd('challenge_type')}>{challengeTypes.map(t=><option key={t} value={t}>{t}</option>)}</select></div>
+              <div className="form-row"><label>Points</label><input type="number" value={form.points} onChange={upd('points')} /></div>
+              <div className="form-row"><label>Time limit (min)</label><input type="number" value={form.time_limit_minutes} onChange={upd('time_limit_minutes')} /></div>
             </div>
-            <div className="form-row"><label>Tags (comma-separated)</label><input value={form.tags} onChange={update('tags')} placeholder="CAN Bus, ECU, OBD-II" /></div>
+            <div className="form-row"><label>Tags (comma-separated)</label><input value={form.tags} onChange={upd('tags')} placeholder="CAN Bus, ECU, OBD-II" /></div>
             <div className="form-row">
-              <label>Flag {editingId && <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>(leave blank to keep current)</span>}</label>
-              <input className="mono" value={form.flag} onChange={update('flag')} placeholder="FLAG{...}" required={!editingId} />
+              <label>Flag {editingId && <span style={{ fontWeight:400, color:'var(--text-dim)' }}>(leave blank to keep current)</span>}</label>
+              <input style={{ fontFamily:'var(--mono)' }} value={form.flag} onChange={upd('flag')} placeholder="FLAG{...}" required={!editingId} />
             </div>
           </div>
 
           <div className="form-section">
-            <h2>Environment — VM Templates</h2>
+            <h3>VM Templates</h3>
             {templates.length === 0
-              ? <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>No VM templates configured yet. Add them in Admin → Infrastructure.</p>
-              : <div className="checkbox-list">
+              ? <p style={{ color:'var(--text-muted)', fontSize:13 }}>No VM templates configured yet — add them in Admin → Infrastructure.</p>
+              : <div className="chip-list">
                   {templates.map(t => (
-                    <div key={t.id} className={`checkbox-chip ${form.vm_template_ids.includes(t.id) ? 'checked' : ''}`} onClick={() => toggleTemplate(t.id)}>
-                      {t.name} <span style={{ opacity: .6, fontSize: 10 }}>({t.zone})</span>
+                    <div key={t.id} className={`chip${form.vm_template_ids.includes(t.id)?' on':''}`}
+                      onClick={() => toggleTpl(t.id)}>
+                      {t.name} <span style={{ opacity:.6, fontSize:10 }}>({t.zone})</span>
                     </div>
                   ))}
                 </div>
@@ -196,40 +164,41 @@ export default function ChallengeCreator() {
           </div>
 
           <div className="form-section">
-            <h2>Hints</h2>
-            {form.hints.map((h, i) => (
-              <div key={i} className="hint-row">
-                <input placeholder="Hint text" value={h.content} onChange={e => updateHint(i, 'content', e.target.value)} />
-                <input type="number" placeholder="Cost" value={h.cost} onChange={e => updateHint(i, 'cost', Number(e.target.value))} style={{ width: 90 }} />
-                <button type="button" className="remove-btn" onClick={() => removeHint(i)}>×</button>
+            <h3>Hints</h3>
+            {form.hints.map((h,i) => (
+              <div key={i} style={{ display:'flex', gap:8, marginBottom:8, alignItems:'center' }}>
+                <input placeholder="Hint text" value={h.content} onChange={e => updHint(i,'content',e.target.value)} />
+                <input type="number" placeholder="Cost" value={h.cost} onChange={e => updHint(i,'cost',Number(e.target.value))} style={{ width:90 }} />
+                <button type="button" className="btn-danger btn-sm" onClick={() => rmHint(i)}>×</button>
               </div>
             ))}
-            <button type="button" className="btn-secondary" style={{ fontSize: 12 }} onClick={addHint}>+ Add hint</button>
+            <button type="button" className="btn-secondary btn-sm" onClick={addHint}>+ Add hint</button>
           </div>
 
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button className="btn-primary" type="submit" style={{ padding: '11px 28px' }}>{editingId ? 'Save changes' : 'Create draft'}</button>
-            <button type="button" className="btn-secondary" style={{ padding: '11px 20px' }} onClick={() => setTab('mine')}>Cancel</button>
+          <div style={{ display:'flex', gap:10 }}>
+            <button className="btn-primary" type="submit">{editingId ? 'Save changes' : 'Create draft'}</button>
+            <button type="button" className="btn-secondary" onClick={() => setTab('mine')}>Cancel</button>
           </div>
         </form>
       )}
 
-      {/* ── IMPORT ── */}
-      {tab === 'import' && (
-        <div className="form-section" style={{ animation: 'fadeUp .35s ease both' }}>
-          <h2>Import a challenge pack</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 16, lineHeight: 1.7 }}>
-            Paste a pack exported from this or another deployment. Categories and difficulties are matched by slug and auto-created if missing.
+      {/* ── Import ── */}
+      {tab==='import' && (
+        <div className="form-section">
+          <h3>Import a challenge pack</h3>
+          <p style={{ color:'var(--text-muted)', fontSize:13, marginBottom:16, lineHeight:1.7 }}>
+            Paste JSON exported from this platform or another deployment. Categories and difficulties are matched by slug and auto-created if missing.
           </p>
           <div className="form-row">
             <label>Pack JSON</label>
-            <textarea rows={10} className="mono" value={importPack} onChange={e => setImportPack(e.target.value)} placeholder='{"pack_version": 1, ...}' style={{ fontSize: 12 }} />
+            <textarea rows={10} style={{ fontFamily:'var(--mono)', fontSize:12 }} value={importPack}
+              onChange={e => setImportPack(e.target.value)} placeholder={'{"pack_version": 1, ...}'} />
           </div>
           <div className="form-row">
             <label>New flag for this copy</label>
-            <input className="mono" value={importFlag} onChange={e => setImportFlag(e.target.value)} placeholder="FLAG{...}" />
+            <input style={{ fontFamily:'var(--mono)' }} value={importFlag} onChange={e => setImportFlag(e.target.value)} placeholder="FLAG{...}" />
           </div>
-          <button className="btn-primary" onClick={doImport} style={{ padding: '11px 24px' }}>Import as draft</button>
+          <button className="btn-primary" onClick={doImport}>Import as draft</button>
         </div>
       )}
     </div>

@@ -24,31 +24,19 @@ export const AuthContext = createContext(null)
 export const useAuth = () => useContext(AuthContext)
 
 function Topbar() {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   return (
     <div className="topbar">
-      {/* scanline accent */}
-      <div style={{
-        position: 'absolute', left: 0, right: 0, height: 1, pointerEvents: 'none',
-        background: 'linear-gradient(90deg, transparent, rgba(0,194,230,0.18), transparent)',
-        animation: 'scanline 9s linear infinite', top: 0,
-      }} />
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginRight: 'auto' }}>
-        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)', boxShadow: '0 0 6px var(--success)' }} />
-        <span style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
-          LIVE · {user?.role?.toUpperCase()}
-        </span>
+      <div style={{ marginRight: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 6px var(--green)', animation: 'pulse 2.5s ease-in-out infinite' }} />
+        <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>Connected</span>
       </div>
-      {user.role === 'learner' && <span className="xp-pill">{user.points} XP</span>}
-      <div style={{
-        width: 30, height: 30, borderRadius: '50%',
-        background: 'var(--combined-dim)', color: 'var(--combined)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontWeight: 700, fontSize: 11, border: '1px solid rgba(155,124,240,0.3)',
-        fontFamily: 'var(--font-mono)',
-      }}>
-        {user?.name?.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase()}
-      </div>
+      {user.role === 'learner' && (
+        <span className="xp-badge">{user.points} XP</span>
+      )}
+      <div style={{ width: 1, height: 18, background: 'var(--border)' }} />
+      <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{user.name}</span>
+      <button className="btn-ghost btn-sm" onClick={logout}>Sign out</button>
     </div>
   )
 }
