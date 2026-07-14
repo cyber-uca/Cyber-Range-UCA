@@ -1,5 +1,10 @@
+"""
+Rooms, Tasks, and Questions router.
+Public:  GET /rooms/{slug}
+Learner: GET with progress overlay
+Admin/Tutor: full CRUD
+"""
 from typing import List, Optional
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -10,119 +15,326 @@ from ..auth import get_current_user, require_role
 router = APIRouter(prefix="/rooms", tags=["rooms"])
 
 
-def _enrich_room(room: models.Room) -> dict:
-    """Attach challenge_count to a Room ORM object for RoomOut."""
-    d = {
-        "id": room.id,
-        "slug": room.slug,
-        "title": room.title,
-        "description": room.description,
-        "category": room.category,
-        "lab_layer": room.lab_layer,
-        "module": room.module,
-        "difficulty": room.difficulty,
-        "is_published": room.is_published,
-        "sort_order": room.sort_order,
-        "challenge_count": len(room.challenges),
+# ── serialisers ────────────────────────────────────────────────────────────
+
+def _option_out(o: models.QuestionOption) -> dict:
+    return {"id": o.id, "text": o.text, "sort_order": o.sort_order, "match_key": o.match_key}
+
+
+def _hint_out(h: models.QuestionHint, unlocked_ids: set) -> dict:
+    unlocked = h.id in unlocked_ids
+    return {
+        "id": h.id,
+        "content": h.content if unlocked else None,
+        "cost": h.cost,
+        "order": h.order,
+        "unlocked": unlocked,
     }
+
+
+def _question_out(q: models.Question, unlocked_ids: set, admin: bool = False) -> dict:
+    d = {
+        "id": q.id, "task_id": q.task_id,
+        "question_type": q.question_type, "text": q.text,
+        "explanation": q.explanation, "points": q.points,
+        "is_mandatory": q.is_mandatory, "sort_order": q.sort_order,
+        "options": [_option_out(o) for o in q.options],
+        "hints": [_hint_out(h, unlocked_ids) for h in q.hints],
+    }
+    if admin:
+        d["validation_data"] = q.validation_data
     return d
 
 
-@router.get("", response_model=List[schemas.RoomOut])
-def list_rooms(
-    category: Optional[str] = None,
-    lab_layer: Optional[str] = None,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-):
-    q = db.query(models.Room).filter(models.Room.is_published == True)  # noqa: E712
-    if category:
-        q = q.join(models.Category).filter(models.Category.slug == category)
-    if lab_layer:
-        q = q.filter(models.Room.lab_layer == lab_layer)
-    rooms = q.order_by(models.Room.sort_order).all()
-    return [_enrich_room(r) for r in rooms]
+def _task_out(t: models.Task, unlocked_ids: set, admin: bool = False) -> dict:
+    return {
+        "id": t.id, "room_id": t.room_id, "title": t.title,
+        "description": t.description, "objectives": t.objectives,
+        "sort_order": t.sort_order, "estimated_minutes": t.estimated_minutes,
+        "points": t.points, "completion_rule": t.completion_rule,
+        "min_score_pct": t.min_score_pct,
+        "questions": [_question_out(q, unlocked_ids, admin) for q in t.questions],
+    }
 
 
-@router.get("/{room_slug}", response_model=schemas.RoomDetail)
+def _room_detail(r: models.Room, unlocked_ids: set = None, admin: bool = False) -> dict:
+    if unlocked_ids is None:
+        unlocked_ids = set()
+    return {
+        "id": r.id, "slug": r.slug, "module_id": r.module_id,
+        "title": r.title, "description": r.description,
+        "story": r.story, "objectives": r.objectives,
+        "difficulty": r.difficulty, "estimated_minutes": r.estimated_minutes,
+        "tags": r.tags, "mitre_attack": r.mitre_attack,
+        "prerequisites": r.prerequisites, "cover_image": r.cover_image,
+        "xp_reward": r.xp_reward, "sort_order": r.sort_order, "status": r.status,
+        "tasks": [_task_out(t, unlocked_ids, admin) for t in r.tasks],
+        "vm_assignments": [
+            {"id": a.id, "vm_template": {
+                "id": a.vm_template.id, "name": a.vm_template.name,
+                "zone": a.vm_template.zone,
+                "proxmox_template_id": a.vm_template.proxmox_template_id,
+                "default_tools": a.vm_template.default_tools,
+                "description": a.vm_template.description,
+            }, "sort_order": a.sort_order}
+            for a in r.vm_assignments
+        ],
+    }
+
+
+def _get_room_or_404(slug_or_id: str, db: Session) -> models.Room:
+    r = db.query(models.Room).filter(
+        (models.Room.slug == slug_or_id) | (models.Room.id == slug_or_id)
+    ).first()
+    if not r:
+        raise HTTPException(status_code=404, detail="Room not found")
+    return r
+
+
+def _get_task_or_404(task_id: str, db: Session) -> models.Task:
+    t = db.query(models.Task).filter(models.Task.id == task_id).first()
+    if not t:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return t
+
+
+def _get_question_or_404(question_id: str, db: Session) -> models.Question:
+    q = db.query(models.Question).filter(models.Question.id == question_id).first()
+    if not q:
+        raise HTTPException(status_code=404, detail="Question not found")
+    return q
+
+
+def _user_unlocked_hints(user_id: str, db: Session) -> set:
+    rows = db.query(models.QuestionHintUnlock.hint_id).filter(
+        models.QuestionHintUnlock.user_id == user_id
+    ).all()
+    return {r.hint_id for r in rows}
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  PUBLIC
+# ═══════════════════════════════════════════════════════════════════
+
+@router.get("/{slug}")
 def get_room(
-    room_slug: str,
+    slug: str,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    room = db.query(models.Room).filter(models.Room.slug == room_slug).first()
-    if not room:
+    room = _get_room_or_404(slug, db)
+    is_admin = current_user.role in (models.Role.ADMIN, models.Role.TUTOR)
+    if not is_admin and room.status != models.PublicationStatus.PUBLISHED:
         raise HTTPException(status_code=404, detail="Room not found")
-    return room
+    unlocked = _user_unlocked_hints(current_user.id, db)
+    return _room_detail(room, unlocked, admin=is_admin)
 
 
-# ── Admin CRUD ─────────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════
+#  ADMIN/TUTOR — Room CRUD
+# ═══════════════════════════════════════════════════════════════════
 
-class RoomCreate(schemas.BaseModel if hasattr(schemas, "BaseModel") else object):
-    pass
-
-
-from pydantic import BaseModel as _Base
-
-
-class RoomCreatePayload(_Base):
-    slug: str
-    title: str
-    description: Optional[str] = None
-    category_id: str
-    lab_layer: Optional[str] = None
-    module: Optional[str] = None
-    difficulty: str = "medium"
-    sort_order: int = 0
-    challenge_ids: List[str] = []
-
-
-@router.post("", response_model=schemas.RoomDetail)
+@router.post("/in-module/{module_id}")
 def create_room(
-    payload: RoomCreatePayload,
+    module_id: str,
+    payload: schemas.RoomCreate,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_role(models.Role.TUTOR, models.Role.ADMIN)),
 ):
-    if db.query(models.Room).filter(models.Room.slug == payload.slug).first():
-        raise HTTPException(status_code=400, detail="Slug already in use")
-    room = models.Room(
-        slug=payload.slug, title=payload.title, description=payload.description,
-        category_id=payload.category_id, lab_layer=payload.lab_layer,
-        module=payload.module, difficulty=payload.difficulty,
-        sort_order=payload.sort_order, is_published=False,
-    )
-    db.add(room)
-    db.flush()
-    for i, cid in enumerate(payload.challenge_ids):
-        db.add(models.RoomChallenge(room_id=room.id, challenge_id=cid, order=i))
-    db.commit()
-    db.refresh(room)
-    return room
+    module = db.query(models.Module).filter(models.Module.id == module_id).first()
+    if not module:
+        raise HTTPException(status_code=404, detail="Module not found")
+    vm_ids = payload.vm_template_ids or []
+    data = payload.model_dump(exclude={"vm_template_ids"})
+    room = models.Room(module_id=module.id, created_by=current_user.id, **data)
+    db.add(room); db.flush()
+    for i, vm_id in enumerate(vm_ids):
+        db.add(models.RoomVMTemplate(room_id=room.id, vm_template_id=vm_id, sort_order=i))
+    db.commit(); db.refresh(room)
+    return _room_detail(room, admin=True)
 
 
-@router.post("/{room_slug}/publish")
+@router.patch("/{room_id}")
+def update_room(
+    room_id: str,
+    payload: schemas.RoomUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role(models.Role.TUTOR, models.Role.ADMIN)),
+):
+    room = _get_room_or_404(room_id, db)
+    vm_ids = payload.vm_template_ids
+    data = payload.model_dump(exclude_unset=True, exclude={"vm_template_ids"})
+    for k, v in data.items():
+        setattr(room, k, v)
+    if vm_ids is not None:
+        db.query(models.RoomVMTemplate).filter(models.RoomVMTemplate.room_id == room.id).delete()
+        for i, vm_id in enumerate(vm_ids):
+            db.add(models.RoomVMTemplate(room_id=room.id, vm_template_id=vm_id, sort_order=i))
+    db.commit(); db.refresh(room)
+    return _room_detail(room, admin=True)
+
+
+@router.post("/{room_id}/publish")
 def publish_room(
-    room_slug: str,
+    room_id: str,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_role(models.Role.TUTOR, models.Role.ADMIN)),
 ):
-    room = db.query(models.Room).filter(models.Room.slug == room_slug).first()
-    if not room:
-        raise HTTPException(status_code=404, detail="Room not found")
-    room.is_published = True
+    room = _get_room_or_404(room_id, db)
+    room.status = models.PublicationStatus.PUBLISHED
     db.commit()
     return {"status": "published"}
 
 
-@router.delete("/{room_slug}")
+@router.post("/{room_id}/unpublish")
+def unpublish_room(
+    room_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role(models.Role.TUTOR, models.Role.ADMIN)),
+):
+    room = _get_room_or_404(room_id, db)
+    room.status = models.PublicationStatus.DRAFT
+    db.commit()
+    return {"status": "draft"}
+
+
+@router.delete("/{room_id}")
 def delete_room(
-    room_slug: str,
+    room_id: str,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_role(models.Role.ADMIN)),
 ):
-    room = db.query(models.Room).filter(models.Room.slug == room_slug).first()
-    if not room:
-        raise HTTPException(status_code=404, detail="Room not found")
-    db.delete(room)
-    db.commit()
+    room = _get_room_or_404(room_id, db)
+    db.delete(room); db.commit()
     return {"status": "deleted"}
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  ADMIN/TUTOR — Task CRUD
+# ═══════════════════════════════════════════════════════════════════
+
+@router.post("/{room_id}/tasks")
+def create_task(
+    room_id: str,
+    payload: schemas.TaskCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role(models.Role.TUTOR, models.Role.ADMIN)),
+):
+    room = _get_room_or_404(room_id, db)
+    task = models.Task(room_id=room.id, **payload.model_dump())
+    db.add(task); db.commit(); db.refresh(task)
+    return _task_out(task, set(), admin=True)
+
+
+@router.patch("/tasks/{task_id}")
+def update_task(
+    task_id: str,
+    payload: schemas.TaskUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role(models.Role.TUTOR, models.Role.ADMIN)),
+):
+    task = _get_task_or_404(task_id, db)
+    for k, v in payload.model_dump(exclude_unset=True).items():
+        setattr(task, k, v)
+    db.commit(); db.refresh(task)
+    return _task_out(task, set(), admin=True)
+
+
+@router.delete("/tasks/{task_id}")
+def delete_task(
+    task_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role(models.Role.ADMIN)),
+):
+    task = _get_task_or_404(task_id, db)
+    db.delete(task); db.commit()
+    return {"status": "deleted"}
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  ADMIN/TUTOR — Question CRUD
+# ═══════════════════════════════════════════════════════════════════
+
+@router.post("/tasks/{task_id}/questions")
+def create_question(
+    task_id: str,
+    payload: schemas.QuestionCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role(models.Role.TUTOR, models.Role.ADMIN)),
+):
+    task = _get_task_or_404(task_id, db)
+    opts = payload.options or []
+    hints = payload.hints or []
+    data = payload.model_dump(exclude={"options", "hints"})
+    question = models.Question(task_id=task.id, **data)
+    db.add(question); db.flush()
+    for o in opts:
+        db.add(models.QuestionOption(question_id=question.id, **o.model_dump()))
+    for h in hints:
+        db.add(models.QuestionHint(question_id=question.id, **h.model_dump()))
+    db.commit(); db.refresh(question)
+    return _question_out(question, set(), admin=True)
+
+
+@router.patch("/questions/{question_id}")
+def update_question(
+    question_id: str,
+    payload: schemas.QuestionUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role(models.Role.TUTOR, models.Role.ADMIN)),
+):
+    question = _get_question_or_404(question_id, db)
+    for k, v in payload.model_dump(exclude_unset=True).items():
+        setattr(question, k, v)
+    db.commit(); db.refresh(question)
+    return _question_out(question, set(), admin=True)
+
+
+@router.delete("/questions/{question_id}")
+def delete_question(
+    question_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role(models.Role.ADMIN)),
+):
+    question = _get_question_or_404(question_id, db)
+    db.delete(question); db.commit()
+    return {"status": "deleted"}
+
+
+@router.post("/questions/{question_id}/options")
+def add_option(
+    question_id: str,
+    payload: schemas.QuestionOptionCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role(models.Role.TUTOR, models.Role.ADMIN)),
+):
+    question = _get_question_or_404(question_id, db)
+    opt = models.QuestionOption(question_id=question.id, **payload.model_dump())
+    db.add(opt); db.commit(); db.refresh(opt)
+    return _option_out(opt)
+
+
+@router.delete("/options/{option_id}")
+def delete_option(
+    option_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role(models.Role.ADMIN)),
+):
+    opt = db.query(models.QuestionOption).filter(models.QuestionOption.id == option_id).first()
+    if not opt:
+        raise HTTPException(status_code=404, detail="Option not found")
+    db.delete(opt); db.commit()
+    return {"status": "deleted"}
+
+
+@router.post("/questions/{question_id}/hints")
+def add_hint(
+    question_id: str,
+    payload: schemas.QuestionHintCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role(models.Role.TUTOR, models.Role.ADMIN)),
+):
+    question = _get_question_or_404(question_id, db)
+    hint = models.QuestionHint(question_id=question.id, **payload.model_dump())
+    db.add(hint); db.commit(); db.refresh(hint)
+    return {"id": hint.id, "content": hint.content, "cost": hint.cost, "order": hint.order}

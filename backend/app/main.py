@@ -1,32 +1,40 @@
+"""
+AutoRange Cyber Range — FastAPI application entry point.
+New architecture: Path → Module → Room → Task → Question
+"""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .database import Base, engine, test_connection
-from .routers import auth, challenges, environments, vm_templates, tutor, admin, taxonomy, rooms
+from .routers import auth, paths, rooms, environments, progress, admin
 
+# Create all tables
 Base.metadata.create_all(bind=engine)
 test_connection()
 
-app = FastAPI(title="Cyber Range Framework API", version="0.1.0")
+app = FastAPI(
+    title="AutoRange Cyber Range API",
+    version="2.0.0",
+    description="OT/ICS Cybersecurity Learning Management System — Path→Module→Room→Task→Question",
+)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # tighten this to your frontend's origin in production
+    allow_origins=["*"],   # tighten in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(auth.router)
-app.include_router(challenges.router)
-app.include_router(environments.router)
-app.include_router(vm_templates.router)
-app.include_router(tutor.router)
-app.include_router(admin.router)
-app.include_router(taxonomy.router)
-app.include_router(rooms.router)
+# ── Routers ────────────────────────────────────────────────────────────────
+app.include_router(auth.router)          # /auth/...
+app.include_router(paths.router)         # /paths/... + /paths/modules/...
+app.include_router(rooms.router)         # /rooms/... + /rooms/tasks/... + /rooms/questions/...
+app.include_router(environments.router)  # /environments/...
+app.include_router(progress.router)      # /progress/...
+app.include_router(admin.router)         # /admin/...
 
 
 @app.get("/")
 def health_check():
-    return {"status": "ok"}
+    return {"status": "ok", "version": "2.0.0"}

@@ -1,3 +1,7 @@
+"""
+Environments router — VM lifecycle management.
+Environments are now linked to a Room (not a Challenge).
+"""
 import json
 import os
 import logging
@@ -17,21 +21,29 @@ from ..gateway.provisioning import get_gateway
 router = APIRouter(prefix="/environments", tags=["environments"])
 
 
+# ── serialiser ─────────────────────────────────────────────────────────────
+
 def _env_out(env: models.Environment) -> dict:
-    """Build the EnvironmentOut dict with a proper UTC ISO string for expires_at."""
+    tl = env.room.estimated_minutes if env.room else 120
     return {
         "id": env.id,
-        "challenge_id": env.challenge_id,
+        "room_id": env.room_id,
         "status": env.status,
         "started_at": env.started_at,
         "expires_at": env.expires_at,
         "expires_at_iso": env.expires_at.strftime("%Y-%m-%dT%H:%M:%SZ") if env.expires_at else None,
-        "time_limit_minutes": env.challenge.time_limit_minutes if env.challenge else 90,
-        "hints_used": env.hints_used,
+        "time_limit_minutes": tl,
         "vms": [
             {
                 "id": v.id,
-                "vm_template": v.vm_template,
+                "vm_template": {
+                    "id": v.vm_template.id,
+                    "name": v.vm_template.name,
+                    "zone": v.vm_template.zone,
+                    "proxmox_template_id": v.vm_template.proxmox_template_id,
+                    "default_tools": v.vm_template.default_tools,
+                    "description": v.vm_template.description,
+                },
                 "ip_address": v.ip_address,
                 "proxmox_vmid": v.proxmox_vmid,
                 "proxmox_node": v.proxmox_node,
@@ -42,94 +54,15 @@ def _env_out(env: models.Environment) -> dict:
     }
 
 
-@router.post("/{challenge_id}/start", response_model=schemas.EnvironmentOut)
-def start_environment(
-    challenge_id: str,
-    topology: schemas.TopologySave,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-):
-    challenge = db.query(models.Challenge).filter(models.Challenge.id == challenge_id).first()
-    if not challenge:
-        raise HTTPException(status_code=404, detail="Challenge not found")
+def _get_or_create_env(user_id: str, room_id: str, db: Session) -> models.Environment:
+    """Find active environment for user+room or create one."""
+    room = db.query(models.Room).filter(models.Room.id == room_id).first()
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
 
-    if not topology.nodes:
-        raise HTTPException(status_code=400, detail="Drag at least one VM onto the canvas before starting")
-
-    env = models.Environment(
-        user_id=current_user.id,
-        challenge_id=challenge_id,
-        status=models.EnvironmentStatus.PROVISIONING,
-        topology_json=json.dumps(topology.model_dump()),
-        started_at=datetime.utcnow(),
-        expires_at=datetime.utcnow() + timedelta(minutes=challenge.time_limit_minutes),
-    )
-    db.add(env)
-    db.flush()
-
-    # Provision one cloned VM per node the learner placed on the canvas.
-    for node in topology.nodes:
-        template = db.query(models.VMTemplate).filter(models.VMTemplate.id == node.vm_template_id).first()
-        if not template:
-            continue
-        provisioned = get_gateway().clone_vm(
-            template_ref=template.proxmox_template_id,
-            name_hint=f"{template.name}-{env.id[:8]}",
-        )
-        get_gateway().start_vm(provisioned.node, provisioned.vmid)
-
-        db.add(models.EnvironmentVM(
-            environment_id=env.id,
-            vm_template_id=template.id,
-            proxmox_vmid=provisioned.vmid,
-            proxmox_node=provisioned.node,
-            ip_address=provisioned.ip_address,
-            status="running",
-        ))
-
-    # NOTE: network segment creation (isolated VNet per session) and wiring
-    # the drawn `topology.links` into actual Proxmox bridges/VLANs happens
-    # here too - see ProxmoxService.create_network_segment for the extension
-    # point once your SDN zones are defined.
-
-    env.status = models.EnvironmentStatus.RUNNING
-    db.commit()
-    db.refresh(env)
-    return _env_out(env)
-
-
-class SingleVMStart(BaseModel):
-    vm_template_id: str
-
-
-@router.post("/{challenge_id}/start-vm", response_model=schemas.EnvironmentOut)
-def start_single_vm(
-    challenge_id: str,
-    payload: SingleVMStart,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-):
-    """
-    Start a single VM for a challenge.
-    - If no environment exists yet for this user+challenge, creates one.
-    - If an environment already exists (from a previous VM start), adds the
-      new VM to it.
-    - If this VM template is already running in the environment, returns the
-      existing environment unchanged.
-    This is what powers the per-VM Start buttons in the Room Lab page.
-    """
-    challenge = db.query(models.Challenge).filter(models.Challenge.id == challenge_id).first()
-    if not challenge:
-        raise HTTPException(status_code=404, detail="Challenge not found")
-
-    template = db.query(models.VMTemplate).filter(models.VMTemplate.id == payload.vm_template_id).first()
-    if not template:
-        raise HTTPException(status_code=404, detail="VM template not found")
-
-    # Find or create the environment for this user+challenge
     env = db.query(models.Environment).filter(
-        models.Environment.user_id == current_user.id,
-        models.Environment.challenge_id == challenge_id,
+        models.Environment.user_id == user_id,
+        models.Environment.room_id == room_id,
         models.Environment.status.in_([
             models.EnvironmentStatus.RUNNING,
             models.EnvironmentStatus.PROVISIONING,
@@ -138,17 +71,50 @@ def start_single_vm(
 
     if env is None:
         env = models.Environment(
-            user_id=current_user.id,
-            challenge_id=challenge_id,
+            user_id=user_id,
+            room_id=room_id,
             status=models.EnvironmentStatus.PROVISIONING,
             topology_json=json.dumps({"nodes": [], "links": []}),
             started_at=datetime.utcnow(),
-            expires_at=datetime.utcnow() + timedelta(minutes=challenge.time_limit_minutes),
+            expires_at=datetime.utcnow() + timedelta(minutes=room.estimated_minutes or 120),
         )
         db.add(env)
         db.flush()
 
-    # Check if this template is already running in this environment
+    return env
+
+
+# ── payload models ─────────────────────────────────────────────────────────
+
+class SingleVMStart(BaseModel):
+    vm_template_id: str
+
+
+class StopVMPayload(BaseModel):
+    vm_template_id: str
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  START A SINGLE VM
+# ═══════════════════════════════════════════════════════════════════
+
+@router.post("/rooms/{room_id}/start-vm")
+def start_single_vm(
+    room_id: str,
+    payload: SingleVMStart,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Start one VM for a room. Creates the environment if needed."""
+    template = db.query(models.VMTemplate).filter(
+        models.VMTemplate.id == payload.vm_template_id
+    ).first()
+    if not template:
+        raise HTTPException(status_code=404, detail="VM template not found")
+
+    env = _get_or_create_env(current_user.id, room_id, db)
+
+    # Already running?
     already = db.query(models.EnvironmentVM).filter(
         models.EnvironmentVM.environment_id == env.id,
         models.EnvironmentVM.vm_template_id == template.id,
@@ -158,7 +124,6 @@ def start_single_vm(
         db.refresh(env)
         return _env_out(env)
 
-    # Provision and start the VM
     provisioned = get_gateway().clone_vm(
         template_ref=template.proxmox_template_id,
         name_hint=f"{template.name}-{env.id[:8]}",
@@ -173,35 +138,32 @@ def start_single_vm(
         ip_address=provisioned.ip_address,
         status="running",
     ))
-
     env.status = models.EnvironmentStatus.RUNNING
-    db.commit()
-    db.refresh(env)
+    db.commit(); db.refresh(env)
     return _env_out(env)
 
 
-class StopVMPayload(BaseModel):
-    vm_template_id: str
+# ═══════════════════════════════════════════════════════════════════
+#  STOP A SINGLE VM
+# ═══════════════════════════════════════════════════════════════════
 
-
-@router.post("/{challenge_id}/stop-vm")
+@router.post("/rooms/{room_id}/stop-vm")
 def stop_single_vm(
-    challenge_id: str,
+    room_id: str,
     payload: StopVMPayload,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Stop and destroy a single VM within the challenge's environment."""
     env = db.query(models.Environment).filter(
         models.Environment.user_id == current_user.id,
-        models.Environment.challenge_id == challenge_id,
+        models.Environment.room_id == room_id,
         models.Environment.status.in_([
             models.EnvironmentStatus.RUNNING,
             models.EnvironmentStatus.PROVISIONING,
         ]),
     ).first()
     if not env:
-        raise HTTPException(status_code=404, detail="No active environment for this challenge")
+        raise HTTPException(status_code=404, detail="No active environment for this room")
 
     vm = db.query(models.EnvironmentVM).filter(
         models.EnvironmentVM.environment_id == env.id,
@@ -218,19 +180,23 @@ def stop_single_vm(
             logger.warning(f"destroy_vm error: {e}")
 
     vm.status = "stopped"
-    # if all VMs are stopped, mark env as destroyed
-    all_stopped = all(v.status != "running" for v in env.vms)
-    if all_stopped:
+    if all(v.status != "running" for v in env.vms):
         env.status = models.EnvironmentStatus.DESTROYED
         env.destroyed_at = datetime.utcnow()
     db.commit()
-    db.refresh(env)
     return {"status": "stopped", "vm_template_id": payload.vm_template_id}
 
 
-@router.get("/{environment_id}", response_model=schemas.EnvironmentOut)
-def get_environment(environment_id: str, db: Session = Depends(get_db),
-                     current_user: models.User = Depends(get_current_user)):
+# ═══════════════════════════════════════════════════════════════════
+#  GET ENVIRONMENT
+# ═══════════════════════════════════════════════════════════════════
+
+@router.get("/{environment_id}")
+def get_environment(
+    environment_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
     env = db.query(models.Environment).filter(models.Environment.id == environment_id).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
@@ -239,32 +205,9 @@ def get_environment(environment_id: str, db: Session = Depends(get_db),
     return _env_out(env)
 
 
-@router.post("/{environment_id}/reset", response_model=schemas.EnvironmentOut)
-def reset_environment(environment_id: str, db: Session = Depends(get_db),
-                       current_user: models.User = Depends(get_current_user)):
-    """Destroys and re-clones every VM in the environment from its template."""
-    env = db.query(models.Environment).filter(models.Environment.id == environment_id).first()
-    if not env:
-        raise HTTPException(status_code=404, detail="Environment not found")
-    if env.user_id != current_user.id and current_user.role == models.Role.LEARNER:
-        raise HTTPException(status_code=403, detail="Not your environment")
-
-    for vm in env.vms:
-        if vm.proxmox_vmid:
-            get_gateway().destroy_vm(vm.proxmox_node, vm.proxmox_vmid)
-        template = vm.vm_template
-        provisioned = get_gateway().clone_vm(template.proxmox_template_id, f"{template.name}-reset")
-        get_gateway().start_vm(provisioned.node, provisioned.vmid)
-        vm.proxmox_vmid = provisioned.vmid
-        vm.proxmox_node = provisioned.node
-        vm.ip_address = provisioned.ip_address
-        vm.status = "running"
-
-    env.status = models.EnvironmentStatus.RUNNING
-    db.commit()
-    db.refresh(env)
-    return _env_out(env)
-
+# ═══════════════════════════════════════════════════════════════════
+#  CONSOLE URL (Proxmox noVNC)
+# ═══════════════════════════════════════════════════════════════════
 
 @router.get("/{environment_id}/console/{vm_id}")
 def get_console_url(
@@ -273,12 +216,6 @@ def get_console_url(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """
-    Returns a fully authenticated Proxmox noVNC console URL.
-    Generates a short-lived Proxmox ticket + CSRF token server-side
-    so the learner's browser opens the VM console directly without
-    ever seeing the Proxmox login screen.
-    """
     env = db.query(models.Environment).filter(models.Environment.id == environment_id).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
@@ -290,87 +227,63 @@ def get_console_url(
         models.EnvironmentVM.environment_id == environment_id,
     ).first()
     if not vm:
-        raise HTTPException(status_code=404, detail="VM not found in this environment")
+        raise HTTPException(status_code=404, detail="VM not found")
     if not vm.proxmox_vmid or not vm.proxmox_node:
         raise HTTPException(status_code=400, detail="VM not yet provisioned")
 
-    proxmox_host  = os.getenv("PROXMOX_HOST", "192.168.37.20")
-    proxmox_user  = os.getenv("PROXMOX_USER", "root@pam")
-    token_name    = os.getenv("PROXMOX_TOKEN_NAME", "cyberrange")
-    token_value   = os.getenv("PROXMOX_TOKEN_VALUE", "")
-    verify_ssl    = os.getenv("PROXMOX_VERIFY_SSL", "false").lower() == "true"
-
-    # ── Request a Proxmox session ticket using the API token ────────────────
-    # Proxmox supports two auth paths:
-    #   1. username/password  → returns ticket + CSRFPreventionToken
-    #   2. API token          → does NOT return a ticket (tokens can't generate tickets)
-    # noVNC requires a ticket, so we must use password auth here.
-    # We fall back to the API token auth URL format if no password is available.
-
+    proxmox_host     = os.getenv("PROXMOX_HOST", "192.168.37.20")
+    proxmox_user     = os.getenv("PROXMOX_USER", "root@pam")
     proxmox_password = os.getenv("PROXMOX_PASSWORD", "")
+    verify_ssl       = os.getenv("PROXMOX_VERIFY_SSL", "false").lower() == "true"
 
-    ticket = None
-    csrf   = None
-
+    ticket = csrf = None
     if proxmox_password:
         try:
             import urllib.request, urllib.parse, ssl, json as _json
             ctx = ssl.create_default_context()
             if not verify_ssl:
                 ctx.check_hostname = False
-                ctx.verify_mode    = ssl.CERT_NONE
-
-            payload = urllib.parse.urlencode({
-                "username": proxmox_user,
-                "password": proxmox_password,
-            }).encode()
-
+                ctx.verify_mode = ssl.CERT_NONE
+            data = urllib.parse.urlencode({"username": proxmox_user, "password": proxmox_password}).encode()
             req = urllib.request.Request(
                 f"https://{proxmox_host}:8006/api2/json/access/ticket",
-                data=payload, method="POST",
+                data=data, method="POST",
             )
             with urllib.request.urlopen(req, context=ctx, timeout=8) as resp:
-                data   = _json.loads(resp.read())
-                ticket = data["data"]["ticket"]
-                csrf   = data["data"]["CSRFPreventionToken"]
+                body   = _json.loads(resp.read())
+                ticket = body["data"]["ticket"]
+                csrf   = body["data"]["CSRFPreventionToken"]
         except Exception as e:
             logger.warning(f"Could not obtain Proxmox ticket: {e}")
 
+    base = f"https://{proxmox_host}:8006/?console=kvm&novnc=1&vmid={vm.proxmox_vmid}&node={vm.proxmox_node}&resize=off&lang=en"
     if ticket and csrf:
-        # Fully authenticated URL — no login screen
-        console_url = (
-            f"https://{proxmox_host}:8006/?"
-            f"console=kvm&novnc=1"
-            f"&vmid={vm.proxmox_vmid}"
-            f"&node={vm.proxmox_node}"
-            f"&resize=off&lang=en"
-            f"&ticket={urllib.parse.quote(ticket)}"
-            f"&csrf={urllib.parse.quote(csrf)}"
-        )
+        console_url = base + f"&ticket={urllib.parse.quote(ticket)}&csrf={urllib.parse.quote(csrf)}"
+        authenticated = True
     else:
-        # Fallback — learner may need to log in once manually
-        logger.warning("Falling back to unauthenticated noVNC URL (add PROXMOX_PASSWORD to .env for auto-auth)")
-        console_url = (
-            f"https://{proxmox_host}:8006/?"
-            f"console=kvm&novnc=1"
-            f"&vmid={vm.proxmox_vmid}"
-            f"&node={vm.proxmox_node}"
-            f"&resize=off&lang=en"
-        )
+        console_url = base
+        authenticated = False
 
     return {
         "console_url": console_url,
-        "vmid":        vm.proxmox_vmid,
-        "node":        vm.proxmox_node,
-        "vm_name":     vm.vm_template.name,
-        "ip_address":  vm.ip_address,
-        "authenticated": bool(ticket),
+        "vmid": vm.proxmox_vmid,
+        "node": vm.proxmox_node,
+        "vm_name": vm.vm_template.name,
+        "ip_address": vm.ip_address,
+        "authenticated": authenticated,
     }
 
 
+# ═══════════════════════════════════════════════════════════════════
+#  DESTROY FULL ENVIRONMENT
+# ═══════════════════════════════════════════════════════════════════
+
 @router.post("/{environment_id}/destroy")
-def destroy_environment(environment_id: str, db: Session = Depends(get_db),
-                         current_user: models.User = Depends(get_current_user)):
+def destroy_environment(
+    environment_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
     env = db.query(models.Environment).filter(models.Environment.id == environment_id).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
@@ -379,12 +292,13 @@ def destroy_environment(environment_id: str, db: Session = Depends(get_db),
 
     env.status = models.EnvironmentStatus.DESTROYING
     db.commit()
-
     for vm in env.vms:
         if vm.proxmox_vmid:
-            get_gateway().destroy_vm(vm.proxmox_node, vm.proxmox_vmid)
+            try:
+                get_gateway().destroy_vm(vm.proxmox_node, vm.proxmox_vmid)
+            except Exception as e:
+                logger.warning(f"destroy_vm {vm.proxmox_vmid}: {e}")
         vm.status = "destroyed"
-
     env.status = models.EnvironmentStatus.DESTROYED
     env.destroyed_at = datetime.utcnow()
     db.commit()
