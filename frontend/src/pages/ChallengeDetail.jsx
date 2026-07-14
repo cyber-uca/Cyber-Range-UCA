@@ -232,10 +232,14 @@ export default function ChallengeDetail() {
   const addLog = line => setLogs(p => [...p, line])
 
   const startVM = async (vmTpl) => {
+    if (!fromRoom?.id) {
+      addLog('$ [ERROR] No room context — navigate from a Room page to start VMs')
+      return
+    }
     setVmState(p => ({ ...p, [vmTpl.id]: { ...p[vmTpl.id], starting: true } }))
     addLog(`$ provisioning ${vmTpl.name} on Proxmox…`)
     try {
-      const env = await api.startSingleVM(id, vmTpl.id)
+      const env = await api.startSingleVM(fromRoom.id, vmTpl.id)
       const envVms = (env.vms ?? []).map(v => ({ ...v, environment_id: env.id }))
       const envVm = envVms.find(v => v.vm_template?.id === vmTpl.id || v.vm_template?.name === vmTpl.name)
       addLog(`$ ✓ ${vmTpl.name} running${envVm?.ip_address ? ' · ' + envVm.ip_address : ''}`)
@@ -247,10 +251,11 @@ export default function ChallengeDetail() {
   }
 
   const stopVM = async (vmTpl) => {
+    if (!fromRoom?.id) return
     setVmState(p => ({ ...p, [vmTpl.id]: { ...p[vmTpl.id], stopping: true } }))
     addLog(`$ stopping ${vmTpl.name}…`)
     try {
-      await api.stopVM(id, vmTpl.id)
+      await api.stopVM(fromRoom.id, vmTpl.id)
       addLog(`$ ✓ ${vmTpl.name} stopped`)
       setVmState(p => ({ ...p, [vmTpl.id]: { ...p[vmTpl.id], envVm: { ...p[vmTpl.id].envVm, status: 'stopped' }, stopping: false } }))
     } catch (err) {

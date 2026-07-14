@@ -64,15 +64,15 @@ export const api = {
       body: JSON.stringify(topology),
     }).then(handle),
 
-  startSingleVM: (challengeId, vmTemplateId) =>
-    fetch(`${BASE}/environments/${challengeId}/start-vm`, {
+  startSingleVM: (roomId, vmTemplateId) =>
+    fetch(`${BASE}/environments/rooms/${roomId}/start-vm`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ vm_template_id: vmTemplateId }),
     }).then(handle),
 
-  stopVM: (challengeId, vmTemplateId) =>
-    fetch(`${BASE}/environments/${challengeId}/stop-vm`, {
+  stopVM: (roomId, vmTemplateId) =>
+    fetch(`${BASE}/environments/rooms/${roomId}/stop-vm`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ vm_template_id: vmTemplateId }),
@@ -165,12 +165,27 @@ export const api = {
   listDifficultiesPublic: () => fetch(`${BASE}/difficulties`, { headers: authHeaders() }).then(handle),
   listChallengeTypesPublic: () => fetch(`${BASE}/challenge-types`, { headers: authHeaders() }).then(handle),
 
+  // ---------- Paths ----------
+  listPaths: () => fetch(`${BASE}/paths`, { headers: authHeaders() }).then(handle),
+  getPath: (slug) => fetch(`${BASE}/paths/${slug}`, { headers: authHeaders() }).then(handle),
+
   // ---------- Rooms ----------
   listRooms: (params = {}) => {
     const qs = new URLSearchParams(params).toString()
     return fetch(`${BASE}/rooms${qs ? `?${qs}` : ''}`, { headers: authHeaders() }).then(handle)
   },
   getRoom: (slug) => fetch(`${BASE}/rooms/${slug}`, { headers: authHeaders() }).then(handle),
+
+  // ---------- Progress ----------
+  submitAnswer: (questionId, answer) =>
+    fetch(`${BASE}/progress/questions/${questionId}/answer`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ answer }),
+    }).then(handle),
+
+  getRoomProgress: (roomId) =>
+    fetch(`${BASE}/progress/rooms/${roomId}`, { headers: authHeaders() }).then(handle),
 
   // Lab layers are static on the frontend — no separate endpoint needed
   LAB_LAYERS: [

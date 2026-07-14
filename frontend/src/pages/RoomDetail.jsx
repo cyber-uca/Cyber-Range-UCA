@@ -94,7 +94,7 @@ export default function RoomDetail() {
           return (
             <div key={c.id} className="fade-up"
               style={{ animationDelay: `${idx * .06}s`, position:'relative', zIndex:1 }}
-              onClick={() => navigate(`/challenges/${c.id}`)}>
+              onClick={() => navigate(`/challenges/${c.id}`, { state: { room: { id: room.id, slug: room.slug, title: room.title } } })}>
               <div style={{ display:'flex', alignItems:'flex-start', gap:16, marginBottom:10, cursor:'pointer' }}
                 onMouseEnter={e => e.currentTarget.parentElement.querySelector('.task-card').style.borderColor = 'var(--border-hi)'}
                 onMouseLeave={e => e.currentTarget.parentElement.querySelector('.task-card').style.borderColor = 'var(--border)'}>

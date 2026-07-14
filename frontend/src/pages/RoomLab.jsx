@@ -344,7 +344,7 @@ export default function RoomLab() {
     put(id, { starting: {...get(id).starting, [vmTpl.id]: true} })
     log(id, `$ provisioning ${vmTpl.name} on Proxmox…`)
     try {
-      const env = await api.startSingleVM(id, vmTpl.id)
+      const env = await api.startSingleVM(room.id, vmTpl.id)
       const envVms = (env.vms ?? []).map(v => ({...v, environment_id: env.id}))
       const vm = envVms.find(v => v.vm_template?.name===vmTpl.name)
       log(id, `$ ✓ ${vmTpl.name} running${vm?.ip_address ? ' · '+vm.ip_address : ''}`)
@@ -361,7 +361,7 @@ export default function RoomLab() {
     put(id, { stopping: {...get(id).stopping, [vmTpl.id]: true} })
     log(id, `$ stopping ${vmTpl.name}…`)
     try {
-      await api.stopVM(id, vmTpl.id)
+      await api.stopVM(room.id, vmTpl.id)
       log(id, `$ ✓ ${vmTpl.name} stopped`)
       const envVms = get(id).envVms.map(v =>
         (v.vm_template?.id===vmTpl.id || v.vm_template?.name===vmTpl.name) ? {...v, status:'stopped'} : v
