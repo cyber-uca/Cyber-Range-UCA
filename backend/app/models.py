@@ -95,7 +95,7 @@ class User(Base):
     created_at      = Column(DateTime, default=datetime.utcnow)
 
     environments      = relationship("Environment", back_populates="user")
-    question_answers  = relationship("UserQuestionAnswer", back_populates="user")
+    question_answers  = relationship("UserQuestionAnswer", back_populates="user", foreign_keys="[UserQuestionAnswer.user_id]")
     task_progress     = relationship("UserTaskProgress", back_populates="user")
     room_progress     = relationship("UserRoomProgress", back_populates="user")
     module_progress   = relationship("UserModuleProgress", back_populates="user")
@@ -388,10 +388,9 @@ class UserQuestionAnswer(Base):
     reviewed_by     = Column(String(36), ForeignKey("users.id"), nullable=True)
     review_notes    = Column(Text, nullable=True)
 
-    user     = relationship("User", back_populates="question_answers",
-                            foreign_keys=[user_id])
+    user     = relationship("User", back_populates="question_answers", foreign_keys="[UserQuestionAnswer.user_id]")
     question = relationship("Question", back_populates="answers")
-    reviewer = relationship("User", foreign_keys=[reviewed_by])
+    reviewer = relationship("User", foreign_keys="[UserQuestionAnswer.reviewed_by]")
 
 
 class UserTaskProgress(Base):
