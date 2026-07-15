@@ -44,22 +44,24 @@ function VMCard({ vmTemplate, envVm, env, onStart, onStop, starting, stopping })
     if (!envVm?.id) return
     setLoadingConsole(true)
     try {
-      const token = localStorage.getItem('token')
-      // The launcher endpoint returns HTML that sets PVEAuthCookie then opens noVNC
-      // We fetch it with auth header and open the resulting HTML in a new window
-      const resp = await fetch(`/api/environments/${envVm.environment_id}/console/${envVm.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      if (!resp.ok) throw new Error(`${resp.status}`)
-      const html = await resp.text()
-      const blob = new Blob([html], { type: 'text/html' })
-      const url = URL.createObjectURL(blob)
-      window.open(url, '_blank', 'width=1200,height=800')
+      const data = await api.getConsoleUrl(envVm.environment_id, envVm.id)
+      const url = data.console_url
+
+      if (data.pve_ticket && url.startsWith('/proxmox/')) {
+        // Set PVEAuthCookie on our own origin (nginx proxies /proxmox/ → Proxmox)
+        // by fetching /proxmox/ with the ticket as a cookie header via a credentialed request
+        document.cookie = `PVEAuthCookie=${encodeURIComponent(data.pve_ticket)}; path=/proxmox; SameSite=Lax`
+        // Small delay to ensure cookie is set, then open
+        await new Promise(r => setTimeout(r, 100))
+      }
+
       setConsoleUrl(url)
+      window.open(url, '_blank', 'width=1200,height=800')
     } catch {
       if (envVm.proxmox_vmid && envVm.proxmox_node) {
         const url = `https://192.168.37.20:8006/?console=kvm&novnc=1&vmid=${envVm.proxmox_vmid}&node=${envVm.proxmox_node}&lang=en`
-        setConsoleUrl(url); window.open(url, '_blank')
+        setConsoleUrl(url)
+        window.open(url, '_blank')
       }
     } finally { setLoadingConsole(false) }
   }
