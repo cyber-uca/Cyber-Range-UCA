@@ -312,9 +312,38 @@ def update_question(
     current_user: models.User = Depends(require_role(models.Role.TUTOR, models.Role.ADMIN)),
 ):
     question = _get_question_or_404(question_id, db)
-    for k, v in payload.model_dump(exclude_unset=True).items():
+    data = payload.model_dump(exclude_unset=True, exclude={"options"})
+    for k, v in data.items():
         setattr(question, k, v)
-    db.commit(); db.refresh(question)
+
+    # If options are provided, replace them and rebuild validation_data
+    if payload.options is not None:
+        db.query(models.QuestionOption).filter(
+            models.QuestionOption.question_id == question_id
+        ).delete()
+        db.flush()
+
+        new_opts = []
+        for o in payload.options:
+            opt = models.QuestionOption(
+                question_id=question.id,
+                text=o.text,
+                is_correct=o.is_correct,
+                sort_order=o.sort_order,
+            )
+            db.add(opt)
+            db.flush()
+            new_opts.append(opt)
+
+        # Rebuild validation_data with the correct option IDs
+        correct_opts = [o for o in new_opts if o.is_correct]
+        if question.question_type == models.QuestionType.MCQ_SINGLE and correct_opts:
+            question.validation_data = {"correct_option_id": correct_opts[0].id}
+        elif question.question_type == models.QuestionType.MCQ_MULTI and correct_opts:
+            question.validation_data = {"correct_option_ids": [o.id for o in correct_opts]}
+
+    db.commit()
+    db.refresh(question)
     return _question_out(question, set(), admin=True)
 
 

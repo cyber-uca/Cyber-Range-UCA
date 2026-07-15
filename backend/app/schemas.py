@@ -247,6 +247,7 @@ class QuestionOptionOut(BaseModel):
 
 class QuestionOptionCreate(BaseModel):
     text: str
+    is_correct: bool = False
     sort_order: int = 0
     match_key: Optional[str] = None
 
@@ -293,6 +294,7 @@ class QuestionUpdate(BaseModel):
     is_mandatory: Optional[bool] = None
     sort_order: Optional[int] = None
     validation_data: Optional[Dict[str, Any]] = None
+    options: Optional[List[QuestionOptionCreate]] = None
 
 
 # ── Tasks ─────────────────────────────────────────────────────────────────────
