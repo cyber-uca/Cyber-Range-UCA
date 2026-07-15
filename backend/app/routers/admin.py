@@ -149,6 +149,92 @@ def delete_vm_template(
 
 
 # ═══════════════════════════════════════════════════════════════════
+#  CATEGORIES & DIFFICULTIES  (challenge taxonomy)
+# ═══════════════════════════════════════════════════════════════════
+
+@router.get("/categories", response_model=List[schemas.CategoryOut])
+def list_categories(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role(models.Role.ADMIN)),
+):
+    return db.query(models.Category).order_by(models.Category.sort_order).all()
+
+
+@router.post("/categories", response_model=schemas.CategoryOut)
+def create_category(
+    payload: schemas.CategoryCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role(models.Role.ADMIN)),
+):
+    if db.query(models.Category).filter(models.Category.slug == payload.slug).first():
+        raise HTTPException(status_code=400, detail="A category with this slug already exists")
+    category = models.Category(**payload.model_dump())
+    db.add(category); db.commit(); db.refresh(category)
+    return category
+
+
+@router.delete("/categories/{category_id}")
+def delete_category(
+    category_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role(models.Role.ADMIN)),
+):
+    category = db.query(models.Category).filter(models.Category.id == category_id).first()
+    if not category:
+        raise HTTPException(status_code=404, detail="Category not found")
+    in_use = db.query(models.Challenge).filter(models.Challenge.category_id == category_id).first()
+    if in_use:
+        raise HTTPException(status_code=400, detail="Category is used by a challenge — remove it first")
+    db.delete(category); db.commit()
+    return {"status": "deleted"}
+
+
+@router.get("/difficulties", response_model=List[schemas.DifficultyOut])
+def list_difficulties(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role(models.Role.ADMIN)),
+):
+    return db.query(models.Difficulty).order_by(models.Difficulty.sort_order).all()
+
+
+@router.post("/difficulties", response_model=schemas.DifficultyOut)
+def create_difficulty(
+    payload: schemas.DifficultyCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role(models.Role.ADMIN)),
+):
+    if db.query(models.Difficulty).filter(models.Difficulty.slug == payload.slug).first():
+        raise HTTPException(status_code=400, detail="A difficulty with this slug already exists")
+    difficulty = models.Difficulty(**payload.model_dump())
+    db.add(difficulty); db.commit(); db.refresh(difficulty)
+    return difficulty
+
+
+@router.delete("/difficulties/{difficulty_id}")
+def delete_difficulty(
+    difficulty_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role(models.Role.ADMIN)),
+):
+    difficulty = db.query(models.Difficulty).filter(models.Difficulty.id == difficulty_id).first()
+    if not difficulty:
+        raise HTTPException(status_code=404, detail="Difficulty not found")
+    in_use = db.query(models.Challenge).filter(models.Challenge.difficulty_id == difficulty_id).first()
+    if in_use:
+        raise HTTPException(status_code=400, detail="Difficulty is used by a challenge — remove it first")
+    db.delete(difficulty); db.commit()
+    return {"status": "deleted"}
+
+
+@router.get("/challenge-types")
+def list_challenge_types(
+    current_user: models.User = Depends(require_role(models.Role.ADMIN)),
+):
+    from ..gateway.challenge_type_gateway import list_registered_types
+    return {"registered_types": list_registered_types()}
+
+
+# ═══════════════════════════════════════════════════════════════════
 #  PLATFORM SETTINGS
 # ═══════════════════════════════════════════════════════════════════
 

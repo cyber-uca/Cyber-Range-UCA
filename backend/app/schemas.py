@@ -11,6 +11,40 @@ from .models import (
 )
 
 
+# ── Taxonomy ──────────────────────────────────────────────────────────────────
+
+class CategoryOut(BaseModel):
+    id: str
+    slug: str
+    name: str
+    color: str
+    description: Optional[str]
+    sort_order: int
+    class Config: from_attributes = True
+
+
+class DifficultyOut(BaseModel):
+    id: str
+    slug: str
+    name: str
+    sort_order: int
+    class Config: from_attributes = True
+
+
+class CategoryCreate(BaseModel):
+    slug: str
+    name: str
+    color: str = "coral"
+    description: Optional[str] = None
+    sort_order: int = 0
+
+
+class DifficultyCreate(BaseModel):
+    slug: str
+    name: str
+    sort_order: int = 0
+
+
 # ── Auth ────────────────────────────────────────────────────────────────────
 
 class UserRegister(BaseModel):
@@ -68,6 +102,88 @@ class VMTemplateUpdate(BaseModel):
     zone: Optional[str] = None
     proxmox_template_id: Optional[int] = None
     default_tools: Optional[str] = None
+
+
+# ── Challenges ────────────────────────────────────────────────────────────────
+
+class ChallengeCard(BaseModel):
+    """Lightweight challenge for the library listing."""
+    id: str
+    title: str
+    description: Optional[str]
+    category: CategoryOut
+    difficulty: DifficultyOut
+    challenge_type: str
+    points: int
+    time_limit_minutes: int
+    tags: Optional[str]
+    is_published: bool
+    class Config: from_attributes = True
+
+
+class ChallengeVMOut(BaseModel):
+    id: str
+    vm_template: VMTemplateOut
+    canvas_x: int
+    canvas_y: int
+    class Config: from_attributes = True
+
+
+class HintOut(BaseModel):
+    id: str
+    content: Optional[str]   # None if not yet unlocked
+    cost: int
+    order: int
+    unlocked: bool = False
+    class Config: from_attributes = True
+
+
+class ChallengeDetail(BaseModel):
+    id: str
+    title: str
+    description: Optional[str]
+    objectives: Optional[str]
+    category: CategoryOut
+    difficulty: DifficultyOut
+    challenge_type: str
+    points: int
+    time_limit_minutes: int
+    tags: Optional[str]
+    is_published: bool
+    created_by: Optional[str]
+    vms: List[ChallengeVMOut] = []
+    hints: List[HintOut] = []
+    class Config: from_attributes = True
+
+
+class ChallengeCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    objectives: Optional[str] = None
+    category_id: str
+    difficulty_id: str
+    challenge_type: str = "standard_flag"
+    points: int = 100
+    time_limit_minutes: int = 90
+    tags: Optional[str] = None
+    flag: str
+    vm_template_ids: List[str] = []
+    hints: List[Dict[str, Any]] = []
+
+
+class ChallengeImport(BaseModel):
+    pack: Dict[str, Any]
+    flag: str
+
+
+class FlagSubmit(BaseModel):
+    value: str
+
+
+class FlagResult(BaseModel):
+    is_correct: bool
+    points_awarded: int
+    message: str
 
 
 # ── Environments ─────────────────────────────────────────────────────────────
