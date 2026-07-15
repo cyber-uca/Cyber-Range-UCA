@@ -236,14 +236,16 @@ def get_console_url(
     proxmox_password = os.getenv("PROXMOX_PASSWORD", "")
     verify_ssl       = os.getenv("PROXMOX_VERIFY_SSL", "false").lower() == "true"
 
-    ticket = csrf = None
-    if proxmox_password:
-        try:
-            import urllib.request, urllib.parse, ssl, json as _json
-            ctx = ssl.create_default_context()
-            if not verify_ssl:
-                ctx.check_hostname = False
-                ctx.verify_mode = ssl.CERT_NONE
+    ticket = csrf = vnc_ticket = None
+    try:
+        import urllib.request, urllib.parse, ssl, json as _json
+        ctx = ssl.create_default_context()
+        if not verify_ssl:
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+
+        # Step 1 — get PVE auth ticket
+        if proxmox_password:
             data = urllib.parse.urlencode({"username": proxmox_user, "password": proxmox_password}).encode()
             req = urllib.request.Request(
                 f"https://{proxmox_host}:8006/api2/json/access/ticket",
@@ -253,12 +255,37 @@ def get_console_url(
                 body   = _json.loads(resp.read())
                 ticket = body["data"]["ticket"]
                 csrf   = body["data"]["CSRFPreventionToken"]
-        except Exception as e:
-            logger.warning(f"Could not obtain Proxmox ticket: {e}")
 
+        # Step 2 — get one-time VNC ticket via vncproxy
+        if ticket and csrf:
+            req2 = urllib.request.Request(
+                f"https://{proxmox_host}:8006/api2/json/nodes/{vm.proxmox_node}/qemu/{vm.proxmox_vmid}/vncproxy",
+                data=b"websocket=1",
+                method="POST",
+                headers={
+                    "Cookie": f"PVEAuthCookie={ticket}",
+                    "CSRFPreventionToken": csrf,
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+            )
+            with urllib.request.urlopen(req2, context=ctx, timeout=8) as resp2:
+                body2 = _json.loads(resp2.read())
+                vnc_ticket = body2["data"]["ticket"]
+                vnc_port   = body2["data"].get("port", 5900)
+
+    except Exception as e:
+        logger.warning(f"Could not obtain Proxmox VNC ticket: {e}")
+
+    # Build noVNC URL
     base = f"https://{proxmox_host}:8006/?console=kvm&novnc=1&vmid={vm.proxmox_vmid}&node={vm.proxmox_node}&resize=off&lang=en"
-    if ticket and csrf:
-        console_url = base + f"&ticket={urllib.parse.quote(ticket)}&csrf={urllib.parse.quote(csrf)}"
+    if vnc_ticket:
+        encoded = urllib.parse.quote(vnc_ticket, safe='')
+        console_url = base + f"&ticket={encoded}"
+        authenticated = True
+    elif ticket:
+        # Fallback: send PVE auth ticket — works on older PVE versions
+        encoded = urllib.parse.quote(ticket, safe='')
+        console_url = base + f"&ticket={encoded}"
         authenticated = True
     else:
         console_url = base
