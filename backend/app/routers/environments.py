@@ -311,8 +311,6 @@ def get_console_url(
             f"api2/json/nodes/{vm.proxmox_node}/qemu/{vm.proxmox_vmid}"
             f"/vncwebsocket/port/{vnc_port}/vncticket/{enc_vnc}"
         )
-        # Use /proxmox/ prefix — nginx proxies this to https://PROXMOX_HOST:8006/
-        # This keeps everything on the same origin so cookies work.
         console_url = (
             f"/proxmox/?console=kvm&novnc=1"
             f"&vmid={vm.proxmox_vmid}&node={vm.proxmox_node}"
