@@ -40,7 +40,7 @@ function VMCard({ vmTemplate, envVm, env, onStart, onStop, starting, stopping })
   const [loadingConsole, setLoadingConsole] = useState(false)
 
   const openConsole = async () => {
-    if (consoleUrl) { window.open(consoleUrl, '_blank'); return }
+    // Always fetch a fresh ticket — VNC tickets expire in ~2 min
     if (!envVm?.id) return
     setLoadingConsole(true)
     try {
