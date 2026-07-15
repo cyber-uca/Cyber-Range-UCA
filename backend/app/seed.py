@@ -93,12 +93,12 @@ if db.query(models.VMTemplate).count() == 0:
         models.VMTemplate(name="icsimrisk",         zone="CAN_Net",    proxmox_template_id=120,
                           description="Vehicle VM — ICSim + infotainment (192.168.37.47)",
                           default_tools="ICSim, OTA client, /opt/ota-lab/"),
-        models.VMTemplate(name="riskroom1wazuh",    zone="SOC_Net",    proxmox_template_id=121,
-                          description="Wazuh VM — dashboard at https://192.168.37.49",
-                          default_tools="Wazuh dashboard, alert rules"),
-        models.VMTemplate(name="accriskroom1",      zone="OT_Net",     proxmox_template_id=122,
+        models.VMTemplate(name="accriskroom1",      zone="OT_Net",     proxmox_template_id=121,
                           description="OTA Server VM (192.168.37.48)",
                           default_tools="OTA server, systemd journal"),
+        models.VMTemplate(name="riskroom1wazuh",    zone="SOC_Net",    proxmox_template_id=122,
+                          description="Wazuh VM — dashboard at https://192.168.37.49",
+                          default_tools="Wazuh dashboard, alert rules"),
     ]
     db.add_all(vms); db.commit()
     print(f"✓ {len(vms)} VM templates seeded.")
