@@ -227,25 +227,51 @@ function TaskModal({ initial, onSave, onClose }) {
 /* ── Question modal ───────────────────────────────────────────── */
 function QuestionModal({ initial, onSave, onClose }) {
   const blank = { question_type: 'mcq_single', text: '', explanation: '', points: 20, is_mandatory: true, sort_order: 0, validation_data: '', options: [], hints: [] }
-  const [form, setForm] = useState(initial ?? blank)
+
+  // When editing, compute is_correct for each option from validation_data
+  const initForm = () => {
+    if (!initial) return blank
+    const vd = initial.validation_data ?? {}
+    const correctId  = vd.correct_option_id
+    const correctIds = vd.correct_option_ids ?? []
+    const opts = (initial.options ?? []).map(o => ({
+      ...o,
+      is_correct: o.id === correctId || correctIds.includes(o.id),
+    }))
+    // For non-MCQ, extract the plain answer string from validation_data
+    const plainAnswer = typeof initial.validation_data === 'object' && initial.validation_data
+      ? (initial.validation_data.answer ?? initial.validation_data.flag_hash ?? '')
+      : (initial.validation_data ?? '')
+    return {
+      ...initial,
+      options: opts,
+      validation_data: initial.question_type?.startsWith('mcq') ? '' : plainAnswer,
+    }
+  }
+
+  const [form, setForm] = useState(initForm)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
-  // Options management (for MCQ types)
-  const addOption = () => set('options', [...(form.options ?? []), { text: '', is_correct: false, sort_order: (form.options ?? []).length }])
+  const addOption    = () => set('options', [...(form.options ?? []), { text: '', is_correct: false, sort_order: (form.options ?? []).length }])
   const updateOption = (i, key, val) => set('options', form.options.map((o, idx) => idx === i ? { ...o, [key]: val } : o))
   const removeOption = (i) => set('options', form.options.filter((_, idx) => idx !== i))
 
-  const isMcq = form.question_type.startsWith('mcq')
+  const isMcq = form.question_type?.startsWith('mcq')
 
   const save = async () => {
     if (!form.text.trim()) { setErr('Question text is required'); return }
     if (isMcq && (!form.options || form.options.length < 2)) { setErr('MCQ questions need at least 2 options'); return }
     setSaving(true); setErr('')
     const payload = {
-      ...form,
-      validation_data: form.validation_data ? { answer: form.validation_data } : null,
+      question_type:  form.question_type,
+      text:           form.text,
+      explanation:    form.explanation,
+      points:         form.points,
+      is_mandatory:   form.is_mandatory,
+      sort_order:     form.sort_order,
+      validation_data: isMcq ? null : (form.validation_data ? { answer: form.validation_data } : null),
       options: isMcq ? form.options.map((o, i) => ({ text: o.text, is_correct: !!o.is_correct, sort_order: i })) : [],
     }
     try { await onSave(payload); onClose() }
@@ -573,6 +599,7 @@ function TasksPanel({ room }) {
   const saveQ = async (form) => {
     if (qModal.item) await api.adminUpdateQuestion(qModal.item.id, form)
     else await api.adminCreateQuestion(qModal.taskId, form)
+    setRoomData(null)  // force panel to show spinner while reloading
     load()
   }
 
