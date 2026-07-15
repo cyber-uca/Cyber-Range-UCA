@@ -150,6 +150,21 @@ server {
         proxy_pass http://127.0.0.1:8000/openapi.json;
     }
 
+    # Proxmox reverse proxy — same-origin noVNC console access
+    # Proxies both the Proxmox UI requests AND the VNC WebSocket upgrade
+    location /proxmox/ {
+        proxy_pass https://192.168.37.20:8006/;
+        proxy_http_version 1.1;
+        proxy_set_header Host 192.168.37.20:8006;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_ssl_verify off;
+        proxy_read_timeout 3600;
+        proxy_send_timeout 3600;
+        proxy_buffering off;
+    }
+
     client_max_body_size 20M;
 }
 NGXEOF
