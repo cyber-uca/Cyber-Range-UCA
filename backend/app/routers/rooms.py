@@ -296,8 +296,28 @@ def create_question(
     data = payload.model_dump(exclude={"options", "hints"})
     question = models.Question(task_id=task.id, **data)
     db.add(question); db.flush()
-    for o in opts:
-        db.add(models.QuestionOption(question_id=question.id, **o.model_dump()))
+
+    correct_indices = []
+    new_opts = []
+    for i, o in enumerate(opts):
+        opt = models.QuestionOption(
+            question_id=question.id,
+            text=o.text,
+            sort_order=o.sort_order,
+        )
+        db.add(opt); db.flush()
+        new_opts.append(opt)
+        if o.is_correct:
+            correct_indices.append(i)
+
+    # Build validation_data from correct option IDs
+    if new_opts:
+        correct_opt_ids = [new_opts[i].id for i in correct_indices]
+        if question.question_type == models.QuestionType.MCQ_SINGLE:
+            question.validation_data = {"correct_option_id": correct_opt_ids[0] if correct_opt_ids else None}
+        elif question.question_type == models.QuestionType.MCQ_MULTI:
+            question.validation_data = {"correct_option_ids": correct_opt_ids}
+
     for h in hints:
         db.add(models.QuestionHint(question_id=question.id, **h.model_dump()))
     db.commit(); db.refresh(question)
@@ -324,23 +344,25 @@ def update_question(
         db.flush()
 
         new_opts = []
-        for o in payload.options:
+        correct_indices = []
+        for i, o in enumerate(payload.options):
             opt = models.QuestionOption(
                 question_id=question.id,
                 text=o.text,
-                is_correct=o.is_correct,
                 sort_order=o.sort_order,
             )
             db.add(opt)
             db.flush()
             new_opts.append(opt)
+            if o.is_correct:
+                correct_indices.append(i)
 
-        # Rebuild validation_data with the correct option IDs
-        correct_opts = [o for o in new_opts if o.is_correct]
-        if question.question_type == models.QuestionType.MCQ_SINGLE and correct_opts:
-            question.validation_data = {"correct_option_id": correct_opts[0].id}
-        elif question.question_type == models.QuestionType.MCQ_MULTI and correct_opts:
-            question.validation_data = {"correct_option_ids": [o.id for o in correct_opts]}
+        # Rebuild validation_data with the new correct option IDs
+        correct_opt_ids = [new_opts[i].id for i in correct_indices]
+        if question.question_type == models.QuestionType.MCQ_SINGLE:
+            question.validation_data = {"correct_option_id": correct_opt_ids[0] if correct_opt_ids else None}
+        elif question.question_type == models.QuestionType.MCQ_MULTI:
+            question.validation_data = {"correct_option_ids": correct_opt_ids}
 
     db.commit()
     db.refresh(question)
