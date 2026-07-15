@@ -385,7 +385,7 @@ function ModulesPanel({ path, selectedModule, onSelect }) {
     api.getPath(path.slug)
       .then(data => { setModules(data.modules ?? []); setLoading(false) })
       .catch(() => setLoading(false))
-  }, [path])
+  }, [path?.slug])
 
   useEffect(() => { setModules([]); load() }, [load])
 
@@ -463,10 +463,13 @@ function RoomsPanel({ module, selectedRoom, onSelect }) {
   const load = useCallback(() => {
     if (!module) return
     setLoading(true)
-    Promise.all([api.listRooms({ module_id: module.id }), api.listVmTemplates()])
+    const roomsPromise = module.rooms
+      ? Promise.resolve(module.rooms)
+      : api.listRooms({ module_id: module.id })
+    Promise.all([roomsPromise, api.listVmTemplates()])
       .then(([rs, vms]) => { setRooms(rs ?? []); setVmTemplates(vms ?? []); setLoading(false) })
       .catch(() => setLoading(false))
-  }, [module])
+  }, [module?.id])
 
   useEffect(() => { setRooms([]); load() }, [load])
 
@@ -551,7 +554,7 @@ function TasksPanel({ room }) {
     if (!room) return
     setLoading(true)
     api.getRoom(room.slug).then(d => { setRoomData(d); setLoading(false) }).catch(() => setLoading(false))
-  }, [room])
+  }, [room?.slug])
 
   useEffect(() => { setRoomData(null); load() }, [load])
 
