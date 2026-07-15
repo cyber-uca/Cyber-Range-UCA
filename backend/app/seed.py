@@ -418,21 +418,8 @@ if db.query(models.Room).count() == 0:
     add_hint(q11, "Set minimum_battery to at least 50 in ota.conf before retrying.", cost=10)
     add_hint(q11, "Both rollback_enabled and verify_before_reboot must be true.", cost=15)
 
-    q12 = models.Question(
-        task_id=t6.id,
-        question_type=models.QuestionType.FLAG,
-        text=(
-            "When the retry succeeds and the infotainment recovers, the OTA client prints "
-            "a confirmation token. Submit it here."
-        ),
-        explanation="Congratulations — you've applied a real configuration fix and validated it against live code.",
-        points=30, is_mandatory=True, sort_order=2,
-        validation_data={"flag_hash": "sha256:" + hashlib.sha256("FLAG{ota_retry_success_battery_enforced}".encode()).hexdigest()},
-    )
-    db.add(q12)
-
     db.commit()
-    print("✓ Room 1 'Interrupted OTA Update' seeded with 6 tasks and 12 questions.")
+    print("✓ Room 1 'Interrupted OTA Update' seeded with 6 tasks and 11 questions.")
 
 db.close()
 print("\n✓ Seed complete.")
