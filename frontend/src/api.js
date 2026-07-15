@@ -165,16 +165,139 @@ export const api = {
   listDifficultiesPublic: () => fetch(`${BASE}/difficulties`, { headers: authHeaders() }).then(handle),
   listChallengeTypesPublic: () => fetch(`${BASE}/challenge-types`, { headers: authHeaders() }).then(handle),
 
-  // ---------- Paths ----------
+  // ---------- Paths (learner read + admin CRUD) ----------
   listPaths: () => fetch(`${BASE}/paths`, { headers: authHeaders() }).then(handle),
   getPath: (slug) => fetch(`${BASE}/paths/${slug}`, { headers: authHeaders() }).then(handle),
 
-  // ---------- Rooms ----------
+  adminCreatePath: (data) =>
+    fetch(`${BASE}/paths`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(data),
+    }).then(handle),
+
+  adminUpdatePath: (id, data) =>
+    fetch(`${BASE}/paths/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(data),
+    }).then(handle),
+
+  adminDeletePath: (id) =>
+    fetch(`${BASE}/paths/${id}`, { method: 'DELETE', headers: authHeaders() }).then(handle),
+
+  adminPublishPath: (id) =>
+    fetch(`${BASE}/paths/${id}/publish`, { method: 'POST', headers: authHeaders() }).then(handle),
+
+  adminUnpublishPath: (id) =>
+    fetch(`${BASE}/paths/${id}/unpublish`, { method: 'POST', headers: authHeaders() }).then(handle),
+
+  // ---------- Modules ----------
+  adminCreateModule: (pathId, data) =>
+    fetch(`${BASE}/paths/${pathId}/modules`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(data),
+    }).then(handle),
+
+  adminUpdateModule: (moduleId, data) =>
+    fetch(`${BASE}/paths/modules/${moduleId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(data),
+    }).then(handle),
+
+  adminDeleteModule: (moduleId) =>
+    fetch(`${BASE}/paths/modules/${moduleId}`, { method: 'DELETE', headers: authHeaders() }).then(handle),
+
+  adminPublishModule: (moduleId) =>
+    fetch(`${BASE}/paths/modules/${moduleId}/publish`, { method: 'POST', headers: authHeaders() }).then(handle),
+
+  adminUnpublishModule: (moduleId) =>
+    fetch(`${BASE}/paths/modules/${moduleId}/unpublish`, { method: 'POST', headers: authHeaders() }).then(handle),
+
+  // ---------- Rooms (learner read + admin CRUD) ----------
   listRooms: (params = {}) => {
     const qs = new URLSearchParams(params).toString()
     return fetch(`${BASE}/rooms${qs ? `?${qs}` : ''}`, { headers: authHeaders() }).then(handle)
   },
   getRoom: (slug) => fetch(`${BASE}/rooms/${slug}`, { headers: authHeaders() }).then(handle),
+
+  adminCreateRoom: (moduleId, data) =>
+    fetch(`${BASE}/rooms/in-module/${moduleId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(data),
+    }).then(handle),
+
+  adminUpdateRoom: (roomId, data) =>
+    fetch(`${BASE}/rooms/${roomId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(data),
+    }).then(handle),
+
+  adminDeleteRoom: (roomId) =>
+    fetch(`${BASE}/rooms/${roomId}`, { method: 'DELETE', headers: authHeaders() }).then(handle),
+
+  adminPublishRoom: (roomId) =>
+    fetch(`${BASE}/rooms/${roomId}/publish`, { method: 'POST', headers: authHeaders() }).then(handle),
+
+  adminUnpublishRoom: (roomId) =>
+    fetch(`${BASE}/rooms/${roomId}/unpublish`, { method: 'POST', headers: authHeaders() }).then(handle),
+
+  // ---------- Tasks ----------
+  adminCreateTask: (roomId, data) =>
+    fetch(`${BASE}/rooms/${roomId}/tasks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(data),
+    }).then(handle),
+
+  adminUpdateTask: (taskId, data) =>
+    fetch(`${BASE}/rooms/tasks/${taskId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(data),
+    }).then(handle),
+
+  adminDeleteTask: (taskId) =>
+    fetch(`${BASE}/rooms/tasks/${taskId}`, { method: 'DELETE', headers: authHeaders() }).then(handle),
+
+  // ---------- Questions ----------
+  adminCreateQuestion: (taskId, data) =>
+    fetch(`${BASE}/rooms/tasks/${taskId}/questions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(data),
+    }).then(handle),
+
+  adminUpdateQuestion: (questionId, data) =>
+    fetch(`${BASE}/rooms/questions/${questionId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(data),
+    }).then(handle),
+
+  adminDeleteQuestion: (questionId) =>
+    fetch(`${BASE}/rooms/questions/${questionId}`, { method: 'DELETE', headers: authHeaders() }).then(handle),
+
+  adminAddOption: (questionId, data) =>
+    fetch(`${BASE}/rooms/questions/${questionId}/options`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(data),
+    }).then(handle),
+
+  adminDeleteOption: (optionId) =>
+    fetch(`${BASE}/rooms/options/${optionId}`, { method: 'DELETE', headers: authHeaders() }).then(handle),
+
+  adminAddHint: (questionId, data) =>
+    fetch(`${BASE}/rooms/questions/${questionId}/hints`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(data),
+    }).then(handle),
 
   // ---------- Progress ----------
   submitAnswer: (questionId, answer) =>

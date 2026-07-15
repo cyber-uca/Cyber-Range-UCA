@@ -116,6 +116,34 @@ def _user_unlocked_hints(user_id: str, db: Session) -> set:
 #  PUBLIC
 # ═══════════════════════════════════════════════════════════════════
 
+@router.get("")
+def list_rooms(
+    module_id: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """List rooms. Learners see only published rooms; admins/tutors see all."""
+    q = db.query(models.Room).order_by(models.Room.sort_order)
+    is_admin = current_user.role in (models.Role.ADMIN, models.Role.TUTOR)
+    if not is_admin:
+        q = q.filter(models.Room.status == models.PublicationStatus.PUBLISHED)
+    if module_id:
+        q = q.filter(models.Room.module_id == module_id)
+    rooms = q.all()
+    return [
+        {
+            "id": r.id, "slug": r.slug, "module_id": r.module_id,
+            "title": r.title, "description": r.description,
+            "difficulty": r.difficulty, "estimated_minutes": r.estimated_minutes,
+            "tags": r.tags, "xp_reward": r.xp_reward,
+            "sort_order": r.sort_order, "status": r.status,
+            "task_count": len(r.tasks),
+            "vm_count": len(r.vm_assignments),
+        }
+        for r in rooms
+    ]
+
+
 @router.get("/{slug}")
 def get_room(
     slug: str,

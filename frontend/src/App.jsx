@@ -15,6 +15,7 @@ import AdminUsers from './pages/AdminUsers.jsx'
 import AdminVmTemplates from './pages/AdminVmTemplates.jsx'
 import AdminTaxonomy from './pages/AdminTaxonomy.jsx'
 import AdminSettings from './pages/AdminSettings.jsx'
+import AdminContent from './pages/AdminContent.jsx'
 import Roadmap from './pages/Roadmap.jsx'
 import RoomDetail from './pages/RoomDetail.jsx'
 import RoomLab from './pages/RoomLab.jsx'
@@ -87,6 +88,7 @@ function AppRoutes() {
       <Route path="/admin/vm-templates" element={<RequireRole roles={['admin']}><AdminVmTemplates /></RequireRole>} />
       <Route path="/admin/taxonomy" element={<RequireRole roles={['admin']}><AdminTaxonomy /></RequireRole>} />
       <Route path="/admin/settings" element={<RequireRole roles={['admin']}><AdminSettings /></RequireRole>} />
+      <Route path="/admin/content" element={<RequireRole roles={['admin']}><AdminContent /></RequireRole>} />
     </Routes>
   )
 }

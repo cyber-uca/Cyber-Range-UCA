@@ -11,6 +11,7 @@ const NAV = [
 const TUTOR_NAV = [{ to: '/creator', label: 'Creator Studio' }]
 const ADMIN_NAV = [
   { to: '/admin',              label: 'Overview',       end: true },
+  { to: '/admin/content',      label: 'Content'                  },
   { to: '/admin/users',        label: 'Users'                    },
   { to: '/admin/vm-templates', label: 'Infrastructure'           },
   { to: '/admin/taxonomy',     label: 'Categories'               },
