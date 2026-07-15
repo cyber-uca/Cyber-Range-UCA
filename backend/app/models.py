@@ -332,6 +332,119 @@ class RoomVMTemplate(Base):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+#  CHALLENGES  (flat CTF-style challenge library, independent of the Path/Room hierarchy)
+# ═══════════════════════════════════════════════════════════════════════════
+
+class Category(Base):
+    __tablename__ = "categories"
+
+    id          = Column(String(36), primary_key=True, default=gen_uuid)
+    slug        = Column(String(128), unique=True, nullable=False)
+    name        = Column(String(256), nullable=False)
+    color       = Column(String(32), default="coral")
+    description = Column(Text, nullable=True)
+    sort_order  = Column(Integer, default=0)
+
+    challenges = relationship("Challenge", back_populates="category")
+
+
+class Difficulty(Base):
+    __tablename__ = "difficulties"
+
+    id         = Column(String(36), primary_key=True, default=gen_uuid)
+    slug       = Column(String(128), unique=True, nullable=False)
+    name       = Column(String(256), nullable=False)
+    sort_order = Column(Integer, default=0)
+
+    challenges = relationship("Challenge", back_populates="difficulty")
+
+
+class Challenge(Base):
+    __tablename__ = "challenges"
+
+    id                 = Column(String(36), primary_key=True, default=gen_uuid)
+    title              = Column(String(256), nullable=False)
+    description        = Column(Text, nullable=True)
+    objectives         = Column(Text, nullable=True)
+    category_id        = Column(String(36), ForeignKey("categories.id"), nullable=False)
+    difficulty_id      = Column(String(36), ForeignKey("difficulties.id"), nullable=False)
+    challenge_type     = Column(String(64), default="standard_flag")
+    points             = Column(Integer, default=100)
+    time_limit_minutes = Column(Integer, default=90)
+    tags               = Column(String(512), nullable=True)
+    flag_hash          = Column(String(128), nullable=False)
+    is_published       = Column(Boolean, default=False)
+    created_by         = Column(String(36), ForeignKey("users.id"), nullable=True)
+    created_at         = Column(DateTime, default=datetime.utcnow)
+    updated_at         = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    category   = relationship("Category", back_populates="challenges")
+    difficulty = relationship("Difficulty", back_populates="challenges")
+    creator    = relationship("User", foreign_keys=[created_by])
+    vms        = relationship("ChallengeVM", back_populates="challenge", cascade="all, delete-orphan")
+    hints      = relationship("Hint", back_populates="challenge",
+                              order_by="Hint.order", cascade="all, delete-orphan")
+
+
+class ChallengeVM(Base):
+    """Many-to-many: a Challenge uses one or more VM Templates, positioned on a topology canvas."""
+    __tablename__ = "challenge_vms"
+
+    id             = Column(String(36), primary_key=True, default=gen_uuid)
+    challenge_id   = Column(String(36), ForeignKey("challenges.id"), nullable=False)
+    vm_template_id = Column(String(36), ForeignKey("vm_templates.id"), nullable=False)
+    canvas_x       = Column(Integer, default=100)
+    canvas_y       = Column(Integer, default=150)
+
+    challenge   = relationship("Challenge", back_populates="vms")
+    vm_template = relationship("VMTemplate")
+
+
+class Hint(Base):
+    """A hint that can be unlocked for a Challenge, optionally with a point cost."""
+    __tablename__ = "hints"
+
+    id           = Column(String(36), primary_key=True, default=gen_uuid)
+    challenge_id = Column(String(36), ForeignKey("challenges.id"), nullable=False)
+    content      = Column(Text, nullable=False)
+    cost         = Column(Integer, default=10)
+    order        = Column(Integer, default=0)
+
+    challenge = relationship("Challenge", back_populates="hints")
+    unlocks   = relationship("HintUnlock", back_populates="hint")
+
+
+class HintUnlock(Base):
+    """Records when a learner unlocks a hint for a Challenge."""
+    __tablename__ = "hint_unlocks"
+
+    id           = Column(String(36), primary_key=True, default=gen_uuid)
+    user_id      = Column(String(36), ForeignKey("users.id"), nullable=False)
+    challenge_id = Column(String(36), ForeignKey("challenges.id"), nullable=False)
+    hint_id      = Column(String(36), ForeignKey("hints.id"), nullable=False)
+    unlocked_at  = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")
+    hint = relationship("Hint", back_populates="unlocks")
+
+
+class FlagSubmission(Base):
+    """Every flag submission attempt by a learner for a Challenge."""
+    __tablename__ = "flag_submissions"
+
+    id              = Column(String(36), primary_key=True, default=gen_uuid)
+    user_id         = Column(String(36), ForeignKey("users.id"), nullable=False)
+    challenge_id    = Column(String(36), ForeignKey("challenges.id"), nullable=False)
+    submitted_value = Column(Text, nullable=True)
+    is_correct      = Column(Boolean, default=False)
+    points_awarded  = Column(Integer, default=0)
+    submitted_at    = Column(DateTime, default=datetime.utcnow)
+
+    user      = relationship("User")
+    challenge = relationship("Challenge")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 #  ENVIRONMENTS  (VM sessions — linked to Room, not individual Task)
 # ═══════════════════════════════════════════════════════════════════════════
 

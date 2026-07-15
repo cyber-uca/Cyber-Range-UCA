@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .database import Base, engine, test_connection
-from .routers import auth, paths, rooms, environments, progress, admin
+from .routers import auth, paths, rooms, environments, progress, admin, vm_templates, taxonomy, challenges
 
 # Create all tables
 Base.metadata.create_all(bind=engine)
@@ -33,6 +33,9 @@ app.include_router(rooms.router)         # /rooms/... + /rooms/tasks/... + /room
 app.include_router(environments.router)  # /environments/...
 app.include_router(progress.router)      # /progress/...
 app.include_router(admin.router)         # /admin/...
+app.include_router(vm_templates.router)  # /vm-templates/...
+app.include_router(taxonomy.router)      # /categories + /difficulties + /challenge-types
+app.include_router(challenges.router)    # /challenges/...
 
 
 @app.get("/")

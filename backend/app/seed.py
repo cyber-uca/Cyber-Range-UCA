@@ -38,6 +38,30 @@ if db.query(models.PlatformSettings).count() == 0:
     db.commit()
     print("✓ Platform settings seeded.")
 
+# ── Challenge Categories & Difficulties ─────────────────────────────────────
+if db.query(models.Category).count() == 0:
+    db.add_all([
+        models.Category(slug="offensive",  name="Offensive",  color="coral",  sort_order=1,
+                        description="Attack ICS/OT systems — PLC, SCADA, CAN bus exploitation."),
+        models.Category(slug="defensive",  name="Defensive",  color="blue",   sort_order=2,
+                        description="Detect threats and protect industrial assets."),
+        models.Category(slug="mitigation", name="Mitigation", color="teal",   sort_order=3,
+                        description="Harden systems and respond to incidents."),
+        models.Category(slug="risk",       name="Risk",       color="purple", sort_order=4,
+                        description="Assess and manage cybersecurity risks."),
+    ])
+    db.commit()
+    print("✓ Categories seeded.")
+
+if db.query(models.Difficulty).count() == 0:
+    db.add_all([
+        models.Difficulty(slug="easy",   name="Easy",   sort_order=1),
+        models.Difficulty(slug="medium", name="Medium", sort_order=2),
+        models.Difficulty(slug="hard",   name="Hard",   sort_order=3),
+    ])
+    db.commit()
+    print("✓ Difficulties seeded.")
+
 # ── VM Templates ───────────────────────────────────────────────────────────
 if db.query(models.VMTemplate).count() == 0:
     vms = [
