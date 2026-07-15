@@ -311,10 +311,16 @@ def get_console_url(
             f"api2/json/nodes/{vm.proxmox_node}/qemu/{vm.proxmox_vmid}"
             f"/vncwebsocket/port/{vnc_port}/vncticket/{enc_vnc}"
         )
+        # Direct Proxmox URL — most reliable, no proxy issues
+        # The PVEAuthCookie is passed as a query param for the initial page load
+        enc_cookie = urllib.parse.quote(ticket, safe='')
         console_url = (
-            f"/proxmox/?console=kvm&novnc=1"
+            f"https://{proxmox_host}:8006/"
+            f"?console=kvm&novnc=1"
             f"&vmid={vm.proxmox_vmid}&node={vm.proxmox_node}"
-            f"&resize=off&lang=en&path={vnc_path}"
+            f"&resize=off&lang=en"
+            f"&path={vnc_path}"
+            f"&PVEAuthCookie={enc_cookie}"
         )
         authenticated = True
     else:
