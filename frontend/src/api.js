@@ -55,7 +55,7 @@ export const api = {
 
   leaderboard: () => fetch(`${BASE}/challenges/meta/leaderboard`, { headers: authHeaders() }).then(handle),
 
-  listVmTemplates: () => fetch(`${BASE}/vm-templates`, { headers: authHeaders() }).then(handle),
+  listVmTemplates: () => fetch(`${BASE}/admin/vm-templates`, { headers: authHeaders() }).then(handle),
 
   startEnvironment: (challengeId, topology) =>
     fetch(`${BASE}/environments/${challengeId}/start`, {

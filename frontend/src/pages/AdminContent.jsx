@@ -466,7 +466,7 @@ function RoomsPanel({ module, selectedRoom, onSelect }) {
     const roomsPromise = module.rooms
       ? Promise.resolve(module.rooms)
       : api.listRooms({ module_id: module.id })
-    Promise.all([roomsPromise, api.listVmTemplates()])
+    Promise.all([roomsPromise, api.listVmTemplates().catch(() => [])])
       .then(([rs, vms]) => { setRooms(rs ?? []); setVmTemplates(vms ?? []); setLoading(false) })
       .catch(() => setLoading(false))
   }, [module?.id])
