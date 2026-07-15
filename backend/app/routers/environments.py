@@ -237,6 +237,7 @@ def get_console_url(
     verify_ssl       = os.getenv("PROXMOX_VERIFY_SSL", "false").lower() == "true"
 
     ticket = csrf = vnc_ticket = None
+    vnc_port = 5900
     try:
         import urllib.request, urllib.parse, ssl, json as _json
         ctx = ssl.create_default_context()
@@ -276,16 +277,18 @@ def get_console_url(
     except Exception as e:
         logger.warning(f"Could not obtain Proxmox VNC ticket: {e}")
 
-    # Build noVNC URL
+    # Build noVNC URL using vncwebsocket path format (correct Proxmox noVNC auth)
     base = f"https://{proxmox_host}:8006/?console=kvm&novnc=1&vmid={vm.proxmox_vmid}&node={vm.proxmox_node}&resize=off&lang=en"
-    if vnc_ticket:
-        encoded = urllib.parse.quote(vnc_ticket, safe='')
-        console_url = base + f"&ticket={encoded}"
+    if vnc_ticket and ticket:
+        encoded_vnc    = urllib.parse.quote(vnc_ticket, safe='')
+        encoded_cookie = urllib.parse.quote(ticket, safe='')
+        path = f"api2/json/nodes/{vm.proxmox_node}/qemu/{vm.proxmox_vmid}/vncwebsocket/port/{vnc_port}/vncticket/{encoded_vnc}"
+        console_url = base + f"&path={path}&PVEAuthCookie={encoded_cookie}"
         authenticated = True
     elif ticket:
-        # Fallback: send PVE auth ticket — works on older PVE versions
-        encoded = urllib.parse.quote(ticket, safe='')
-        console_url = base + f"&ticket={encoded}"
+        # Fallback: PVEAuthCookie in URL param (older PVE versions)
+        encoded_cookie = urllib.parse.quote(ticket, safe='')
+        console_url = base + f"&PVEAuthCookie={encoded_cookie}"
         authenticated = True
     else:
         console_url = base
