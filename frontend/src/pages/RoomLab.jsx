@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { api } from '../api.js'
+import { useAuth } from '../App.jsx'
 
 const ANIM = `
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -214,47 +215,54 @@ function QuestionBlock({ q, idx, answer, onAnswer, submitted, result }) {
 /* ─── Main Lab ────────────────────────────────────────────────────────── */
 export default function RoomLab() {
   const { slug } = useParams()
+  const { user } = useAuth()
   const [room, setRoom] = useState(null)
   const [activeTaskIdx, setActiveTaskIdx] = useState(0)
-  const [answers, setAnswers] = useState({})       // questionId → answer value
-  const [results, setResults] = useState({})       // questionId → result
-  const [vmState, setVmState] = useState({})       // vmTemplateId → { env, envVm, starting, stopping }
+  const [answers, setAnswers] = useState({})
+  const [results, setResults] = useState({})
+  const [vmState, setVmState] = useState({})
   const [logs, setLogs] = useState(['$ ready — start VMs when needed'])
   const logRef = useRef(null)
 
-  // Load room then restore previous progress
+  // Reset all state and reload progress when user or room changes
   useEffect(() => {
+    // Clear previous user's state immediately
+    setRoom(null)
+    setActiveTaskIdx(0)
+    setAnswers({})
+    setResults({})
+    setVmState({})
+    setLogs(['$ ready — start VMs when needed'])
+
     api.getRoom(slug).then(r => {
       setRoom(r)
-      // Load saved answers from backend
+      // Load saved answers for THIS user from backend
       api.getRoomAnswers(r.id).then(savedAnswers => {
         if (!savedAnswers?.length) return
         const restoredResults = {}
         const restoredAnswers = {}
         savedAnswers.forEach(a => {
-          // Restore the result (so question shows as submitted)
           restoredResults[a.question_id] = {
             is_correct:     a.is_correct,
             points_awarded: a.points_awarded,
             message:        a.is_correct ? 'Correct!' : 'Incorrect',
           }
-          // Restore the answer value so it shows in the input
           if (a.submitted_value != null) {
             restoredAnswers[a.question_id] = a.submitted_value
           }
         })
         setResults(restoredResults)
-        setAnswers(prev => ({ ...prev, ...restoredAnswers }))
+        setAnswers(restoredAnswers)
 
-        // Restore active task — jump to first incomplete task
+        // Jump to first incomplete task
         const tasks = r.tasks ?? []
         const firstIncomplete = tasks.findIndex(t =>
           (t.questions ?? []).some(q => !restoredResults[q.id]?.is_correct)
         )
         if (firstIncomplete !== -1) setActiveTaskIdx(firstIncomplete)
-      }).catch(() => {}) // silently ignore if no progress yet
+      }).catch(() => {})
     }).catch(() => {})
-  }, [slug])
+  }, [slug, user?.id])
   useEffect(() => { if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight }, [logs])
 
   const [resetting, setResetting] = useState(false)
