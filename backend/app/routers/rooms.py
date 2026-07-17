@@ -314,9 +314,15 @@ def create_question(
     if new_opts:
         correct_opt_ids = [new_opts[i].id for i in correct_indices]
         if question.question_type == models.QuestionType.MCQ_SINGLE:
-            question.validation_data = {"correct_option_id": correct_opt_ids[0] if correct_opt_ids else None}
+            question.validation_data = {
+                "correct_option_id":    correct_opt_ids[0] if correct_opt_ids else None,
+                "correct_option_index": correct_indices[0] if correct_indices else None,
+            }
         elif question.question_type == models.QuestionType.MCQ_MULTI:
-            question.validation_data = {"correct_option_ids": correct_opt_ids}
+            question.validation_data = {
+                "correct_option_ids":     correct_opt_ids,
+                "correct_option_indices": correct_indices,
+            }
 
     for h in hints:
         db.add(models.QuestionHint(question_id=question.id, **h.model_dump()))
@@ -359,10 +365,17 @@ def update_question(
 
         # Rebuild validation_data with the new correct option IDs
         correct_opt_ids = [new_opts[i].id for i in correct_indices]
+        correct_opt_indices = correct_indices  # stable across edits
         if question.question_type == models.QuestionType.MCQ_SINGLE:
-            question.validation_data = {"correct_option_id": correct_opt_ids[0] if correct_opt_ids else None}
+            question.validation_data = {
+                "correct_option_id":    correct_opt_ids[0] if correct_opt_ids else None,
+                "correct_option_index": correct_indices[0] if correct_indices else None,
+            }
         elif question.question_type == models.QuestionType.MCQ_MULTI:
-            question.validation_data = {"correct_option_ids": correct_opt_ids}
+            question.validation_data = {
+                "correct_option_ids":     correct_opt_ids,
+                "correct_option_indices": correct_indices,
+            }
 
     db.commit()
     db.refresh(question)

@@ -44,15 +44,44 @@ def _validate_answer(question: models.Question, value: Optional[str], data: Opti
         return is_ok, ("Correct!" if is_ok else "Incorrect answer — try again.")
 
     if qtype == models.QuestionType.MCQ_SINGLE:
-        correct = vd.get("correct_option_id", "")
-        is_ok = value == correct
-        return is_ok, ("Correct!" if is_ok else "That's not the right option.")
+        correct_id    = vd.get("correct_option_id", "")
+        correct_index = vd.get("correct_option_index")
+
+        # Primary: compare by option UUID (fast, exact)
+        if value == correct_id:
+            return True, "Correct!"
+
+        # Fallback: compare by sort_order index (stable across admin edits)
+        # value is an option UUID — find its position among the question's options
+        if correct_index is not None:
+            opts_sorted = sorted(question.options, key=lambda o: o.sort_order)
+            submitted_index = next(
+                (i for i, o in enumerate(opts_sorted) if o.id == value), None
+            )
+            if submitted_index is not None and submitted_index == correct_index:
+                return True, "Correct!"
+
+        return False, "That's not the right option."
 
     if qtype == models.QuestionType.MCQ_MULTI:
-        correct = set(vd.get("correct_option_ids", []))
-        submitted_set = set((data or {}).get("option_ids", []))
-        is_ok = submitted_set == correct
-        return is_ok, ("Correct!" if is_ok else "Not all selections are correct.")
+        correct_ids     = set(vd.get("correct_option_ids", []))
+        correct_indices = set(vd.get("correct_option_indices", []))
+        submitted_ids   = set((data or {}).get("option_ids", []))
+
+        # Primary: compare by UUIDs
+        if submitted_ids == correct_ids:
+            return True, "Correct!"
+
+        # Fallback: compare by indices
+        if correct_indices:
+            opts_sorted = sorted(question.options, key=lambda o: o.sort_order)
+            submitted_indices = {
+                i for i, o in enumerate(opts_sorted) if o.id in submitted_ids
+            }
+            if submitted_indices == correct_indices:
+                return True, "Correct!"
+
+        return False, "Not all selections are correct."
 
     if qtype == models.QuestionType.TRUE_FALSE:
         correct = str(vd.get("correct", "true")).lower()
