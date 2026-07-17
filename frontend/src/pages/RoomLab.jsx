@@ -222,7 +222,39 @@ export default function RoomLab() {
   const [logs, setLogs] = useState(['$ ready — start VMs when needed'])
   const logRef = useRef(null)
 
-  useEffect(() => { api.getRoom(slug).then(setRoom).catch(() => {}) }, [slug])
+  // Load room then restore previous progress
+  useEffect(() => {
+    api.getRoom(slug).then(r => {
+      setRoom(r)
+      // Load saved answers from backend
+      api.getRoomAnswers(r.id).then(savedAnswers => {
+        if (!savedAnswers?.length) return
+        const restoredResults = {}
+        const restoredAnswers = {}
+        savedAnswers.forEach(a => {
+          // Restore the result (so question shows as submitted)
+          restoredResults[a.question_id] = {
+            is_correct:     a.is_correct,
+            points_awarded: a.points_awarded,
+            message:        a.is_correct ? 'Correct!' : 'Incorrect',
+          }
+          // Restore the answer value so it shows in the input
+          if (a.submitted_value != null) {
+            restoredAnswers[a.question_id] = a.submitted_value
+          }
+        })
+        setResults(restoredResults)
+        setAnswers(prev => ({ ...prev, ...restoredAnswers }))
+
+        // Restore active task — jump to first incomplete task
+        const tasks = r.tasks ?? []
+        const firstIncomplete = tasks.findIndex(t =>
+          (t.questions ?? []).some(q => !restoredResults[q.id]?.is_correct)
+        )
+        if (firstIncomplete !== -1) setActiveTaskIdx(firstIncomplete)
+      }).catch(() => {}) // silently ignore if no progress yet
+    }).catch(() => {})
+  }, [slug])
   useEffect(() => { if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight }, [logs])
 
   const addLog = useCallback((line) => setLogs(p => [...p, line]), [])

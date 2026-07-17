@@ -308,7 +308,10 @@ export const api = {
     }).then(handle),
 
   getRoomProgress: (roomId) =>
-    fetch(`${BASE}/progress/rooms/${roomId}`, { headers: authHeaders() }).then(handle),
+    fetch(`${BASE}/progress/room/${roomId}`, { headers: authHeaders() }).then(handle),
+
+  getRoomAnswers: (roomId) =>
+    fetch(`${BASE}/progress/room-answers/${roomId}`, { headers: authHeaders() }).then(handle),
 
   // Lab layers are static on the frontend — no separate endpoint needed
   LAB_LAYERS: [

@@ -356,6 +356,50 @@ def get_room_progress(
     return schemas.UserRoomProgressOut.model_validate(prog)
 
 
+@router.get("/room-answers/{room_id}")
+def get_room_answers(
+    room_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Returns all previously submitted correct answers for a learner in a room.
+    Used by RoomLab to restore progress on page load / refresh / re-login.
+    """
+    room = db.query(models.Room).filter(models.Room.id == room_id).first()
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
+
+    # Collect all question IDs in this room
+    question_ids = [
+        q.id
+        for task in room.tasks
+        for q in task.questions
+    ]
+
+    # Fetch all answers for this user in this room
+    answers = db.query(models.UserQuestionAnswer).filter(
+        models.UserQuestionAnswer.user_id == current_user.id,
+        models.UserQuestionAnswer.question_id.in_(question_ids),
+    ).all()
+
+    result = {}
+    for a in answers:
+        # Only store the most recent answer per question
+        existing = result.get(a.question_id)
+        if existing is None or a.attempt_number > existing["attempt_number"]:
+            result[a.question_id] = {
+                "question_id":    a.question_id,
+                "submitted_value": a.submitted_value,
+                "submitted_data":  a.submitted_data,
+                "is_correct":      a.is_correct,
+                "points_awarded":  a.points_awarded,
+                "attempt_number":  a.attempt_number,
+            }
+
+    return list(result.values())
+
+
 @router.get("/leaderboard")
 def leaderboard(db: Session = Depends(get_db),
                 current_user: models.User = Depends(get_current_user)):
