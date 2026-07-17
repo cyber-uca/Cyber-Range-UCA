@@ -257,6 +257,25 @@ export default function RoomLab() {
   }, [slug])
   useEffect(() => { if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight }, [logs])
 
+  const [resetting, setResetting] = useState(false)
+
+  const resetLab = async () => {
+    if (!room) return
+    if (!confirm('Reset all progress for this lab? All your answers will be deleted and you can start again.')) return
+    setResetting(true)
+    try {
+      await api.resetRoomProgress(room.id)
+      setAnswers({})
+      setResults({})
+      setActiveTaskIdx(0)
+      setLogs(['$ lab reset — start fresh'])
+    } catch (err) {
+      alert('Reset failed: ' + err.message)
+    } finally {
+      setResetting(false)
+    }
+  }
+
   const addLog = useCallback((line) => setLogs(p => [...p, line]), [])
 
   const startVM = async (vmTpl) => {
@@ -337,6 +356,19 @@ export default function RoomLab() {
             <div style={{ height:'100%', borderRadius:999, background:'var(--cyan)',
               width:`${totalPts>0?(earnedPts/totalPts)*100:0}%`, transition:'width .4s' }}/>
           </div>
+          <button onClick={resetLab} disabled={resetting}
+            title="Reset all progress and start the lab again"
+            style={{
+              padding:'5px 12px', borderRadius:7, fontSize:11, fontWeight:700,
+              cursor: resetting ? 'wait' : 'pointer',
+              background:'rgba(240,82,74,0.08)',
+              color:'var(--red)',
+              border:'1px solid rgba(240,82,74,0.3)',
+              display:'flex', alignItems:'center', gap:5,
+              opacity: resetting ? 0.6 : 1,
+            }}>
+            {resetting ? <><Spin size={10}/> Resetting…</> : <>↺ Reset Lab</>}
+          </button>
         </div>
       </div>
 

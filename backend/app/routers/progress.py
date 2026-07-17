@@ -341,6 +341,55 @@ def unlock_hint(
 #  PROGRESS RETRIEVAL
 # ═══════════════════════════════════════════════════════════════════
 
+@router.delete("/room-answers/{room_id}")
+def reset_room_progress(
+    room_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Delete all of the current user's answers and progress for a room.
+    Allows a learner to restart a lab from scratch.
+    """
+    room = db.query(models.Room).filter(models.Room.id == room_id).first()
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
+
+    question_ids = [q.id for task in room.tasks for q in task.questions]
+    task_ids     = [task.id for task in room.tasks]
+
+    # Delete all question answers
+    deleted = db.query(models.UserQuestionAnswer).filter(
+        models.UserQuestionAnswer.user_id == current_user.id,
+        models.UserQuestionAnswer.question_id.in_(question_ids),
+    ).delete(synchronize_session=False)
+
+    # Delete task progress
+    db.query(models.UserTaskProgress).filter(
+        models.UserTaskProgress.user_id == current_user.id,
+        models.UserTaskProgress.task_id.in_(task_ids),
+    ).delete(synchronize_session=False)
+
+    # Delete room progress
+    db.query(models.UserRoomProgress).filter(
+        models.UserRoomProgress.user_id == current_user.id,
+        models.UserRoomProgress.room_id == room_id,
+    ).delete(synchronize_session=False)
+
+    # Deduct XP that was awarded for this room completion
+    room_prog = db.query(models.UserRoomProgress).filter(
+        models.UserRoomProgress.user_id == current_user.id,
+        models.UserRoomProgress.room_id == room_id,
+    ).first()
+    if room_prog and room_prog.is_completed:
+        user = db.query(models.User).filter(models.User.id == current_user.id).first()
+        if user:
+            user.points = max(0, user.points - (room.xp_reward or 0))
+
+    db.commit()
+    return {"reset": True, "answers_deleted": deleted}
+
+
 @router.get("/room/{room_id}")
 def get_room_progress(
     room_id: str,

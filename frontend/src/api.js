@@ -313,6 +313,12 @@ export const api = {
   getRoomAnswers: (roomId) =>
     fetch(`${BASE}/progress/room-answers/${roomId}`, { headers: authHeaders() }).then(handle),
 
+  resetRoomProgress: (roomId) =>
+    fetch(`${BASE}/progress/room-answers/${roomId}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    }).then(handle),
+
   // Lab layers are static on the frontend — no separate endpoint needed
   LAB_LAYERS: [
     { slug: 'plc',   label: 'PLC',   color: 'var(--warning)',   icon: '⚙️' },
