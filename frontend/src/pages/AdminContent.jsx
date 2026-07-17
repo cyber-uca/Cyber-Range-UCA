@@ -305,16 +305,95 @@ function QuestionModal({ initial, onSave, onClose }) {
       {!isMcq && <Field label="Expected Answer / Flag"><input value={form.validation_data ?? ''} onChange={e => set('validation_data', e.target.value)} placeholder="e.g. FLAG{...} or exact answer" /></Field>}
       {isMcq && (
         <Field label="Options">
-          {(form.options ?? []).map((o, i) => (
-            <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6 }}>
-              <input value={o.text} onChange={e => updateOption(i, 'text', e.target.value)} placeholder={`Option ${i + 1}`} style={{ flex: 1 }} />
-              <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
-                <input type="checkbox" checked={!!o.is_correct} onChange={e => updateOption(i, 'is_correct', e.target.checked)} /> Correct
-              </label>
-              <button onClick={() => removeOption(i)} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 14, padding: '0 4px' }}>✕</button>
-            </div>
-          ))}
-          <button className="btn-ghost btn-sm" onClick={addOption} style={{ marginTop: 4 }}>+ Add option</button>
+          {form.question_type === 'mcq_single' && (
+            <p style={{ fontSize:11, color:'var(--text-4)', margin:'0 0 8px' }}>
+              Select the radio button next to the correct answer.
+            </p>
+          )}
+          {form.question_type === 'mcq_multi' && (
+            <p style={{ fontSize:11, color:'var(--text-4)', margin:'0 0 8px' }}>
+              Click the ✓ / ✗ button to mark one or more options as correct.
+            </p>
+          )}
+          {(form.options ?? []).map((o, i) => {
+            const isCorrect = !!o.is_correct
+            return (
+              <div key={i} style={{
+                display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8,
+                padding: '8px 10px', borderRadius: 8,
+                background: isCorrect ? 'rgba(20,201,168,0.08)' : 'rgba(13,24,38,0.4)',
+                border: `1px solid ${isCorrect ? 'rgba(20,201,168,0.4)' : 'var(--border)'}`,
+                transition: 'all .15s',
+              }}>
+                {/* Correct indicator — radio for single, toggle button for multi */}
+                {form.question_type === 'mcq_single' ? (
+                  <input
+                    type="radio"
+                    name="correct_option"
+                    checked={isCorrect}
+                    onChange={() => {
+                      // For single: uncheck all, check only this one
+                      set('options', form.options.map((opt, idx) => ({
+                        ...opt, is_correct: idx === i
+                      })))
+                    }}
+                    style={{ width: 16, height: 16, cursor: 'pointer', flexShrink: 0, accentColor: '#14C9A8' }}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => updateOption(i, 'is_correct', !isCorrect)}
+                    style={{
+                      width: 28, height: 28, borderRadius: 6, flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 14, fontWeight: 800, cursor: 'pointer', border: 'none',
+                      background: isCorrect ? 'rgba(20,201,168,0.2)' : 'rgba(240,82,74,0.15)',
+                      color: isCorrect ? '#14C9A8' : 'var(--red)',
+                    }}>
+                    {isCorrect ? '✓' : '✗'}
+                  </button>
+                )}
+
+                {/* Option text */}
+                <input
+                  value={o.text}
+                  onChange={e => updateOption(i, 'text', e.target.value)}
+                  placeholder={`Option ${i + 1}`}
+                  style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none',
+                    fontSize: 13, color: 'var(--text)', padding: '2px 0' }}
+                />
+
+                {/* Correct / Incorrect label */}
+                <span style={{
+                  fontSize: 10, fontWeight: 700, letterSpacing: '.06em',
+                  color: isCorrect ? '#14C9A8' : 'var(--text-4)',
+                  minWidth: 52, textAlign: 'right', flexShrink: 0,
+                }}>
+                  {isCorrect ? '✓ CORRECT' : '✗ WRONG'}
+                </span>
+
+                {/* Remove */}
+                <button
+                  type="button"
+                  onClick={() => removeOption(i)}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-4)',
+                    cursor: 'pointer', fontSize: 16, padding: '0 2px', flexShrink: 0,
+                    lineHeight: 1 }}
+                  title="Remove option">
+                  ×
+                </button>
+              </div>
+            )
+          })}
+          <button className="btn-ghost btn-sm" onClick={addOption} style={{ marginTop: 4 }}>
+            + Add option
+          </button>
+          {/* Validation hint */}
+          {isMcq && form.options?.length > 0 && !form.options.some(o => o.is_correct) && (
+            <p style={{ color: 'var(--amber)', fontSize: 11, marginTop: 6 }}>
+              ⚠ No correct option selected — please mark at least one answer as correct.
+            </p>
+          )}
         </Field>
       )}
       {err && <p style={{ color: 'var(--red)', fontSize: 12, marginBottom: 10 }}>{err}</p>}
