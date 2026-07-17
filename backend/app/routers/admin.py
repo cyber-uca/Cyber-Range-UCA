@@ -2,6 +2,7 @@
 Admin router — stats, user management, VM templates, platform settings.
 All endpoints require ADMIN role except where noted.
 """
+import logging
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -10,7 +11,9 @@ from sqlalchemy.orm import Session
 from .. import models, schemas
 from ..database import get_db
 from ..auth import require_role
+from ..security import log_audit
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
@@ -68,9 +71,18 @@ def update_user_role(
 ):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
+        log_audit("USER_ROLE_CHANGE", user_id=current_user.id, 
+                 resource=user_id, details={"reason": "user_not_found"}, status="error")
         raise HTTPException(status_code=404, detail="User not found")
+    
+    old_role = user.role
     user.role = payload.role
     db.commit(); db.refresh(user)
+    
+    log_audit("USER_ROLE_CHANGE", user_id=current_user.id, resource=user_id,
+             details={"old_role": old_role.value, "new_role": payload.role.value, "target_user": user.email},
+             status="success")
+    
     return user
 
 
@@ -83,11 +95,22 @@ def update_user_active(
 ):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
+        log_audit("USER_DEACTIVATE", user_id=current_user.id, resource=user_id,
+                 details={"reason": "user_not_found"}, status="error")
         raise HTTPException(status_code=404, detail="User not found")
+    
     if user.id == current_user.id and not payload.is_active:
+        log_audit("USER_DEACTIVATE", user_id=current_user.id, resource=user_id,
+                 details={"reason": "self_deactivation_attempt"}, status="error")
         raise HTTPException(status_code=400, detail="Cannot deactivate your own account")
+    
     user.is_active = payload.is_active
     db.commit(); db.refresh(user)
+    
+    action = "USER_DEACTIVATE" if not payload.is_active else "USER_ACTIVATE"
+    log_audit(action, user_id=current_user.id, resource=user_id,
+             details={"target_user": user.email}, status="success")
+    
     return user
 
 
