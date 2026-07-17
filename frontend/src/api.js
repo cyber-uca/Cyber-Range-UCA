@@ -304,7 +304,7 @@ export const api = {
     fetch(`${BASE}/progress/questions/${questionId}/answer`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
-      body: JSON.stringify({ answer }),
+      body: JSON.stringify({ value: answer }),
     }).then(handle),
 
   getRoomProgress: (roomId) =>
