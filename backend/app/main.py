@@ -11,6 +11,9 @@ from fastapi.responses import JSONResponse
 from fastapi.openapi.utils import get_openapi
 
 from .database import Base, engine, test_connection
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+
 from .security import (
     get_cors_config,
     SecurityHeadersMiddleware,
@@ -98,6 +101,7 @@ app.add_middleware(
 
 # Add rate limiter state to app
 app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # ── Exception Handlers ──────────────────────────────────────────────────────
 

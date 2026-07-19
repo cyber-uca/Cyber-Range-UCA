@@ -1,5 +1,5 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
@@ -14,7 +14,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", response_model=schemas.Token)
 @limiter.limit("5/minute")
-def register(request, payload: schemas.UserRegister, db: Session = Depends(get_db)):
+def register(request: Request, payload: schemas.UserRegister, db: Session = Depends(get_db)):
     """Register a new user account with rate limiting."""
     try:
         # Validate inputs
@@ -51,7 +51,7 @@ def register(request, payload: schemas.UserRegister, db: Session = Depends(get_d
 
 @router.post("/login", response_model=schemas.Token)
 @limiter.limit("10/minute")
-def login(request, payload: schemas.UserLogin, db: Session = Depends(get_db)):
+def login(request: Request, payload: schemas.UserLogin, db: Session = Depends(get_db)):
     """Login user with rate limiting and audit logging."""
     try:
         email = validate_email(payload.email)
