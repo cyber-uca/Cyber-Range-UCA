@@ -5,6 +5,7 @@ Tracks sensitive operations for security and compliance.
 import logging
 import logging.config
 import json
+import os
 from datetime import datetime
 from typing import Optional, Any, Dict
 from pythonjsonlogger import jsonlogger
@@ -12,6 +13,9 @@ from pythonjsonlogger import jsonlogger
 
 def setup_audit_logging():
     """Configure JSON-based audit logging."""
+    
+    # Create logs directory if it doesn't exist
+    os.makedirs("logs", exist_ok=True)
     
     # Create audit logger
     audit_logger = logging.getLogger("audit")
