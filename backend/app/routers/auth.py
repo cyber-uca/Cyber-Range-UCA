@@ -1,11 +1,11 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
 from ..database import get_db
 from ..auth import hash_password, verify_password, create_access_token, get_current_user
-from ..security import limiter, log_audit, validate_email, validate_password
+from ..security import log_audit, validate_email, validate_password
 from ..audit_logging import AUDIT_EVENTS
 
 logger = logging.getLogger(__name__)
@@ -13,8 +13,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/register", response_model=schemas.Token)
-@limiter.limit("5/minute")
-def register(request: Request, payload: schemas.UserRegister, db: Session = Depends(get_db)):
+def register(payload: schemas.UserRegister, db: Session = Depends(get_db)):
     """Register a new user account with rate limiting."""
     try:
         # Validate inputs
@@ -50,8 +49,7 @@ def register(request: Request, payload: schemas.UserRegister, db: Session = Depe
 
 
 @router.post("/login", response_model=schemas.Token)
-@limiter.limit("10/minute")
-def login(request: Request, payload: schemas.UserLogin, db: Session = Depends(get_db)):
+def login(payload: schemas.UserLogin, db: Session = Depends(get_db)):
     """Login user with rate limiting and audit logging."""
     try:
         email = validate_email(payload.email)

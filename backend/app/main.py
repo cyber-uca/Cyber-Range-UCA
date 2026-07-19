@@ -13,6 +13,7 @@ from fastapi.openapi.utils import get_openapi
 from .database import Base, engine, test_connection
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from .security import (
     get_cors_config,
@@ -99,8 +100,10 @@ app.add_middleware(
     max_age=cors_config["max_age"],
 )
 
-# Add rate limiter state to app
+# Add rate limiter state to app (global limits via middleware — avoid @limiter.limit on
+# auth routes; its decorator breaks FastAPI's view of the request parameter)
 app.state.limiter = limiter
+app.add_middleware(SlowAPIMiddleware)
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # ── Exception Handlers ──────────────────────────────────────────────────────
