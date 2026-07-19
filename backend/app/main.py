@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.openapi.utils import get_openapi
 
 from .database import Base, engine, test_connection
 from .security import (
@@ -31,6 +32,53 @@ app = FastAPI(
     title="AutoRange Cyber Range API",
     version="2.0.0",
     description="OT/ICS Cybersecurity Learning Management System — Path→Module→Room→Task→Question",
+    contact={
+        "name": "AutoRange Support",
+        "email": "support@autorange.local",
+        "url": "http://192.168.37.50",
+    },
+    license_info={
+        "name": "MIT License",
+        "url": "https://opensource.org/licenses/MIT",
+    },
+    openapi_tags=[
+        {
+            "name": "auth",
+            "description": "User authentication and account management",
+        },
+        {
+            "name": "paths",
+            "description": "Learning paths and modules",
+        },
+        {
+            "name": "rooms",
+            "description": "Challenge rooms and lab environments",
+        },
+        {
+            "name": "environments",
+            "description": "Virtual machine environments and provisioning",
+        },
+        {
+            "name": "progress",
+            "description": "User progress tracking and statistics",
+        },
+        {
+            "name": "challenges",
+            "description": "Challenge definitions and submission",
+        },
+        {
+            "name": "admin",
+            "description": "Administrative operations (admin only)",
+        },
+        {
+            "name": "taxonomy",
+            "description": "Challenge taxonomy (categories, difficulties, types)",
+        },
+        {
+            "name": "vm-templates",
+            "description": "Virtual machine templates (admin only)",
+        },
+    ],
 )
 
 # ── Security Middleware ────────────────────────────────────────────────────
@@ -80,6 +128,9 @@ async def general_exception_handler(request, exc):
             status_code=500,
             content={"detail": f"Internal server error: {str(exc)}"}
         )
+
+# ── Routers ─────────────────────────────────────────────────────────────────
+
 app.include_router(auth.router)          # /auth/...
 app.include_router(paths.router)         # /paths/... + /paths/modules/...
 app.include_router(rooms.router)         # /rooms/... + /rooms/tasks/... + /rooms/questions/...
@@ -91,6 +142,50 @@ app.include_router(taxonomy.router)      # /categories + /difficulties + /challe
 app.include_router(challenges.router)    # /challenges/...
 
 
-@app.get("/")
+# ── Health Check ────────────────────────────────────────────────────────────
+
+@app.get("/", tags=["health"], summary="Health Check")
 def health_check():
+    """Check if the API is running and database is accessible."""
     return {"status": "ok", "version": "2.0.0"}
+
+
+# ── Custom OpenAPI Swagger UI ──────────────────────────────────────────────
+
+def custom_openapi():
+    """Customize OpenAPI schema with enhanced documentation."""
+    if app.openapi_schema:
+        return app.openapi_schema
+    
+    openapi_schema = get_openapi(
+        title="AutoRange Cyber Range API",
+        version="2.0.0",
+        description="OT/ICS Cybersecurity Learning Management System",
+        routes=app.routes,
+    )
+    
+    # Add servers for documentation
+    openapi_schema["servers"] = [
+        {"url": "http://192.168.37.50/api", "description": "Local LAN Server"},
+        {"url": "http://localhost:8000", "description": "Local Development"},
+    ]
+    
+    # Add security schemes
+    openapi_schema["components"]["securitySchemes"] = {
+        "Bearer": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+            "description": "JWT token from /auth/login endpoint",
+        }
+    }
+    
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
+
+# Customize Swagger UI appearance
+app.swagger_ui_init_oauth = {
+    "usePkceWithAuthorizationCodeGrant": False
+}
