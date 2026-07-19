@@ -185,7 +185,10 @@ def custom_openapi():
 
 app.openapi = custom_openapi
 
-# Customize Swagger UI appearance
-app.swagger_ui_init_oauth = {
-    "usePkceWithAuthorizationCodeGrant": False
+# Configure Swagger UI parameters
+app.swagger_ui_parameters = {
+    "persistAuthorization": True,
+    "displayOperationId": False,
+    "filter": False,
+    "showExtensions": False,
 }
