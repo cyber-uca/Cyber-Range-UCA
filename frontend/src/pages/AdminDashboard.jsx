@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../api.js'
 
 const LINKS = [
+  { to:'/admin/content',       label:'Content',          desc:'Paths, modules, rooms, tasks, questions' },
   { to:'/admin/users',         label:'Users',            desc:'Manage roles and account status' },
   { to:'/admin/vm-templates',  label:'Infrastructure',   desc:'VM templates for Proxmox cloning' },
   { to:'/admin/taxonomy',      label:'Categories',       desc:'Data-driven taxonomy' },
@@ -43,14 +44,15 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:14, marginBottom:36 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:14, marginBottom:36 }}>
         {[
-          { val:stats.total_challenges,     lbl:'Total challenges', color:'var(--cyan)'  },
-          { val:stats.published_challenges, lbl:'Published',        color:'var(--green)' },
-          { val:stats.vm_templates,         lbl:'VM templates',     color:'var(--amber)' },
+          { val:stats.total_paths,     lbl:'Paths',      color:'var(--cyan)'   },
+          { val:stats.total_rooms,     lbl:'Rooms',      color:'var(--teal)'   },
+          { val:stats.total_tasks,     lbl:'Tasks',      color:'var(--blue)'   },
+          { val:stats.vm_templates,    lbl:'VM templates',color:'var(--amber)' },
         ].map(s => (
           <div key={s.lbl} className="stat-card fade-up-2">
-            <div className="val" style={{ color:s.color }}>{s.val}</div>
+            <div className="val" style={{ color:s.color }}>{s.val ?? 0}</div>
             <div className="lbl">{s.lbl}</div>
           </div>
         ))}

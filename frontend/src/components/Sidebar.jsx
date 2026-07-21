@@ -1,13 +1,17 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../App.jsx'
 
-const NAV = [
-  { to: '/',           label: 'Dashboard',  end: true },
-  { to: '/roadmap',    label: 'Roadmap'              },
-  { to: '/challenges', label: 'Challenges'            },
-  { to: '/analytics',  label: 'Analytics'             },
-  { to: '/leaderboard',label: 'Leaderboard'           },
+// Links shown to ALL authenticated users
+const NAV_ALL = [
+  { to: '/',            label: 'Dashboard',  end: true },
+  { to: '/roadmap',     label: 'Roadmap'              },
+  { to: '/leaderboard', label: 'Leaderboard'           },
+]
+// Links shown only to learners
+const NAV_LEARNER = [
+  { to: '/challenges',  label: 'Challenges'  },
+  { to: '/analytics',   label: 'Analytics'   },
 ]
 const TUTOR_NAV = [{ to: '/creator', label: 'Creator Studio' }]
 const ADMIN_NAV = [
@@ -24,6 +28,7 @@ export default function Sidebar() {
   if (!user) return null
   const cls = ({ isActive }) => 'nav-link' + (isActive ? ' active' : '')
   const initials = user.name.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase()
+  const isLearner = user.role === 'learner'
 
   return (
     <div className="sidebar">
@@ -36,10 +41,16 @@ export default function Sidebar() {
       </div>
 
       <nav className="sidebar-nav">
-        {NAV.map(n => (
+        {NAV_ALL.map(n => (
           <NavLink key={n.to} to={n.to} end={n.end} className={cls}>{n.label}</NavLink>
         ))}
 
+        {/* Learner-only links */}
+        {isLearner && NAV_LEARNER.map(n => (
+          <NavLink key={n.to} to={n.to} className={cls}>{n.label}</NavLink>
+        ))}
+
+        {/* Teaching section for tutor and admin */}
         {(user.role === 'tutor' || user.role === 'admin') && (
           <>
             <div className="sidebar-section">Teaching</div>
@@ -47,6 +58,7 @@ export default function Sidebar() {
           </>
         )}
 
+        {/* Admin section */}
         {user.role === 'admin' && (
           <>
             <div className="sidebar-section">Admin</div>
