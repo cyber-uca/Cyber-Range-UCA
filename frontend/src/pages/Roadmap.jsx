@@ -65,9 +65,21 @@ function RoomNode({ room, pathColor, isLast }) {
 function PathCol({ pathData, meta, isActive, onToggle, moduleProgress }) {
   const modules = pathData?.modules ?? []
   const allRooms = modules.flatMap(m => m.rooms ?? [])
+  // First module open by default, rest collapsed
+  const [expanded, setExpanded] = useState(() => {
+    const s = new Set()
+    if (modules.length > 0) s.add(modules[0].id)
+    return s
+  })
+  const toggle = (id) => setExpanded(prev => {
+    const s = new Set(prev)
+    s.has(id) ? s.delete(id) : s.add(id)
+    return s
+  })
 
   return (
     <div style={{ flex:1, minWidth:200, maxWidth:290, opacity:isActive?1:0.25, filter:isActive?'none':'grayscale(70%)', transition:'opacity .2s, filter .2s' }}>
+      {/* Path header */}
       <div onClick={onToggle} style={{
         background: isActive ? `linear-gradient(135deg, ${meta.color}12, var(--surface))` : 'var(--surface)',
         border:`1px solid ${isActive ? meta.color+'30' : 'var(--border)'}`,
@@ -79,7 +91,7 @@ function PathCol({ pathData, meta, isActive, onToggle, moduleProgress }) {
         </div>
         <p style={{ fontSize:11, color:'var(--text-4)', margin:'0 0 10px', lineHeight:1.6 }}>{meta.desc}</p>
         <span style={{ fontSize:10, color:'var(--text-4)', fontFamily:'var(--mono)' }}>
-          {allRooms.length} room{allRooms.length !== 1 ? 's' : ''}
+          {allRooms.length} room{allRooms.length !== 1 ? 's' : ''} · {modules.length} module{modules.length !== 1 ? 's' : ''}
         </span>
       </div>
 
@@ -87,48 +99,91 @@ function PathCol({ pathData, meta, isActive, onToggle, moduleProgress }) {
         <div style={{ width:1, height:20, background:`linear-gradient(180deg, ${meta.color}50, transparent)` }} />
       </div>
 
-      {modules.map(mod => {
+      {/* Collapsible modules */}
+      {modules.map((mod, mi) => {
         const modRooms = mod.rooms ?? []
-        const allRoomsDone = modRooms.length > 0 && modRooms.every(r => r.task_count > 0)
         const mp = moduleProgress?.[mod.id]
         const allCompleted = mp?.is_completed || false
-        const hasQuiz = mod.quiz_question_count > 0
+        const roomsDone = mp?.rooms_done ?? 0
+        const roomsTotal = modRooms.length
+        const isOpen = expanded.has(mod.id)
+        const pct = roomsTotal > 0 ? Math.round(roomsDone / roomsTotal * 100) : 0
+
         return (
-          <div key={mod.id} style={{ marginBottom:14 }}>
-            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
-              <div style={{ flex:1, height:1, background:`linear-gradient(90deg, ${meta.color}30, transparent)` }} />
-              <span style={{
-                fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'.1em',
-                color:meta.color, padding:'3px 9px', borderRadius:999,
-                background:`${meta.color}10`, border:`1px solid ${meta.color}25`, whiteSpace:'nowrap',
-              }}>{mod.title}</span>
-              <div style={{ flex:1, height:1, background:`linear-gradient(90deg, transparent, ${meta.color}30)` }} />
+          <div key={mod.id} style={{ marginBottom:8 }}>
+            {/* Module header — always visible, clickable to expand */}
+            <div onClick={() => toggle(mod.id)} style={{
+              display:'flex', alignItems:'center', gap:8, padding:'8px 10px',
+              borderRadius:'var(--r-md)', cursor:'pointer', transition:'all .15s',
+              background: isOpen ? `${meta.color}08` : 'var(--surface-2)',
+              border:`1px solid ${isOpen ? meta.color+'25' : 'var(--border)'}`,
+              marginBottom: isOpen ? 8 : 0,
+            }}>
+              {/* Expand/collapse arrow */}
+              <span style={{ fontSize:10, color:meta.color, flexShrink:0, transition:'transform .2s',
+                display:'inline-block', transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
+
+              <span style={{ fontSize:11, fontWeight:700, color:meta.color, flex:1,
+                textTransform:'uppercase', letterSpacing:'.06em', overflow:'hidden',
+                textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                {mod.title}
+              </span>
+
+              {/* Progress pill */}
+              {roomsTotal > 0 && (
+                <span style={{ fontSize:9, fontWeight:700, flexShrink:0,
+                  color: allCompleted ? '#14C9A8' : 'var(--text-4)',
+                  background: allCompleted ? 'rgba(20,201,168,0.1)' : 'var(--surface-3)',
+                  padding:'1px 7px', borderRadius:999,
+                  border:`1px solid ${allCompleted ? 'rgba(20,201,168,0.3)' : 'var(--border)'}` }}>
+                  {allCompleted ? '✓' : `${roomsDone}/${roomsTotal}`}
+                </span>
+              )}
             </div>
-            {modRooms.map((room, i) => (
-              <RoomNode key={room.id} room={room} pathColor={meta.color} isLast={i === (modRooms.length - 1) && !allCompleted} />
-            ))}
-            {modRooms.length === 0 && (
-              <div style={{ textAlign:'center', padding:'10px 0', color:'var(--text-4)', fontSize:11, opacity:.6 }}>No rooms yet</div>
+
+            {/* Progress bar under header when collapsed */}
+            {!isOpen && roomsTotal > 0 && roomsDone > 0 && (
+              <div style={{ height:2, borderRadius:999, background:'var(--border)', overflow:'hidden', marginBottom:8 }}>
+                <div style={{ height:'100%', borderRadius:999, background:meta.color,
+                  width:`${pct}%`, transition:'width .4s' }} />
+              </div>
             )}
-            {/* Quiz button — shown when all rooms are completed */}
-            {allCompleted && (
-              <Link to={`/modules/${mod.id}/quiz`} style={{ textDecoration:'none' }}>
-                <div style={{
-                  marginTop:8, padding:'10px 14px', borderRadius:'var(--r-md)',
-                  background: `linear-gradient(135deg, ${meta.color}12, transparent)`,
-                  border:`1px solid ${meta.color}40`,
-                  display:'flex', alignItems:'center', justifyContent:'space-between',
-                  cursor:'pointer', transition:'all .2s',
-                }}>
-                  <div>
-                    <div style={{ fontSize:12, fontWeight:700, color:meta.color }}>📝 Module Quiz</div>
-                    <div style={{ fontSize:10, color:'var(--text-4)', marginTop:2 }}>
-                      {mp?.quiz_passed ? '✓ Passed' : 'Test your knowledge'}
+
+            {/* Expanded content — rooms */}
+            {isOpen && (
+              <div>
+                {modRooms.map((room, i) => {
+                  const isLastRoom = i === modRooms.length - 1 && !allCompleted
+                  return <RoomNode key={room.id} room={room} pathColor={meta.color} isLast={isLastRoom} />
+                })}
+                {modRooms.length === 0 && (
+                  <div style={{ textAlign:'center', padding:'10px 0', color:'var(--text-4)', fontSize:11, opacity:.6 }}>No rooms yet</div>
+                )}
+                {/* Quiz button */}
+                {allCompleted && (
+                  <Link to={`/modules/${mod.id}/quiz`} style={{ textDecoration:'none' }}>
+                    <div style={{
+                      marginTop:8, padding:'9px 12px', borderRadius:'var(--r-md)',
+                      background:`linear-gradient(135deg, ${meta.color}12, transparent)`,
+                      border:`1px solid ${meta.color}40`,
+                      display:'flex', alignItems:'center', justifyContent:'space-between',
+                      cursor:'pointer',
+                    }}>
+                      <div>
+                        <div style={{ fontSize:11, fontWeight:700, color:meta.color }}>📝 Module Quiz</div>
+                        <div style={{ fontSize:10, color:'var(--text-4)', marginTop:1 }}>Test your knowledge</div>
+                      </div>
+                      <span style={{ color:meta.color, fontSize:13 }}>→</span>
                     </div>
+                  </Link>
+                )}
+                {/* Connector to next module */}
+                {mi < modules.length - 1 && (
+                  <div style={{ display:'flex', justifyContent:'center', margin:'8px 0' }}>
+                    <div style={{ width:1, height:16, background:`linear-gradient(180deg, ${meta.color}30, transparent)` }} />
                   </div>
-                  <span style={{ color:meta.color, fontSize:14 }}>→</span>
-                </div>
-              </Link>
+                )}
+              </div>
             )}
           </div>
         )
