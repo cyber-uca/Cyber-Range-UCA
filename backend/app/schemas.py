@@ -265,7 +265,6 @@ class QuestionCreate(BaseModel):
     sort_order: int = 0
     validation_data: Optional[Dict[str, Any]] = None
     options: List[QuestionOptionCreate] = []
-    hints: List[QuestionHintCreate] = []
 
 
 class QuestionUpdate(BaseModel):
