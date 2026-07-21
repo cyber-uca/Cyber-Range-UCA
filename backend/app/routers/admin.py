@@ -166,8 +166,14 @@ def delete_vm_template(
         models.RoomVMTemplate.vm_template_id == tpl_id
     ).first()
     if in_use:
-        raise HTTPException(status_code=400, detail="Template is assigned to a room — remove it first")
-    db.delete(tpl); db.commit()
+        raise HTTPException(status_code=400, detail="Template is assigned to a room — remove it from the room first")
+    # Delete any EnvironmentVM records referencing this template
+    # (stale records from past lab sessions that were never cleaned up)
+    db.query(models.EnvironmentVM).filter(
+        models.EnvironmentVM.vm_template_id == tpl_id
+    ).delete(synchronize_session=False)
+    db.delete(tpl)
+    db.commit()
     return {"status": "deleted"}
 
 
