@@ -136,15 +136,28 @@ function VMCard({ vmTemplate, envVm, env, onStart, onStop, starting, stopping })
 }
 
 /* ─── Question renderer ───────────────────────────────────────────────── */
-function QuestionBlock({ q, idx, answer, onAnswer, submitted, result }) {
-  const isMcq = q.question_type === 'mcq_single' || q.question_type === 'mcq_multi'
-  const correct = result?.is_correct
-  const border = !submitted ? 'var(--border)' : correct ? 'rgba(20,201,168,0.5)' : 'rgba(240,82,74,0.4)'
-  const bg     = !submitted ? 'rgba(13,24,38,0.6)' : correct ? 'rgba(20,201,168,0.06)' : 'rgba(240,82,74,0.05)'
+function QuestionBlock({ q, idx, answer, onAnswer, submitted, result, unlockedHints, onUnlockHint }) {
+  const isMcq    = q.question_type === 'mcq_single' || q.question_type === 'mcq_multi'
+  const correct  = result?.is_correct
+  const border   = !submitted ? 'var(--border)' : correct ? 'rgba(20,201,168,0.5)' : 'rgba(240,82,74,0.4)'
+  const bg       = !submitted ? 'rgba(13,24,38,0.6)' : correct ? 'rgba(20,201,168,0.06)' : 'rgba(240,82,74,0.05)'
+  const hints    = q.hints ?? []
+  const [showHints, setShowHints] = useState(false)
+
+  // Determine which option is correct (for reveal after wrong answer)
+  const correctOptId = q.validation_data?.correct_option_id
+  const correctIdx   = q.validation_data?.correct_option_index
+  const correctOpt   = isMcq ? (
+    (q.options ?? []).find(o => o.id === correctOptId) ??
+    (correctIdx != null ? (q.options ?? []).sort((a,b) => a.sort_order - b.sort_order)[correctIdx] : null)
+  ) : null
 
   return (
-    <div style={{ background:bg, border:`1px solid ${border}`, borderLeft:`3px solid ${submitted ? (correct?'#14C9A8':'var(--red)') : 'var(--cyan)'}`,
+    <div style={{ background:bg, border:`1px solid ${border}`,
+      borderLeft:`3px solid ${submitted ? (correct?'#14C9A8':'var(--red)') : 'var(--cyan)'}`,
       borderRadius:12, padding:'16px 18px', marginBottom:14 }}>
+
+      {/* Question header */}
       <div style={{ display:'flex', gap:10, marginBottom:12, alignItems:'flex-start' }}>
         <span style={{ fontFamily:'var(--mono)', fontSize:11, fontWeight:800, color:'var(--cyan)',
           background:'rgba(0,194,230,0.1)', padding:'2px 8px', borderRadius:6, flexShrink:0 }}>
@@ -155,57 +168,114 @@ function QuestionBlock({ q, idx, answer, onAnswer, submitted, result }) {
           {q.is_mandatory && <span style={{ marginLeft:8, fontSize:10, color:'var(--amber)', fontWeight:700 }}>required</span>}
           <span style={{ marginLeft:8, fontSize:10, color:'var(--text-4)' }}>{q.points} pts</span>
         </div>
+        {/* Hint trigger — only show if hints exist and question not yet correct */}
+        {hints.length > 0 && !correct && (
+          <button onClick={() => setShowHints(h => !h)}
+            style={{ flexShrink:0, padding:'3px 10px', borderRadius:6, fontSize:11, fontWeight:700,
+              cursor:'pointer', background:'rgba(245,166,35,0.1)', color:'var(--amber)',
+              border:'1px solid rgba(245,166,35,0.3)' }}>
+            💡 {showHints ? 'Hide hints' : `Hints (${hints.length})`}
+          </button>
+        )}
       </div>
 
-      {isMcq && (q.options ?? []).length > 0 && (
-        <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-          {q.options.map(o => {
-            const selected = q.question_type === 'mcq_multi'
-              ? (answer ?? []).includes(o.id)
-              : answer === o.id
+      {/* Hint panel */}
+      {showHints && hints.length > 0 && (
+        <div style={{ marginBottom:12, display:'flex', flexDirection:'column', gap:6 }}>
+          {hints.map((h, hi) => {
+            const unlocked = unlockedHints?.has(h.id)
             return (
-              <div key={o.id} onClick={() => {
-                if (submitted) return
-                if (q.question_type === 'mcq_multi') {
-                  const cur = answer ?? []
-                  onAnswer(cur.includes(o.id) ? cur.filter(x => x !== o.id) : [...cur, o.id])
-                } else {
-                  onAnswer(o.id)
-                }
-              }} style={{
-                display:'flex', gap:10, padding:'9px 12px', borderRadius:8,
-                background: selected ? 'rgba(0,194,230,0.1)' : 'rgba(7,13,22,0.5)',
-                border:`1px solid ${selected ? 'rgba(0,194,230,0.4)' : 'var(--border)'}`,
-                cursor: submitted ? 'default' : 'pointer', transition:'all .15s',
+              <div key={h.id} style={{
+                background: unlocked ? 'rgba(245,166,35,0.06)' : 'rgba(13,24,38,0.5)',
+                border:`1px solid ${unlocked ? 'rgba(245,166,35,0.3)' : 'var(--border)'}`,
+                borderRadius:8, padding:'8px 12px',
               }}>
-                <span style={{ fontFamily:'var(--mono)', fontWeight:700, fontSize:12,
-                  color: selected ? 'var(--cyan)' : 'var(--text-4)', minWidth:18 }}>
-                  {o.text.charAt(0)}
-                </span>
-                <span style={{ fontSize:13, color: selected ? 'var(--text)' : 'var(--text-4)' }}>
-                  {o.text.slice(3)}
-                </span>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
+                  <span style={{ fontSize:11, color:'var(--amber)', fontWeight:700 }}>
+                    Hint {hi+1} {h.cost > 0 ? `(−${h.cost} pts)` : '(free)'}
+                  </span>
+                  {!unlocked && (
+                    <button onClick={() => onUnlockHint(h)}
+                      style={{ padding:'3px 10px', borderRadius:6, fontSize:11, fontWeight:700,
+                        cursor:'pointer', background:'rgba(245,166,35,0.15)', color:'var(--amber)',
+                        border:'1px solid rgba(245,166,35,0.35)' }}>
+                      Unlock
+                    </button>
+                  )}
+                </div>
+                {unlocked && (
+                  <p style={{ margin:'6px 0 0', fontSize:12, color:'var(--text-3)', lineHeight:1.6 }}>
+                    {h.content}
+                  </p>
+                )}
               </div>
             )
           })}
         </div>
       )}
 
-      {(q.question_type === 'text_input' || q.question_type === 'flag' || q.question_type === 'practical') && (
-        <input
-          value={answer ?? ''}
-          onChange={e => !submitted && onAnswer(e.target.value)}
-          placeholder={q.question_type === 'flag' ? 'FLAG{...}' : 'Your answer…'}
-          disabled={submitted}
-          style={{ width:'100%', fontFamily:'var(--mono)', fontSize:12, boxSizing:'border-box' }}
-        />
+      {/* MCQ options */}
+      {isMcq && (q.options ?? []).length > 0 && (
+        <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+          {q.options.map(o => {
+            const selected   = q.question_type === 'mcq_multi'
+              ? (answer ?? []).includes(o.id) : answer === o.id
+            const isCorrectOpt = submitted && !correct && o.id === correctOpt?.id
+            const isWrongPick  = submitted && !correct && selected && o.id !== correctOpt?.id
+            return (
+              <div key={o.id} onClick={() => {
+                if (submitted) return
+                if (q.question_type === 'mcq_multi') {
+                  const cur = answer ?? []
+                  onAnswer(cur.includes(o.id) ? cur.filter(x => x !== o.id) : [...cur, o.id])
+                } else { onAnswer(o.id) }
+              }} style={{
+                display:'flex', gap:10, padding:'9px 12px', borderRadius:8,
+                background: isCorrectOpt ? 'rgba(20,201,168,0.1)'
+                  : isWrongPick  ? 'rgba(240,82,74,0.08)'
+                  : selected     ? 'rgba(0,194,230,0.1)' : 'rgba(7,13,22,0.5)',
+                border:`1px solid ${
+                  isCorrectOpt ? 'rgba(20,201,168,0.5)'
+                  : isWrongPick  ? 'rgba(240,82,74,0.4)'
+                  : selected     ? 'rgba(0,194,230,0.4)' : 'var(--border)'}`,
+                cursor: submitted ? 'default' : 'pointer', transition:'all .15s',
+                position:'relative',
+              }}>
+                <span style={{ fontFamily:'var(--mono)', fontWeight:700, fontSize:12, minWidth:18,
+                  color: isCorrectOpt ? '#14C9A8' : isWrongPick ? 'var(--red)' : selected ? 'var(--cyan)' : 'var(--text-4)' }}>
+                  {o.text.charAt(0)}
+                </span>
+                <span style={{ fontSize:13, flex:1,
+                  color: isCorrectOpt ? '#14C9A8' : isWrongPick ? 'var(--red)' : selected ? 'var(--text)' : 'var(--text-4)' }}>
+                  {o.text.slice(3)}
+                </span>
+                {isCorrectOpt && <span style={{ fontSize:10, color:'#14C9A8', fontWeight:700, flexShrink:0 }}>← correct</span>}
+                {isWrongPick  && <span style={{ fontSize:10, color:'var(--red)', fontWeight:700, flexShrink:0 }}>← your answer</span>}
+              </div>
+            )
+          })}
+        </div>
       )}
 
+      {/* Text / flag input */}
+      {(q.question_type === 'text_input' || q.question_type === 'flag' || q.question_type === 'practical') && (
+        <input value={answer ?? ''} onChange={e => !submitted && onAnswer(e.target.value)}
+          placeholder={q.question_type === 'flag' ? 'FLAG{...}' : 'Your answer…'}
+          disabled={submitted}
+          style={{ width:'100%', fontFamily:'var(--mono)', fontSize:12, boxSizing:'border-box' }} />
+      )}
+
+      {/* Result feedback */}
       {submitted && (
-        <div style={{ marginTop:10, fontSize:12,
-          color: correct ? '#14C9A8' : 'var(--red)', fontWeight:600 }}>
-          {correct ? `✓ Correct! +${result.points_awarded} pts` : `✗ Incorrect`}
-          {q.explanation && <span style={{ color:'var(--text-4)', fontWeight:400, marginLeft:8 }}>{q.explanation}</span>}
+        <div style={{ marginTop:10, padding:'8px 12px', borderRadius:8,
+          background: correct ? 'rgba(20,201,168,0.06)' : 'rgba(240,82,74,0.06)',
+          border:`1px solid ${correct ? 'rgba(20,201,168,0.2)' : 'rgba(240,82,74,0.2)'}` }}>
+          <div style={{ fontSize:12, color: correct ? '#14C9A8' : 'var(--red)', fontWeight:700, marginBottom: result?.explanation ? 4 : 0 }}>
+            {correct ? `✓ Correct! +${result.points_awarded} pts` : '✗ Incorrect — the correct answer is highlighted above.'}
+          </div>
+          {result?.explanation && (
+            <div style={{ fontSize:12, color:'var(--text-4)', lineHeight:1.6 }}>{result.explanation}</div>
+          )}
         </div>
       )}
     </div>
@@ -220,6 +290,7 @@ export default function RoomLab() {
   const [activeTaskIdx, setActiveTaskIdx] = useState(0)
   const [answers, setAnswers] = useState({})
   const [results, setResults] = useState({})
+  const [unlockedHints, setUnlockedHints] = useState(new Set()) // hint IDs the user has unlocked
   const [vmState, setVmState] = useState({})
   const [logs, setLogs] = useState(['$ ready — start VMs when needed'])
   const logRef = useRef(null)
@@ -275,6 +346,7 @@ export default function RoomLab() {
       await api.resetRoomProgress(room.id)
       setAnswers({})
       setResults({})
+      setUnlockedHints(new Set())
       setActiveTaskIdx(0)
       setLogs(['$ lab reset — start fresh'])
     } catch (err) {
@@ -285,6 +357,20 @@ export default function RoomLab() {
   }
 
   const addLog = useCallback((line) => setLogs(p => [...p, line]), [])
+
+  const unlockHint = async (hint) => {
+    try {
+      const res = await api.unlockHint(hint.id)
+      setUnlockedHints(prev => new Set([...prev, hint.id]))
+      if (res.points_deducted > 0) {
+        addLog(`$ 💡 Hint unlocked — −${res.points_deducted} pts`)
+      } else {
+        addLog('$ 💡 Hint unlocked (free)')
+      }
+    } catch (err) {
+      addLog(`$ [ERROR] ${err.message}`)
+    }
+  }
 
   const startVM = async (vmTpl) => {
     setVmState(p => ({ ...p, [vmTpl.id]: { ...(p[vmTpl.id]??{}), starting:true } }))
@@ -463,6 +549,8 @@ export default function RoomLab() {
                     onAnswer={val => setAnswers(p => ({ ...p, [q.id]: val }))}
                     submitted={!!results[q.id]}
                     result={results[q.id]}
+                    unlockedHints={unlockedHints}
+                    onUnlockHint={unlockHint}
                   />
                   {!results[q.id] && (
                     <div style={{ display:'flex', justifyContent:'flex-end', marginTop:-8, marginBottom:16 }}>

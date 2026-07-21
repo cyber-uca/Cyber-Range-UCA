@@ -478,6 +478,111 @@ def get_room_answers(
     return list(result.values())
 
 
+@router.get("/analytics/me")
+def my_analytics(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Returns detailed learning analytics for the current user.
+    Used by the Analytics page.
+    """
+    uid = current_user.id
+
+    # --- Question-level stats ---
+    all_answers = db.query(models.UserQuestionAnswer).filter(
+        models.UserQuestionAnswer.user_id == uid
+    ).all()
+    total_attempts  = len(all_answers)
+    correct_answers = [a for a in all_answers if a.is_correct]
+    total_correct   = len(correct_answers)
+    total_pts_earned = sum(a.points_awarded for a in correct_answers)
+    success_rate = round(total_correct / total_attempts * 100) if total_attempts else 0
+
+    # --- Attempts distribution: how many questions took 1, 2, 3+ tries ---
+    from collections import defaultdict
+    attempts_per_q: dict = defaultdict(int)
+    for a in all_answers:
+        attempts_per_q[a.question_id] = max(attempts_per_q[a.question_id], a.attempt_number)
+    attempt_dist = {"1": 0, "2": 0, "3+": 0}
+    for n in attempts_per_q.values():
+        if n == 1:   attempt_dist["1"]  += 1
+        elif n == 2: attempt_dist["2"]  += 1
+        else:        attempt_dist["3+"] += 1
+
+    # --- Room-level progress ---
+    room_progs = db.query(models.UserRoomProgress).filter(
+        models.UserRoomProgress.user_id == uid
+    ).all()
+    rooms_started   = len(room_progs)
+    rooms_completed = sum(1 for p in room_progs if p.is_completed)
+
+    room_details = []
+    for p in room_progs:
+        room = db.query(models.Room).filter(models.Room.id == p.room_id).first()
+        if not room: continue
+        total_q = sum(len(t.questions) for t in room.tasks)
+        correct_q = db.query(models.UserQuestionAnswer).filter(
+            models.UserQuestionAnswer.user_id == uid,
+            models.UserQuestionAnswer.question_id.in_(
+                [q.id for t in room.tasks for q in t.questions]
+            ),
+            models.UserQuestionAnswer.is_correct == True,
+        ).count()
+        room_details.append({
+            "room_id":       room.id,
+            "room_title":    room.title,
+            "room_slug":     room.slug,
+            "is_completed":  p.is_completed,
+            "score":         p.score,
+            "max_score":     p.max_score,
+            "tasks_done":    p.tasks_done,
+            "tasks_total":   p.tasks_total,
+            "questions_correct": correct_q,
+            "questions_total":   total_q,
+            "pct": round(correct_q / total_q * 100) if total_q else 0,
+            "started_at":    p.started_at.isoformat() if p.started_at else None,
+            "completed_at":  p.completed_at.isoformat() if p.completed_at else None,
+        })
+
+    # --- Hint usage ---
+    hints_used = db.query(models.QuestionHintUnlock).filter(
+        models.QuestionHintUnlock.user_id == uid
+    ).count()
+
+    # --- Path progress ---
+    path_progs = db.query(models.UserPathProgress).filter(
+        models.UserPathProgress.user_id == uid
+    ).all()
+    path_details = []
+    for pp in path_progs:
+        path = db.query(models.Path).filter(models.Path.id == pp.path_id).first()
+        if not path: continue
+        path_details.append({
+            "path_title":      path.title,
+            "path_slug":       path.slug,
+            "icon":            path.icon,
+            "color":           path.color,
+            "modules_done":    pp.modules_done,
+            "modules_total":   pp.modules_total,
+            "is_completed":    pp.is_completed,
+            "pct": round(pp.modules_done / pp.modules_total * 100) if pp.modules_total else 0,
+        })
+
+    return {
+        "total_attempts":   total_attempts,
+        "total_correct":    total_correct,
+        "success_rate":     success_rate,
+        "total_pts_earned": total_pts_earned,
+        "attempt_dist":     attempt_dist,
+        "rooms_started":    rooms_started,
+        "rooms_completed":  rooms_completed,
+        "hints_used":       hints_used,
+        "rooms":            room_details,
+        "paths":            path_details,
+    }
+
+
 @router.get("/leaderboard")
 def leaderboard(db: Session = Depends(get_db),
                 current_user: models.User = Depends(get_current_user)):

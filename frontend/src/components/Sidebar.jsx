@@ -3,10 +3,11 @@ import { NavLink } from 'react-router-dom'
 import { useAuth } from '../App.jsx'
 
 const NAV = [
-  { to: '/',          label: 'Dashboard',        end: true  },
-  { to: '/roadmap',   label: 'Roadmap'                      },
-  { to: '/challenges',label: 'Challenges'                   },
-  { to: '/leaderboard',label: 'Leaderboard'                 },
+  { to: '/',           label: 'Dashboard',  end: true },
+  { to: '/roadmap',    label: 'Roadmap'              },
+  { to: '/challenges', label: 'Challenges'            },
+  { to: '/analytics',  label: 'Analytics'             },
+  { to: '/leaderboard',label: 'Leaderboard'           },
 ]
 const TUTOR_NAV = [{ to: '/creator', label: 'Creator Studio' }]
 const ADMIN_NAV = [

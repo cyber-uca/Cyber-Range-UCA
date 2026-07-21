@@ -319,6 +319,15 @@ export const api = {
       headers: authHeaders(),
     }).then(handle),
 
+  unlockHint: (hintId) =>
+    fetch(`${BASE}/progress/hints/${hintId}/unlock`, {
+      method: 'POST',
+      headers: authHeaders(),
+    }).then(handle),
+
+  getMyAnalytics: () =>
+    fetch(`${BASE}/progress/analytics/me`, { headers: authHeaders() }).then(handle),
+
   // Lab layers are static on the frontend — no separate endpoint needed
   LAB_LAYERS: [
     { slug: 'plc',   label: 'PLC',   color: 'var(--warning)',   icon: '⚙️' },
