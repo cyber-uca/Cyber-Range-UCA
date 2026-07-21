@@ -9,8 +9,9 @@ const PATH_META = {
   risk:       { label:'Risk',       color:'var(--cat-risk)',       desc:'Assess and model OT cybersecurity risk' },
 }
 const DIFF_COLOR = {
-  beginner:'var(--green)', intermediate:'var(--amber)', advanced:'var(--red)', expert:'var(--red)',
-  easy:'var(--green)', medium:'var(--amber)', hard:'var(--red)',
+  beginner:'var(--green)', easy:'var(--green)',
+  medium:'var(--amber)', hard:'var(--red)',
+  expert:'var(--red)', intermediate:'var(--amber)', advanced:'var(--red)',
 }
 
 function RoomNode({ room, pathColor, isLast }) {

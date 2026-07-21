@@ -145,7 +145,7 @@ function RoomModal({ initial, vmTemplates, onSave, onClose }) {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 10 }}>
         <Field label="Difficulty">
           <select value={form.difficulty} onChange={e => set('difficulty', e.target.value)}>
-            {['beginner','intermediate','advanced','expert'].map(d => <option key={d}>{d}</option>)}
+            {['beginner','easy','medium','hard','expert'].map(d => <option key={d}>{d}</option>)}
           </select>
         </Field>
         <Field label="Est. Minutes"><input type="number" value={form.estimated_minutes} onChange={e => set('estimated_minutes', +e.target.value)} /></Field>
@@ -183,7 +183,7 @@ function RoomModal({ initial, vmTemplates, onSave, onClose }) {
 
 /* ── Task modal ───────────────────────────────────────────────── */
 function TaskModal({ initial, onSave, onClose }) {
-  const blank = { title: '', description: '', objectives: '', sort_order: 0, estimated_minutes: 20, points: 100, completion_rule: 'all_mandatory', min_score_pct: 80 }
+  const blank = { title: '', description: '', objectives: '', sort_order: 0, estimated_minutes: 20, points: 100, completion_rule: 'all_questions', min_score_pct: 80 }
   const [form, setForm] = useState(initial ?? blank)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
@@ -210,9 +210,10 @@ function TaskModal({ initial, onSave, onClose }) {
       </div>
       <Field label="Completion Rule">
         <select value={form.completion_rule} onChange={e => set('completion_rule', e.target.value)}>
-          <option value="all_mandatory">All mandatory questions</option>
-          <option value="any">Any question</option>
+          <option value="all_questions">All questions</option>
+          <option value="mandatory_only">Mandatory only</option>
           <option value="min_score">Minimum score</option>
+          <option value="any_correct">Any correct</option>
         </select>
       </Field>
       {err && <p style={{ color: 'var(--red)', fontSize: 12, marginBottom: 10 }}>{err}</p>}
