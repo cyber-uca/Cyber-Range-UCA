@@ -322,6 +322,39 @@ export const api = {
   getMyAnalytics: () =>
     fetch(`${BASE}/progress/analytics/me`, { headers: authHeaders() }).then(handle),
 
+  getMyModuleProgress: () =>
+    fetch(`${BASE}/progress/modules/me`, { headers: authHeaders() }).then(handle),
+
+  // ---------- Module Quiz ----------
+  getModuleQuiz: (moduleId) =>
+    fetch(`${BASE}/paths/modules/${moduleId}/quiz`, { headers: authHeaders() }).then(handle),
+
+  submitModuleQuiz: (moduleId, answers) =>
+    fetch(`${BASE}/paths/modules/${moduleId}/quiz/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ answers }),
+    }).then(handle),
+
+  adminAddQuizQuestion: (moduleId, data) =>
+    fetch(`${BASE}/paths/modules/${moduleId}/quiz/questions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(data),
+    }).then(handle),
+
+  adminUpdateQuizQuestion: (questionId, data) =>
+    fetch(`${BASE}/paths/modules/quiz/questions/${questionId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(data),
+    }).then(handle),
+
+  adminDeleteQuizQuestion: (questionId) =>
+    fetch(`${BASE}/paths/modules/quiz/questions/${questionId}`, {
+      method: 'DELETE', headers: authHeaders(),
+    }).then(handle),
+
   // Lab layers are static on the frontend — no separate endpoint needed
   LAB_LAYERS: [
     { slug: 'plc',   label: 'PLC',   color: 'var(--warning)',   icon: '⚙️' },

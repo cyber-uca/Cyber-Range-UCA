@@ -161,6 +161,9 @@ class Module(Base):
     rooms        = relationship("Room", back_populates="module",
                                 order_by="Room.sort_order", cascade="all, delete-orphan")
     user_progress = relationship("UserModuleProgress", back_populates="module")
+    quiz_questions = relationship("ModuleQuizQuestion", back_populates="module",
+                                  order_by="ModuleQuizQuestion.sort_order",
+                                  cascade="all, delete-orphan")
 
 
 class Room(Base):
@@ -576,3 +579,57 @@ class UserPathProgress(Base):
 
     user = relationship("User", back_populates="path_progress")
     path = relationship("Path", back_populates="user_progress")
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  MODULE QUIZ
+# ═══════════════════════════════════════════════════════════════════════════
+
+class ModuleQuizQuestion(Base):
+    """An MCQ question attached to a Module for the end-of-module quiz."""
+    __tablename__ = "module_quiz_questions"
+
+    id              = Column(String(36), primary_key=True, default=gen_uuid)
+    module_id       = Column(String(36), ForeignKey("modules.id"), nullable=False)
+    text            = Column(Text, nullable=False)
+    explanation     = Column(Text, nullable=True)    # shown after grading
+    points          = Column(Integer, default=10)
+    sort_order      = Column(Integer, default=0)
+    # validation_data: {"correct_option_id": "uuid", "correct_option_index": N}
+    validation_data = Column(JSON, nullable=True)
+    created_at      = Column(DateTime, default=datetime.utcnow)
+
+    module  = relationship("Module", back_populates="quiz_questions")
+    options = relationship("ModuleQuizOption", back_populates="question",
+                           order_by="ModuleQuizOption.sort_order",
+                           cascade="all, delete-orphan")
+
+
+class ModuleQuizOption(Base):
+    """An answer option for a ModuleQuizQuestion."""
+    __tablename__ = "module_quiz_options"
+
+    id          = Column(String(36), primary_key=True, default=gen_uuid)
+    question_id = Column(String(36), ForeignKey("module_quiz_questions.id"), nullable=False)
+    text        = Column(Text, nullable=False)
+    sort_order  = Column(Integer, default=0)
+
+    question = relationship("ModuleQuizQuestion", back_populates="options")
+
+
+class UserModuleQuizAttempt(Base):
+    """Records a learner's quiz attempt for a Module."""
+    __tablename__ = "user_module_quiz_attempts"
+
+    id          = Column(String(36), primary_key=True, default=gen_uuid)
+    user_id     = Column(String(36), ForeignKey("users.id"), nullable=False)
+    module_id   = Column(String(36), ForeignKey("modules.id"), nullable=False)
+    score       = Column(Integer, default=0)
+    max_score   = Column(Integer, default=0)
+    passed      = Column(Boolean, default=False)
+    pass_pct    = Column(Integer, default=70)   # threshold used at time of attempt
+    attempted_at = Column(DateTime, default=datetime.utcnow)
+    # JSON list of {question_id, selected_option_id, is_correct}
+    answers_json = Column(JSON, nullable=True)
+
+    user   = relationship("User")
+    module = relationship("Module")

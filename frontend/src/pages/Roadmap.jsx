@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../api.js'
+import { useAuth } from '../App.jsx'
 
 const PATH_META = {
   offensive:  { label:'Offensive',  color:'var(--cat-offensive)', desc:'Attack ICS/OT — PLC, SCADA, CAN bus' },
@@ -61,7 +62,7 @@ function RoomNode({ room, pathColor, isLast }) {
   )
 }
 
-function PathCol({ pathData, meta, isActive, onToggle }) {
+function PathCol({ pathData, meta, isActive, onToggle, moduleProgress }) {
   const modules = pathData?.modules ?? []
   const allRooms = modules.flatMap(m => m.rooms ?? [])
 
@@ -86,25 +87,52 @@ function PathCol({ pathData, meta, isActive, onToggle }) {
         <div style={{ width:1, height:20, background:`linear-gradient(180deg, ${meta.color}50, transparent)` }} />
       </div>
 
-      {modules.map(mod => (
-        <div key={mod.id} style={{ marginBottom:14 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
-            <div style={{ flex:1, height:1, background:`linear-gradient(90deg, ${meta.color}30, transparent)` }} />
-            <span style={{
-              fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'.1em',
-              color:meta.color, padding:'3px 9px', borderRadius:999,
-              background:`${meta.color}10`, border:`1px solid ${meta.color}25`, whiteSpace:'nowrap',
-            }}>{mod.title}</span>
-            <div style={{ flex:1, height:1, background:`linear-gradient(90deg, transparent, ${meta.color}30)` }} />
+      {modules.map(mod => {
+        const modRooms = mod.rooms ?? []
+        const allRoomsDone = modRooms.length > 0 && modRooms.every(r => r.task_count > 0)
+        const mp = moduleProgress?.[mod.id]
+        const allCompleted = mp?.is_completed || false
+        const hasQuiz = mod.quiz_question_count > 0
+        return (
+          <div key={mod.id} style={{ marginBottom:14 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
+              <div style={{ flex:1, height:1, background:`linear-gradient(90deg, ${meta.color}30, transparent)` }} />
+              <span style={{
+                fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'.1em',
+                color:meta.color, padding:'3px 9px', borderRadius:999,
+                background:`${meta.color}10`, border:`1px solid ${meta.color}25`, whiteSpace:'nowrap',
+              }}>{mod.title}</span>
+              <div style={{ flex:1, height:1, background:`linear-gradient(90deg, transparent, ${meta.color}30)` }} />
+            </div>
+            {modRooms.map((room, i) => (
+              <RoomNode key={room.id} room={room} pathColor={meta.color} isLast={i === (modRooms.length - 1) && !allCompleted} />
+            ))}
+            {modRooms.length === 0 && (
+              <div style={{ textAlign:'center', padding:'10px 0', color:'var(--text-4)', fontSize:11, opacity:.6 }}>No rooms yet</div>
+            )}
+            {/* Quiz button — shown when all rooms are completed */}
+            {allCompleted && (
+              <Link to={`/modules/${mod.id}/quiz`} style={{ textDecoration:'none' }}>
+                <div style={{
+                  marginTop:8, padding:'10px 14px', borderRadius:'var(--r-md)',
+                  background: `linear-gradient(135deg, ${meta.color}12, transparent)`,
+                  border:`1px solid ${meta.color}40`,
+                  display:'flex', alignItems:'center', justifyContent:'space-between',
+                  cursor:'pointer', transition:'all .2s',
+                }}>
+                  <div>
+                    <div style={{ fontSize:12, fontWeight:700, color:meta.color }}>📝 Module Quiz</div>
+                    <div style={{ fontSize:10, color:'var(--text-4)', marginTop:2 }}>
+                      {mp?.quiz_passed ? '✓ Passed' : 'Test your knowledge'}
+                    </div>
+                  </div>
+                  <span style={{ color:meta.color, fontSize:14 }}>→</span>
+                </div>
+              </Link>
+            )}
           </div>
-          {(mod.rooms ?? []).map((room, i) => (
-            <RoomNode key={room.id} room={room} pathColor={meta.color} isLast={i === (mod.rooms.length - 1)} />
-          ))}
-          {(mod.rooms ?? []).length === 0 && (
-            <div style={{ textAlign:'center', padding:'10px 0', color:'var(--text-4)', fontSize:11, opacity:.6 }}>No rooms yet</div>
-          )}
-        </div>
-      ))}
+        )
+      })}
 
       {modules.length === 0 && (
         <div style={{ textAlign:'center', padding:'20px 0', color:'var(--text-4)', fontSize:12 }}>Coming soon</div>
@@ -120,9 +148,11 @@ function PathCol({ pathData, meta, isActive, onToggle }) {
 }
 
 export default function Roadmap() {
+  const { user } = useAuth()
   const [paths, setPaths] = useState([])
   const [loading, setLoading] = useState(true)
   const [activePath, setActivePath] = useState(null)
+  const [moduleProgress, setModuleProgress] = useState({}) // moduleId → progress
 
   useEffect(() => {
     api.listPaths()
@@ -131,6 +161,12 @@ export default function Roadmap() {
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
+
+  // Fetch module-level progress for learners
+  useEffect(() => {
+    if (user?.role !== 'learner') return
+    api.getMyModuleProgress().then(setModuleProgress).catch(() => {})
+  }, [user])
 
   const pathOrder = ['offensive', 'defensive', 'mitigation', 'risk']
   const sorted = pathOrder.map(slug => paths.find(p => p.slug === slug)).filter(Boolean)
@@ -178,6 +214,7 @@ export default function Roadmap() {
               meta={meta}
               isActive={activePath === null || activePath === pathData.slug}
               onToggle={() => setActivePath(activePath === pathData.slug ? null : pathData.slug)}
+              moduleProgress={moduleProgress}
             />
           )
         })}

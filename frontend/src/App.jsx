@@ -17,6 +17,7 @@ import AdminTaxonomy from './pages/AdminTaxonomy.jsx'
 import AdminSettings from './pages/AdminSettings.jsx'
 import AdminContent from './pages/AdminContent.jsx'
 import Analytics from './pages/Analytics.jsx'
+import ModuleQuiz from './pages/ModuleQuiz.jsx'
 import Roadmap from './pages/Roadmap.jsx'
 import RoomDetail from './pages/RoomDetail.jsx'
 import RoomLab from './pages/RoomLab.jsx'
@@ -77,6 +78,7 @@ function AppRoutes() {
       <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>} />
       <Route path="/roadmap" element={<RequireAuth><Roadmap /></RequireAuth>} />
       <Route path="/analytics" element={<RequireAuth><Analytics /></RequireAuth>} />
+      <Route path="/modules/:moduleId/quiz" element={<RequireAuth><ModuleQuiz /></RequireAuth>} />
       <Route path="/rooms/:slug" element={<RequireAuth><RoomDetail /></RequireAuth>} />
       <Route path="/rooms/:slug/lab" element={<RequireAuthBare><RoomLab /></RequireAuthBare>} />
       <Route path="/challenges" element={<RequireAuth><ChallengeLibrary /></RequireAuth>} />

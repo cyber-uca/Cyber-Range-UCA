@@ -444,6 +444,25 @@ def get_room_answers(
     return list(result.values())
 
 
+@router.get("/modules/me")
+def my_module_progress(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Returns a map of moduleId → {is_completed, rooms_done, rooms_total} for the current user."""
+    progs = db.query(models.UserModuleProgress).filter(
+        models.UserModuleProgress.user_id == current_user.id
+    ).all()
+    return {
+        p.module_id: {
+            "is_completed": p.is_completed,
+            "rooms_done":   p.rooms_done,
+            "rooms_total":  p.rooms_total,
+        }
+        for p in progs
+    }
+
+
 @router.get("/analytics/me")
 def my_analytics(
     db: Session = Depends(get_db),

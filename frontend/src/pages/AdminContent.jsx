@@ -406,6 +406,85 @@ function QuestionModal({ initial, onSave, onClose }) {
   )
 }
 
+/* ── Quiz Question Modal ──────────────────────────────────────────── */
+function QuizQuestionModal({ initial, onSave, onClose }) {
+  const blank = { text: '', explanation: '', points: 10, sort_order: 0, options: [] }
+  const initForm = () => {
+    if (!initial) return blank
+    const vd = initial.validation_data ?? {}
+    const correctId = vd.correct_option_id
+    const correctIdx = vd.correct_option_index
+    const opts = (initial.options ?? []).map(o => ({
+      ...o,
+      is_correct: o.id === correctId ||
+        (correctIdx != null && (initial.options ?? []).sort((a,b)=>a.sort_order-b.sort_order)[correctIdx]?.id === o.id)
+    }))
+    return { ...initial, options: opts }
+  }
+  const [form, setForm] = useState(initForm)
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState('')
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+  const addOpt = () => set('options', [...(form.options ?? []), { text: '', is_correct: false, sort_order: (form.options ?? []).length }])
+  const updOpt = (i, key, val) => set('options', form.options.map((o, idx) => idx === i ? { ...o, [key]: val } : o))
+  const remOpt = (i) => set('options', form.options.filter((_, idx) => idx !== i))
+
+  const save = async () => {
+    if (!form.text.trim()) { setErr('Question text is required'); return }
+    if (!form.options || form.options.length < 2) { setErr('Need at least 2 options'); return }
+    if (!form.options.some(o => o.is_correct)) { setErr('Mark one option as correct'); return }
+    setSaving(true); setErr('')
+    try {
+      await onSave({
+        text: form.text,
+        explanation: form.explanation,
+        points: form.points,
+        sort_order: form.sort_order,
+        options: form.options.map((o, i) => ({ text: o.text, is_correct: !!o.is_correct, sort_order: i })),
+      })
+    } catch (e) { setErr(e.message) } finally { setSaving(false) }
+  }
+
+  return (
+    <ModalOverlay onClose={onClose}>
+      <h3 style={{ marginBottom: 18 }}>{initial ? 'Edit Quiz Question' : 'New Quiz Question'}</h3>
+      <Field label="Question Text"><textarea value={form.text} onChange={e => set('text', e.target.value)} rows={3} style={{ width:'100%', resize:'vertical' }} /></Field>
+      <Field label="Explanation (shown after grading)"><textarea value={form.explanation ?? ''} onChange={e => set('explanation', e.target.value)} rows={2} style={{ width:'100%', resize:'vertical' }} /></Field>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+        <Field label="Points"><input type="number" value={form.points} onChange={e => set('points', +e.target.value)} /></Field>
+        <Field label="Sort Order"><input type="number" value={form.sort_order} onChange={e => set('sort_order', +e.target.value)} /></Field>
+      </div>
+      <Field label="Options — select radio next to correct answer">
+        <p style={{ fontSize:11, color:'var(--text-4)', margin:'0 0 8px' }}>Select the radio button next to the correct answer.</p>
+        {(form.options ?? []).map((o, i) => {
+          const isCorrect = !!o.is_correct
+          return (
+            <div key={i} style={{ display:'flex', gap:8, alignItems:'center', marginBottom:8, padding:'7px 10px', borderRadius:8,
+              background: isCorrect ? 'rgba(20,201,168,0.08)' : 'rgba(13,24,38,0.4)',
+              border:`1px solid ${isCorrect ? 'rgba(20,201,168,0.4)' : 'var(--border)'}` }}>
+              <input type="radio" name="quiz_correct" checked={isCorrect}
+                onChange={() => set('options', form.options.map((opt, idx) => ({ ...opt, is_correct: idx === i })))}
+                style={{ width:15, height:15, cursor:'pointer', flexShrink:0, accentColor:'#14C9A8' }} />
+              <input value={o.text} onChange={e => updOpt(i, 'text', e.target.value)}
+                placeholder={`Option ${i+1}`} style={{ flex:1, background:'transparent', border:'none', outline:'none', fontSize:13 }} />
+              <span style={{ fontSize:10, fontWeight:700, color: isCorrect ? '#14C9A8' : 'var(--text-4)', minWidth:46 }}>
+                {isCorrect ? '✓ CORRECT' : '✗ WRONG'}
+              </span>
+              <button onClick={() => remOpt(i)} style={{ background:'none', border:'none', color:'var(--text-4)', cursor:'pointer', fontSize:16, padding:'0 2px' }}>×</button>
+            </div>
+          )
+        })}
+        <button className="btn-ghost btn-sm" onClick={addOpt} style={{ marginTop:4 }}>+ Add option</button>
+      </Field>
+      {err && <p style={{ color:'var(--red)', fontSize:12, marginBottom:10 }}>{err}</p>}
+      <div style={{ display:'flex', justifyContent:'flex-end', gap:8, marginTop:8 }}>
+        <button className="btn-ghost btn-sm" onClick={onClose}>Cancel</button>
+        <button className="btn-primary btn-sm" onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
+      </div>
+    </ModalOverlay>
+  )
+}
+
 /* ══════════════════════════════════════════════════════════════════
    PANEL: PATHS
 ══════════════════════════════════════════════════════════════════ */
@@ -484,6 +563,10 @@ function ModulesPanel({ path, selectedModule, onSelect }) {
   const [modules, setModules] = useState([])
   const [loading, setLoading] = useState(false)
   const [modal, setModal] = useState(null)
+  const [selectedQuizModule, setSelectedQuizModule] = useState(null)
+  const [quizQuestions, setQuizQuestions] = useState([])
+  const [quizLoading, setQuizLoading] = useState(false)
+  const [quizModal, setQuizModal] = useState(null)
 
   const load = useCallback(() => {
     if (!path) return
@@ -494,6 +577,13 @@ function ModulesPanel({ path, selectedModule, onSelect }) {
   }, [path?.slug])
 
   useEffect(() => { setModules([]); load() }, [load])
+
+  const loadQuizQuestions = useCallback((moduleId) => {
+    setQuizLoading(true)
+    api.getModuleQuiz(moduleId)
+      .then(d => { setQuizQuestions(d.questions ?? []); setQuizLoading(false) })
+      .catch(() => { setQuizQuestions([]); setQuizLoading(false) })
+  }, [])
 
   const save = async (form) => {
     if (modal.mode === 'create') await api.adminCreateModule(path.id, form)
@@ -546,6 +636,7 @@ function ModulesPanel({ path, selectedModule, onSelect }) {
               <div style={{ display:'flex', gap:6 }} onClick={e => e.stopPropagation()}>
                 <button className="btn-ghost btn-sm" style={{ fontSize:10, padding:'2px 8px' }} onClick={() => setModal({ mode:'edit', item:m })}>Edit</button>
                 <button className="btn-ghost btn-sm" style={{ fontSize:10, padding:'2px 8px', color: m.status==='published' ? 'var(--amber)' : 'var(--green)' }} onClick={() => togglePublish(m)}>{m.status==='published' ? 'Unpublish' : 'Publish'}</button>
+                <button className="btn-ghost btn-sm" style={{ fontSize:10, padding:'2px 8px', color:'var(--amber)' }} onClick={() => { setSelectedQuizModule(m); loadQuizQuestions(m.id) }}>📝 Quiz</button>
                 <button className="btn-ghost btn-sm" style={{ fontSize:10, padding:'2px 8px', color:'var(--red)' }} onClick={() => del(m)}>Delete</button>
               </div>
             </div>
@@ -553,6 +644,68 @@ function ModulesPanel({ path, selectedModule, onSelect }) {
         </div>
       )}
       {modal && <ModuleModal pathId={path.id} initial={modal.item} onSave={save} onClose={() => setModal(null)} />}
+
+      {/* Quiz panel — slides in when admin clicks 📝 Quiz on a module */}
+      {selectedQuizModule && (
+        <ModalOverlay onClose={() => setSelectedQuizModule(null)}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
+            <div>
+              <h3 style={{ margin:0 }}>Module Quiz</h3>
+              <p style={{ margin:'2px 0 0', fontSize:11, color:'var(--text-4)' }}>{selectedQuizModule.title}</p>
+            </div>
+            <button className="btn-primary btn-sm" onClick={() => setQuizModal({ moduleId: selectedQuizModule.id })}>+ Add Question</button>
+          </div>
+          {quizLoading ? <div style={{ display:'flex', justifyContent:'center', padding:20 }}><Spinner /></div> : (
+            <div style={{ display:'flex', flexDirection:'column', gap:8, maxHeight:400, overflowY:'auto' }}>
+              {quizQuestions.length === 0 && <p style={{ color:'var(--text-4)', fontSize:12, textAlign:'center', padding:20 }}>No quiz questions yet. Add one to get started.</p>}
+              {quizQuestions.map((q, qi) => (
+                <div key={q.id} style={{ background:'var(--surface-2)', border:'1px solid var(--border)', borderRadius:'var(--r-sm)', padding:'10px 12px' }}>
+                  <div style={{ display:'flex', alignItems:'flex-start', gap:8 }}>
+                    <span style={{ fontFamily:'var(--mono)', fontSize:10, color:'var(--cyan)', background:'rgba(0,194,230,0.1)', padding:'1px 6px', borderRadius:4, flexShrink:0, marginTop:2 }}>Q{qi+1}</span>
+                    <span style={{ fontSize:12, flex:1, color:'var(--text-2)' }}>{q.text}</span>
+                    <span style={{ fontSize:10, color:'var(--text-4)', flexShrink:0 }}>{q.points} pts</span>
+                    <button className="btn-ghost btn-sm" style={{ fontSize:10, padding:'1px 6px' }} onClick={() => setQuizModal({ moduleId: selectedQuizModule.id, item: q })}>Edit</button>
+                    <button className="btn-ghost btn-sm" style={{ fontSize:10, padding:'1px 6px', color:'var(--red)' }} onClick={async () => {
+                      if (!confirm('Delete this quiz question?')) return
+                      await api.adminDeleteQuizQuestion(q.id).catch(e => alert(e.message))
+                      loadQuizQuestions(selectedQuizModule.id)
+                    }}>Del</button>
+                  </div>
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:4, marginTop:6, paddingLeft:26 }}>
+                    {(q.options ?? []).map(o => {
+                      const isCorrect = q.validation_data?.correct_option_id === o.id ||
+                        (q.validation_data?.correct_option_index != null &&
+                         (q.options ?? []).sort((a,b)=>a.sort_order-b.sort_order)[q.validation_data.correct_option_index]?.id === o.id)
+                      return (
+                        <span key={o.id} style={{ fontSize:10, padding:'2px 8px', borderRadius:999,
+                          background: isCorrect ? 'rgba(20,201,168,0.1)' : 'var(--surface-3)',
+                          color: isCorrect ? '#14C9A8' : 'var(--text-4)',
+                          border:`1px solid ${isCorrect ? 'rgba(20,201,168,0.3)' : 'var(--border)'}` }}>
+                          {isCorrect ? '✓ ' : ''}{o.text}
+                        </span>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </ModalOverlay>
+      )}
+
+      {/* Quiz question editor modal */}
+      {quizModal && (
+        <QuizQuestionModal
+          initial={quizModal.item}
+          onSave={async (form) => {
+            if (quizModal.item) await api.adminUpdateQuizQuestion(quizModal.item.id, form)
+            else await api.adminAddQuizQuestion(quizModal.moduleId, form)
+            loadQuizQuestions(quizModal.moduleId)
+            setQuizModal(null)
+          }}
+          onClose={() => setQuizModal(null)}
+        />
+      )}
     </div>
   )
 }
