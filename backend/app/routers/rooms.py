@@ -21,45 +21,31 @@ def _option_out(o: models.QuestionOption) -> dict:
     return {"id": o.id, "text": o.text, "sort_order": o.sort_order, "match_key": o.match_key}
 
 
-def _hint_out(h: models.QuestionHint, unlocked_ids: set) -> dict:
-    unlocked = h.id in unlocked_ids
-    return {
-        "id": h.id,
-        "content": h.content if unlocked else None,
-        "cost": h.cost,
-        "order": h.order,
-        "unlocked": unlocked,
-    }
-
-
-def _question_out(q: models.Question, unlocked_ids: set, admin: bool = False) -> dict:
+def _question_out(q: models.Question, admin: bool = False) -> dict:
     d = {
         "id": q.id, "task_id": q.task_id,
         "question_type": q.question_type, "text": q.text,
         "explanation": q.explanation, "points": q.points,
         "is_mandatory": q.is_mandatory, "sort_order": q.sort_order,
         "options": [_option_out(o) for o in q.options],
-        "hints": [_hint_out(h, unlocked_ids) for h in q.hints],
     }
     if admin:
         d["validation_data"] = q.validation_data
     return d
 
 
-def _task_out(t: models.Task, unlocked_ids: set, admin: bool = False) -> dict:
+def _task_out(t: models.Task, admin: bool = False) -> dict:
     return {
         "id": t.id, "room_id": t.room_id, "title": t.title,
         "description": t.description, "objectives": t.objectives,
         "sort_order": t.sort_order, "estimated_minutes": t.estimated_minutes,
         "points": t.points, "completion_rule": t.completion_rule,
         "min_score_pct": t.min_score_pct,
-        "questions": [_question_out(q, unlocked_ids, admin) for q in t.questions],
+        "questions": [_question_out(q, admin) for q in t.questions],
     }
 
 
-def _room_detail(r: models.Room, unlocked_ids: set = None, admin: bool = False) -> dict:
-    if unlocked_ids is None:
-        unlocked_ids = set()
+def _room_detail(r: models.Room, admin: bool = False) -> dict:
     return {
         "id": r.id, "slug": r.slug, "module_id": r.module_id,
         "title": r.title, "description": r.description,
@@ -68,7 +54,7 @@ def _room_detail(r: models.Room, unlocked_ids: set = None, admin: bool = False) 
         "tags": r.tags, "mitre_attack": r.mitre_attack,
         "prerequisites": r.prerequisites, "cover_image": r.cover_image,
         "xp_reward": r.xp_reward, "sort_order": r.sort_order, "status": r.status,
-        "tasks": [_task_out(t, unlocked_ids, admin) for t in r.tasks],
+        "tasks": [_task_out(t, admin) for t in r.tasks],
         "vm_assignments": [
             {"id": a.id, "vm_template": {
                 "id": a.vm_template.id, "name": a.vm_template.name,
@@ -103,13 +89,6 @@ def _get_question_or_404(question_id: str, db: Session) -> models.Question:
     if not q:
         raise HTTPException(status_code=404, detail="Question not found")
     return q
-
-
-def _user_unlocked_hints(user_id: str, db: Session) -> set:
-    rows = db.query(models.QuestionHintUnlock.hint_id).filter(
-        models.QuestionHintUnlock.user_id == user_id
-    ).all()
-    return {r.hint_id for r in rows}
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -154,8 +133,7 @@ def get_room(
     is_admin = current_user.role in (models.Role.ADMIN, models.Role.TUTOR)
     if not is_admin and room.status != models.PublicationStatus.PUBLISHED:
         raise HTTPException(status_code=404, detail="Room not found")
-    unlocked = _user_unlocked_hints(current_user.id, db)
-    return _room_detail(room, unlocked, admin=is_admin)
+    return _room_detail(room, admin=is_admin)
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -327,7 +305,7 @@ def create_question(
     for h in hints:
         db.add(models.QuestionHint(question_id=question.id, **h.model_dump()))
     db.commit(); db.refresh(question)
-    return _question_out(question, set(), admin=True)
+    return _question_out(question, admin=True)
 
 
 @router.patch("/questions/{question_id}")

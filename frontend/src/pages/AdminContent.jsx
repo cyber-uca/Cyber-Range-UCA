@@ -226,7 +226,7 @@ function TaskModal({ initial, onSave, onClose }) {
 
 /* ── Question modal ───────────────────────────────────────────── */
 function QuestionModal({ initial, onSave, onClose }) {
-  const blank = { question_type: 'mcq_single', text: '', explanation: '', points: 20, is_mandatory: true, sort_order: 0, validation_data: '', options: [], hints: [] }
+  const blank = { question_type: 'mcq_single', text: '', explanation: '', points: 20, is_mandatory: true, sort_order: 0, validation_data: '', options: [] }
 
   // When editing, compute is_correct for each option from validation_data
   const initForm = () => {

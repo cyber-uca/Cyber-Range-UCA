@@ -218,23 +218,6 @@ class StopVMPayload(BaseModel):
     vm_template_id: str
 
 
-# ── Question Hints ────────────────────────────────────────────────────────────
-
-class QuestionHintOut(BaseModel):
-    id: str
-    content: Optional[str]   # None if not yet unlocked
-    cost: int
-    order: int
-    unlocked: bool = False
-    class Config: from_attributes = True
-
-
-class QuestionHintCreate(BaseModel):
-    content: str
-    cost: int = 0
-    order: int = 0
-
-
 # ── Question Options ──────────────────────────────────────────────────────────
 
 class QuestionOptionOut(BaseModel):
@@ -264,7 +247,6 @@ class QuestionOut(BaseModel):
     is_mandatory: bool
     sort_order: int
     options: List[QuestionOptionOut] = []
-    hints: List[QuestionHintOut] = []
     # validation_data is NOT exposed to learners — only to admins
     class Config: from_attributes = True
 

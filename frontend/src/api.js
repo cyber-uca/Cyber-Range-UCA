@@ -319,12 +319,6 @@ export const api = {
       headers: authHeaders(),
     }).then(handle),
 
-  unlockHint: (hintId) =>
-    fetch(`${BASE}/progress/hints/${hintId}/unlock`, {
-      method: 'POST',
-      headers: authHeaders(),
-    }).then(handle),
-
   getMyAnalytics: () =>
     fetch(`${BASE}/progress/analytics/me`, { headers: authHeaders() }).then(handle),
 

@@ -262,9 +262,6 @@ if db.query(models.Room).count() == 0:
         q.validation_data = {"correct_option_id": correct_opt_id}
         return q
 
-    def add_hint(question, content, cost=0, order=0):
-        db.add(models.QuestionHint(question_id=question.id, content=content, cost=cost, order=order))
-
     # ══════════════════════════════════════════════════════════════════════
     #  TASK 1 — Discover  (+15 XP)
     # ══════════════════════════════════════════════════════════════════════
@@ -287,7 +284,6 @@ if db.query(models.Room).count() == 0:
         [("A","Engine management"),("B","Infotainment system"),("C","Steering system"),("D","Lighting system")],
         correct_letter="B", points=8, sort_order=1,
         explanation="The ICSim dashboard (CAN bus / vehicle controls) is still functional. Only the infotainment unit shows the failure.")
-    add_hint(q1, "Focus on what still works, not just what's broken.", cost=0)
 
     q2 = add_mcq(t1, "Based only on what you observe, what is the most accurate statement?",
         [("A","The entire vehicle has failed"),("B","Only one subsystem appears affected"),
@@ -317,7 +313,6 @@ if db.query(models.Room).count() == 0:
          ("C","install.log and the OTA Server access log only"),("D","The Wazuh dashboard alone")],
         correct_letter="B", points=13, sort_order=1,
         explanation="update.log shows the abort event; battery.log shows the voltage drop that triggered it.")
-    add_hint(q3, "One file usually says what happened. A different one tends to say why.", cost=0)
 
     q4 = add_mcq(t2, "What sequence best matches the evidence?",
         [("A","Malware corrupted the firmware"),("B","The OTA server crashed"),
@@ -347,7 +342,6 @@ if db.query(models.Room).count() == 0:
          ("C","A firewall rule change"),("D","An unusually large firmware file")],
         correct_letter="B", points=10, sort_order=1,
         explanation="Look for what is absent as much as what is present.")
-    add_hint(q5, "No attack fingerprints across three independent sources is itself strong evidence.", cost=0)
 
     q6 = add_mcq(t3, "Which security property was primarily affected?",
         [("A","Confidentiality"),("B","Availability"),("C","Authenticity"),("D","Non-repudiation")],
@@ -380,7 +374,6 @@ if db.query(models.Room).count() == 0:
          ("D","Disconnect the vehicle from the network")],
         correct_letter="C", points=20, sort_order=1,
         explanation="Match the response to what you've confirmed. The root cause is a battery failure, not a security breach.")
-    add_hint(q8, "Match the response to what you have actually confirmed, not to worst-case assumptions.", cost=0)
 
     # ══════════════════════════════════════════════════════════════════════
     #  TASK 5 — Mitigate  (+20 XP)
@@ -439,8 +432,6 @@ if db.query(models.Room).count() == 0:
          ("D","Restarting the OTA server daily")],
         correct_letter="B", points=10, sort_order=1,
         explanation="A pre-install battery check is the single control that prevents mid-install failure.")
-    add_hint(q11, "Set minimum_battery to at least 50 in ota.conf before retrying.", cost=10)
-    add_hint(q11, "Both rollback_enabled and verify_before_reboot must be true.", cost=15)
 
     db.commit()
     print("✓ Room 1 'Interrupted OTA Update' seeded with 6 tasks and 11 questions.")

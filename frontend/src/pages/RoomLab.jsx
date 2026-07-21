@@ -136,13 +136,11 @@ function VMCard({ vmTemplate, envVm, env, onStart, onStop, starting, stopping })
 }
 
 /* ─── Question renderer ───────────────────────────────────────────────── */
-function QuestionBlock({ q, idx, answer, onAnswer, submitted, result, unlockedHints, onUnlockHint }) {
+function QuestionBlock({ q, idx, answer, onAnswer, submitted, result }) {
   const isMcq    = q.question_type === 'mcq_single' || q.question_type === 'mcq_multi'
   const correct  = result?.is_correct
   const border   = !submitted ? 'var(--border)' : correct ? 'rgba(20,201,168,0.5)' : 'rgba(240,82,74,0.4)'
   const bg       = !submitted ? 'rgba(13,24,38,0.6)' : correct ? 'rgba(20,201,168,0.06)' : 'rgba(240,82,74,0.05)'
-  const hints    = q.hints ?? []
-  const [showHints, setShowHints] = useState(false)
 
   // Determine which option is correct (for reveal after wrong answer)
   const correctOptId = q.validation_data?.correct_option_id
@@ -168,51 +166,7 @@ function QuestionBlock({ q, idx, answer, onAnswer, submitted, result, unlockedHi
           {q.is_mandatory && <span style={{ marginLeft:8, fontSize:10, color:'var(--amber)', fontWeight:700 }}>required</span>}
           <span style={{ marginLeft:8, fontSize:10, color:'var(--text-4)' }}>{q.points} pts</span>
         </div>
-        {/* Hint trigger — only show if hints exist and question not yet correct */}
-        {hints.length > 0 && !correct && (
-          <button onClick={() => setShowHints(h => !h)}
-            style={{ flexShrink:0, padding:'3px 10px', borderRadius:6, fontSize:11, fontWeight:700,
-              cursor:'pointer', background:'rgba(245,166,35,0.1)', color:'var(--amber)',
-              border:'1px solid rgba(245,166,35,0.3)' }}>
-            💡 {showHints ? 'Hide hints' : `Hints (${hints.length})`}
-          </button>
-        )}
       </div>
-
-      {/* Hint panel */}
-      {showHints && hints.length > 0 && (
-        <div style={{ marginBottom:12, display:'flex', flexDirection:'column', gap:6 }}>
-          {hints.map((h, hi) => {
-            const unlocked = unlockedHints?.has(h.id)
-            return (
-              <div key={h.id} style={{
-                background: unlocked ? 'rgba(245,166,35,0.06)' : 'rgba(13,24,38,0.5)',
-                border:`1px solid ${unlocked ? 'rgba(245,166,35,0.3)' : 'var(--border)'}`,
-                borderRadius:8, padding:'8px 12px',
-              }}>
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
-                  <span style={{ fontSize:11, color:'var(--amber)', fontWeight:700 }}>
-                    Hint {hi+1} {h.cost > 0 ? `(−${h.cost} pts)` : '(free)'}
-                  </span>
-                  {!unlocked && (
-                    <button onClick={() => onUnlockHint(h)}
-                      style={{ padding:'3px 10px', borderRadius:6, fontSize:11, fontWeight:700,
-                        cursor:'pointer', background:'rgba(245,166,35,0.15)', color:'var(--amber)',
-                        border:'1px solid rgba(245,166,35,0.35)' }}>
-                      Unlock
-                    </button>
-                  )}
-                </div>
-                {unlocked && (
-                  <p style={{ margin:'6px 0 0', fontSize:12, color:'var(--text-3)', lineHeight:1.6 }}>
-                    {h.content}
-                  </p>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
 
       {/* MCQ options */}
       {isMcq && (q.options ?? []).length > 0 && (
@@ -290,7 +244,6 @@ export default function RoomLab() {
   const [activeTaskIdx, setActiveTaskIdx] = useState(0)
   const [answers, setAnswers] = useState({})
   const [results, setResults] = useState({})
-  const [unlockedHints, setUnlockedHints] = useState(new Set()) // hint IDs the user has unlocked
   const [vmState, setVmState] = useState({})
   const [logs, setLogs] = useState(['$ ready — start VMs when needed'])
   const logRef = useRef(null)
@@ -346,7 +299,6 @@ export default function RoomLab() {
       await api.resetRoomProgress(room.id)
       setAnswers({})
       setResults({})
-      setUnlockedHints(new Set())
       setActiveTaskIdx(0)
       setLogs(['$ lab reset — start fresh'])
     } catch (err) {
@@ -357,20 +309,6 @@ export default function RoomLab() {
   }
 
   const addLog = useCallback((line) => setLogs(p => [...p, line]), [])
-
-  const unlockHint = async (hint) => {
-    try {
-      const res = await api.unlockHint(hint.id)
-      setUnlockedHints(prev => new Set([...prev, hint.id]))
-      if (res.points_deducted > 0) {
-        addLog(`$ 💡 Hint unlocked — −${res.points_deducted} pts`)
-      } else {
-        addLog('$ 💡 Hint unlocked (free)')
-      }
-    } catch (err) {
-      addLog(`$ [ERROR] ${err.message}`)
-    }
-  }
 
   const startVM = async (vmTpl) => {
     setVmState(p => ({ ...p, [vmTpl.id]: { ...(p[vmTpl.id]??{}), starting:true } }))
@@ -549,8 +487,6 @@ export default function RoomLab() {
                     onAnswer={val => setAnswers(p => ({ ...p, [q.id]: val }))}
                     submitted={!!results[q.id]}
                     result={results[q.id]}
-                    unlockedHints={unlockedHints}
-                    onUnlockHint={unlockHint}
                   />
                   {!results[q.id] && (
                     <div style={{ display:'flex', justifyContent:'flex-end', marginTop:-8, marginBottom:16 }}>

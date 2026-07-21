@@ -92,7 +92,6 @@ export default function Analytics() {
         <StatCard val={total_pts_earned} label="Points earned"    color="var(--amber)" />
         <StatCard val={rooms_completed}  label="Rooms completed"  color="var(--teal)"
           sub={rooms_started > 0 ? `${rooms_started} started` : undefined} />
-        <StatCard val={hints_used}       label="Hints used"       color="var(--violet)" />
       </div>
 
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:24, marginBottom:32 }}>

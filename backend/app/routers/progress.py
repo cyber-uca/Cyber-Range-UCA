@@ -1,5 +1,5 @@
 """
-Progress router — answer submission, hint unlock, progress retrieval.
+Progress router — answer submission, progress retrieval.
 All endpoints require authentication.
 """
 import hashlib
@@ -333,40 +333,6 @@ def submit_answer(
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  HINT UNLOCK
-# ═══════════════════════════════════════════════════════════════════
-
-@router.post("/hints/{hint_id}/unlock")
-def unlock_hint(
-    hint_id: str,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-):
-    hint = db.query(models.QuestionHint).filter(models.QuestionHint.id == hint_id).first()
-    if not hint:
-        raise HTTPException(status_code=404, detail="Hint not found")
-
-    already = db.query(models.QuestionHintUnlock).filter(
-        models.QuestionHintUnlock.user_id == current_user.id,
-        models.QuestionHintUnlock.hint_id == hint_id,
-    ).first()
-    if already:
-        return {"content": hint.content, "already_unlocked": True, "points_deducted": 0}
-
-    settings = db.query(models.PlatformSettings).filter_by(id="singleton").first()
-    deducted = 0
-    if settings and settings.hint_penalties_enabled and hint.cost > 0:
-        if current_user.points < hint.cost:
-            raise HTTPException(status_code=400, detail=f"Not enough points (need {hint.cost})")
-        current_user.points -= hint.cost
-        deducted = hint.cost
-
-    db.add(models.QuestionHintUnlock(user_id=current_user.id, hint_id=hint_id))
-    db.commit()
-    return {"content": hint.content, "already_unlocked": False, "points_deducted": deducted}
-
-
-# ═══════════════════════════════════════════════════════════════════
 #  PROGRESS RETRIEVAL
 # ═══════════════════════════════════════════════════════════════════
 
@@ -546,9 +512,7 @@ def my_analytics(
         })
 
     # --- Hint usage ---
-    hints_used = db.query(models.QuestionHintUnlock).filter(
-        models.QuestionHintUnlock.user_id == uid
-    ).count()
+    hints_used = 0
 
     # --- Path progress ---
     path_progs = db.query(models.UserPathProgress).filter(
