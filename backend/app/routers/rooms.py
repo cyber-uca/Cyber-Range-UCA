@@ -396,15 +396,3 @@ def delete_option(
     db.delete(opt); db.commit()
     return {"status": "deleted"}
 
-
-@router.post("/questions/{question_id}/hints")
-def add_hint(
-    question_id: str,
-    payload: schemas.QuestionHintCreate,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(require_role(models.Role.TUTOR, models.Role.ADMIN)),
-):
-    question = _get_question_or_404(question_id, db)
-    hint = models.QuestionHint(question_id=question.id, **payload.model_dump())
-    db.add(hint); db.commit(); db.refresh(hint)
-    return {"id": hint.id, "content": hint.content, "cost": hint.cost, "order": hint.order}
