@@ -258,7 +258,8 @@ class Question(Base):
                             order_by="QuestionOption.sort_order", cascade="all, delete-orphan")
     hints    = relationship("QuestionHint", back_populates="question",
                             order_by="QuestionHint.order", cascade="all, delete-orphan")
-    answers  = relationship("UserQuestionAnswer", back_populates="question")
+    answers  = relationship("UserQuestionAnswer", back_populates="question",
+                            cascade="all, delete-orphan")
 
 
 class QuestionOption(Base):

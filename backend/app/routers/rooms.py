@@ -364,7 +364,18 @@ def delete_question(
     current_user: models.User = Depends(require_role(models.Role.ADMIN)),
 ):
     question = _get_question_or_404(question_id, db)
-    db.delete(question); db.commit()
+    # Explicitly delete child records to avoid FK null-set errors
+    db.query(models.UserQuestionAnswer).filter(
+        models.UserQuestionAnswer.question_id == question_id
+    ).delete(synchronize_session=False)
+    db.query(models.QuestionOption).filter(
+        models.QuestionOption.question_id == question_id
+    ).delete(synchronize_session=False)
+    db.query(models.UserTaskProgress).filter(
+        models.UserTaskProgress.task_id == question.task_id
+    ).delete(synchronize_session=False)
+    db.delete(question)
+    db.commit()
     return {"status": "deleted"}
 
 
