@@ -41,18 +41,21 @@ function VMCard({ vmTemplate, envVm, env, onStart, onStop, starting, stopping })
   const [loadingConsole, setLoadingConsole] = useState(false)
 
   const openConsole = async () => {
-    // Always fetch a fresh ticket — VNC tickets expire in ~2 min
     if (!envVm?.id) return
     setLoadingConsole(true)
     try {
-      // Re-fetch environment to get current vmid (avoids using stale cached vmid)
       const env = await api.getEnvironment(envVm.environment_id).catch(() => null)
       const freshVm = env?.vms?.find(v => v.id === envVm.id) ?? envVm
       const data = await api.getConsoleUrl(freshVm.environment_id ?? envVm.environment_id, freshVm.id)
+      // Set PVEAuthCookie on /proxmox path so nginx-proxied noVNC can authenticate
+      if (data.pve_ticket && data.console_url?.startsWith('/proxmox/')) {
+        document.cookie = `PVEAuthCookie=${encodeURIComponent(data.pve_ticket)}; path=/proxmox; SameSite=Lax`
+        await new Promise(r => setTimeout(r, 50))
+      }
       window.open(data.console_url, '_blank', 'width=1200,height=800')
     } catch(err) {
       if (err.message?.includes('410') || err.message?.toLowerCase().includes('no longer exists')) {
-        alert('This VM was deleted on Proxmox. Click Stop then Start to provision a fresh one.')
+        alert('This VM was deleted on Proxmox. Click Stop then Start again.')
       } else if (envVm.proxmox_vmid && envVm.proxmox_node) {
         window.open(`https://192.168.37.20:8006/?console=kvm&novnc=1&vmid=${envVm.proxmox_vmid}&node=${envVm.proxmox_node}`, '_blank')
       }
