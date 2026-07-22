@@ -45,10 +45,15 @@ function VMCard({ vmTemplate, envVm, env, onStart, onStop, starting, stopping })
     if (!envVm?.id) return
     setLoadingConsole(true)
     try {
-      const data = await api.getConsoleUrl(envVm.environment_id, envVm.id)
+      // Re-fetch environment to get current vmid (avoids using stale cached vmid)
+      const env = await api.getEnvironment(envVm.environment_id).catch(() => null)
+      const freshVm = env?.vms?.find(v => v.id === envVm.id) ?? envVm
+      const data = await api.getConsoleUrl(freshVm.environment_id ?? envVm.environment_id, freshVm.id)
       window.open(data.console_url, '_blank', 'width=1200,height=800')
-    } catch {
-      if (envVm.proxmox_vmid && envVm.proxmox_node) {
+    } catch(err) {
+      if (err.message?.includes('410') || err.message?.toLowerCase().includes('no longer exists')) {
+        alert('This VM was deleted on Proxmox. Click Stop then Start to provision a fresh one.')
+      } else if (envVm.proxmox_vmid && envVm.proxmox_node) {
         window.open(`https://192.168.37.20:8006/?console=kvm&novnc=1&vmid=${envVm.proxmox_vmid}&node=${envVm.proxmox_node}`, '_blank')
       }
     } finally { setLoadingConsole(false) }

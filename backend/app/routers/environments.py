@@ -296,6 +296,47 @@ def get_console_url(
     if not vm.proxmox_vmid or not vm.proxmox_node:
         raise HTTPException(status_code=400, detail="VM not yet provisioned")
 
+    # Verify the VM still exists on Proxmox before trying to get a VNC ticket
+    import urllib.request, urllib.parse, ssl, json as _json
+    proxmox_host = os.getenv("PROXMOX_HOST", "192.168.37.20")
+    verify_ssl   = os.getenv("PROXMOX_VERIFY_SSL", "false").lower() == "true"
+    proxmox_user = os.getenv("PROXMOX_USER", "root@pam")
+    proxmox_pass = os.getenv("PROXMOX_PASSWORD", "")
+
+    ctx = ssl.create_default_context()
+    if not verify_ssl:
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+
+    vm_exists = False
+    if proxmox_pass:
+        try:
+            data = urllib.parse.urlencode({"username": proxmox_user, "password": proxmox_pass}).encode()
+            r = urllib.request.urlopen(
+                urllib.request.Request(f"https://{proxmox_host}:8006/api2/json/access/ticket", data=data, method="POST"),
+                context=ctx, timeout=5
+            )
+            chk_ticket = _json.loads(r.read())["data"]["ticket"]
+            chk_req = urllib.request.Request(
+                f"https://{proxmox_host}:8006/api2/json/nodes/{vm.proxmox_node}/qemu/{vm.proxmox_vmid}/status/current",
+                headers={"Cookie": f"PVEAuthCookie={chk_ticket}"}
+            )
+            urllib.request.urlopen(chk_req, context=ctx, timeout=5)
+            vm_exists = True
+        except Exception:
+            vm_exists = False
+
+    if not vm_exists and proxmox_pass:
+        # VM was deleted on Proxmox directly — clean up DB record
+        vm.status = "stopped"
+        if all(v.status != "running" for v in env.vms):
+            env.status = models.EnvironmentStatus.DESTROYED
+        db.commit()
+        raise HTTPException(
+            status_code=410,
+            detail="VM no longer exists on Proxmox — it was likely deleted externally. Click Stop then Start to provision a fresh one."
+        )
+
     import urllib.parse
 
     proxmox_host = os.getenv("PROXMOX_HOST", "192.168.37.20")
