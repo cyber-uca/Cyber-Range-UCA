@@ -347,23 +347,16 @@ def get_console_url(
         vnc_tk, vnc_port = _vnc_ticket(vm.proxmox_node, vm.proxmox_vmid, ticket, csrf)
 
     if vnc_tk:
-        enc_vnc  = urllib.parse.quote(vnc_tk, safe='')
-        vnc_path = (
+        enc_vnc    = urllib.parse.quote(vnc_tk, safe='')
+        enc_cookie = urllib.parse.quote(ticket, safe='')
+        vnc_path   = (
             f"api2/json/nodes/{vm.proxmox_node}/qemu/{vm.proxmox_vmid}"
             f"/vncwebsocket/port/{vnc_port}/vncticket/{enc_vnc}"
         )
-        # Node IP map for direct connection
-        node_ips = {}
-        for entry in os.getenv("PROXMOX_NODES", "").split(","):
-            parts = entry.strip().split(":")
-            if len(parts) == 2:
-                node_ips[parts[0]] = parts[1]
-        node_ip = node_ips.get(vm.proxmox_node, proxmox_host)
-
-        # Direct URL to the correct node — bypasses cross-node routing
-        enc_cookie = urllib.parse.quote(ticket, safe='')
+        # Always use the cluster entry node (pve1) — Proxmox routes internally.
+        # PVEAuthCookie in query string authenticates the initial page load.
         console_url = (
-            f"https://{node_ip}:8006/"
+            f"https://{proxmox_host}:8006/"
             f"?console=kvm&novnc=1"
             f"&vmid={vm.proxmox_vmid}&node={vm.proxmox_node}"
             f"&resize=off&lang=en"
