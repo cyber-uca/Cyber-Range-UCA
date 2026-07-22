@@ -229,7 +229,7 @@ def create_task(
     room = _get_room_or_404(room_id, db)
     task = models.Task(room_id=room.id, **payload.model_dump())
     db.add(task); db.commit(); db.refresh(task)
-    return _task_out(task, set(), admin=True)
+    return _task_out(task, admin=True)
 
 
 @router.patch("/tasks/{task_id}")
@@ -243,7 +243,7 @@ def update_task(
     for k, v in payload.model_dump(exclude_unset=True).items():
         setattr(task, k, v)
     db.commit(); db.refresh(task)
-    return _task_out(task, set(), admin=True)
+    return _task_out(task, admin=True)
 
 
 @router.delete("/tasks/{task_id}")
@@ -357,7 +357,7 @@ def update_question(
 
     db.commit()
     db.refresh(question)
-    return _question_out(question, set(), admin=True)
+    return _question_out(question, admin=True)
 
 
 @router.delete("/questions/{question_id}")
