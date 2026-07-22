@@ -352,17 +352,23 @@ def get_console_url(
             f"api2/json/nodes/{vm.proxmox_node}/qemu/{vm.proxmox_vmid}"
             f"/vncwebsocket/port/{vnc_port}/vncticket/{enc_vnc}"
         )
-        # Use node-specific nginx proxy so WebSocket goes to correct Proxmox node
-        node_proxy = {
-            "pve1": "/proxmox/",
-            "pve2": "/proxmox-pve2/",
-            "pve3": "/proxmox-pve3/",
-        }.get(vm.proxmox_node, "/proxmox/")
+        # Node IP map for direct connection
+        node_ips = {}
+        for entry in os.getenv("PROXMOX_NODES", "").split(","):
+            parts = entry.strip().split(":")
+            if len(parts) == 2:
+                node_ips[parts[0]] = parts[1]
+        node_ip = node_ips.get(vm.proxmox_node, proxmox_host)
 
+        # Direct URL to the correct node — bypasses cross-node routing
+        enc_cookie = urllib.parse.quote(ticket, safe='')
         console_url = (
-            f"{node_proxy}?console=kvm&novnc=1"
+            f"https://{node_ip}:8006/"
+            f"?console=kvm&novnc=1"
             f"&vmid={vm.proxmox_vmid}&node={vm.proxmox_node}"
-            f"&resize=off&lang=en&path={vnc_path}"
+            f"&resize=off&lang=en"
+            f"&path={vnc_path}"
+            f"&PVEAuthCookie={enc_cookie}"
         )
         authenticated = True
     else:
