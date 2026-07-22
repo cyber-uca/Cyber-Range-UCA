@@ -270,8 +270,7 @@ def create_question(
 ):
     task = _get_task_or_404(task_id, db)
     opts = payload.options or []
-    hints = payload.hints or []
-    data = payload.model_dump(exclude={"options", "hints"})
+    data = payload.model_dump(exclude={"options"})
     question = models.Question(task_id=task.id, **data)
     db.add(question); db.flush()
 
@@ -302,8 +301,6 @@ def create_question(
                 "correct_option_indices": correct_indices,
             }
 
-    for h in hints:
-        db.add(models.QuestionHint(question_id=question.id, **h.model_dump()))
     db.commit(); db.refresh(question)
     return _question_out(question, admin=True)
 
