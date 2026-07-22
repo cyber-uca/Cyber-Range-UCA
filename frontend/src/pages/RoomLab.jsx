@@ -48,8 +48,10 @@ function VMCard({ vmTemplate, envVm, env, onStart, onStop, starting, stopping })
       const freshVm = env?.vms?.find(v => v.id === envVm.id) ?? envVm
       const data = await api.getConsoleUrl(freshVm.environment_id ?? envVm.environment_id, freshVm.id)
       // Set PVEAuthCookie on /proxmox path so nginx-proxied noVNC can authenticate
-      if (data.pve_ticket && data.console_url?.startsWith('/proxmox/')) {
-        document.cookie = `PVEAuthCookie=${encodeURIComponent(data.pve_ticket)}; path=/proxmox; SameSite=Lax`
+      if (data.pve_ticket && data.console_url?.startsWith('/proxmox')) {
+        // Extract proxy path prefix (/proxmox/, /proxmox-pve2/, /proxmox-pve3/)
+        const proxyPath = data.console_url.split('?')[0]
+        document.cookie = `PVEAuthCookie=${encodeURIComponent(data.pve_ticket)}; path=${proxyPath}; SameSite=Lax`
         await new Promise(r => setTimeout(r, 50))
       }
       window.open(data.console_url, '_blank', 'width=1200,height=800')

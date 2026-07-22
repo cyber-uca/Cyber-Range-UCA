@@ -352,9 +352,15 @@ def get_console_url(
             f"api2/json/nodes/{vm.proxmox_node}/qemu/{vm.proxmox_vmid}"
             f"/vncwebsocket/port/{vnc_port}/vncticket/{enc_vnc}"
         )
-        # Use /proxmox/ nginx proxy — same origin so browser cookie works
+        # Use node-specific nginx proxy so WebSocket goes to correct Proxmox node
+        node_proxy = {
+            "pve1": "/proxmox/",
+            "pve2": "/proxmox-pve2/",
+            "pve3": "/proxmox-pve3/",
+        }.get(vm.proxmox_node, "/proxmox/")
+
         console_url = (
-            f"/proxmox/?console=kvm&novnc=1"
+            f"{node_proxy}?console=kvm&novnc=1"
             f"&vmid={vm.proxmox_vmid}&node={vm.proxmox_node}"
             f"&resize=off&lang=en&path={vnc_path}"
         )
