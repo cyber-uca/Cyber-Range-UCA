@@ -352,8 +352,6 @@ def get_console_url(
             f"api2/json/nodes/{vm.proxmox_node}/qemu/{vm.proxmox_vmid}"
             f"/vncwebsocket/port/{vnc_port}/vncticket/{enc_vnc}"
         )
-        # Direct Proxmox URL — most reliable, no proxy issues
-        # The PVEAuthCookie is passed as a query param for the initial page load
         enc_cookie = urllib.parse.quote(ticket, safe='')
         console_url = (
             f"https://{proxmox_host}:8006/"
