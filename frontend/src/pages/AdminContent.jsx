@@ -913,9 +913,20 @@ export default function AdminContent() {
   const [selectedPath, setSelectedPath] = useState(null)
   const [selectedModule, setSelectedModule] = useState(null)
   const [selectedRoom, setSelectedRoom] = useState(null)
+  const [activeTab, setActiveTab] = useState(0) // for mobile tab nav
 
-  const selectPath = (p) => { setSelectedPath(p); setSelectedModule(null); setSelectedRoom(null) }
-  const selectModule = (m) => { setSelectedModule(m); setSelectedRoom(null) }
+  const selectPath = (p) => {
+    setSelectedPath(p); setSelectedModule(null); setSelectedRoom(null)
+    setActiveTab(1) // advance to Modules on mobile
+  }
+  const selectModule = (m) => {
+    setSelectedModule(m); setSelectedRoom(null)
+    setActiveTab(2)
+  }
+  const selectRoom = (r) => {
+    setSelectedRoom(r)
+    setActiveTab(3)
+  }
 
   const col = {
     borderRight: '1px solid var(--border)',
@@ -926,14 +937,58 @@ export default function AdminContent() {
     display: 'flex', flexDirection: 'column', minWidth: 0,
   }
 
+  const TABS = ['Paths', 'Modules', 'Rooms', 'Tasks & Q']
+
+  const panels = [
+    <PathsPanel key="paths" selectedPath={selectedPath} onSelect={selectPath} />,
+    <ModulesPanel key="mods" path={selectedPath} selectedModule={selectedModule} onSelect={selectModule} />,
+    <RoomsPanel key="rooms" module={selectedModule} selectedRoom={selectedRoom} onSelect={selectRoom} />,
+    <TasksPanel key="tasks" room={selectedRoom} />,
+  ]
+
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ padding: '24px 28px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+      <div style={{ padding: '16px 20px 12px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         <h1 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>Content Management</h1>
         <p style={{ margin: '4px 0 0', color: 'var(--text-4)', fontSize: 13 }}>
           Paths → Modules → Rooms → Tasks → Questions
         </p>
       </div>
+
+      {/* Mobile/tablet: tab bar */}
+      <div className="admin-tab-bar" style={{ display: 'none' }}>
+        {TABS.map((t, i) => (
+          <button key={t} onClick={() => setActiveTab(i)} style={{
+            flex: 1, padding: '10px 4px', fontSize: 12, fontWeight: 600,
+            background: 'none', border: 'none', borderBottom: `2px solid ${activeTab === i ? 'var(--cyan)' : 'transparent'}`,
+            color: activeTab === i ? 'var(--cyan)' : 'var(--text-4)',
+            borderRadius: 0, cursor: 'pointer', transition: 'all .15s',
+          }}>
+            {t}
+            {i === 1 && selectedPath && <span style={{ display:'block', fontSize:9, color:'var(--text-4)', marginTop:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:70 }}>{selectedPath.title}</span>}
+            {i === 2 && selectedModule && <span style={{ display:'block', fontSize:9, color:'var(--text-4)', marginTop:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:70 }}>{selectedModule.title}</span>}
+            {i === 3 && selectedRoom && <span style={{ display:'block', fontSize:9, color:'var(--text-4)', marginTop:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:70 }}>{selectedRoom.title}</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* Mobile/tablet: single panel shown at a time */}
+      <div className="admin-tab-panel" style={{ display: 'none', flex: 1, overflow: 'hidden' }}>
+        <div style={{ height: '100%', overflow: 'auto', padding: '16px 14px' }}>
+          {panels[activeTab]}
+        </div>
+      </div>
+
+      {/* Desktop: 4-column layout */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }} className="admin-content-shell">
+        <div style={col} className="admin-col"><PathsPanel selectedPath={selectedPath} onSelect={selectPath} /></div>
+        <div style={col} className="admin-col"><ModulesPanel path={selectedPath} selectedModule={selectedModule} onSelect={selectModule} /></div>
+        <div style={col} className="admin-col"><RoomsPanel module={selectedModule} selectedRoom={selectedRoom} onSelect={r => { setSelectedRoom(r) }} /></div>
+        <div style={last} className="admin-col-last"><TasksPanel room={selectedRoom} /></div>
+      </div>
+    </div>
+  )
+}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }} className="admin-content-shell">
         <div style={col} className="admin-col"><PathsPanel selectedPath={selectedPath} onSelect={selectPath} /></div>
         <div style={col} className="admin-col"><ModulesPanel path={selectedPath} selectedModule={selectedModule} onSelect={selectModule} /></div>
