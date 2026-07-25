@@ -480,6 +480,67 @@ def get_console_url(
 
 
 # ═══════════════════════════════════════════════════════════════════
+#  BACKGROUND CLEANUP — destroy expired environments
+# ═══════════════════════════════════════════════════════════════════
+
+@router.post("/cleanup-expired")
+def cleanup_expired(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Destroy all environments where expires_at < now. Admin only."""
+    if current_user.role not in (models.Role.ADMIN, models.Role.TUTOR):
+        raise HTTPException(status_code=403, detail="Admin only")
+    return _do_cleanup(db)
+
+
+def _do_cleanup(db):
+    """Internal cleanup — can be called from scheduler or endpoint."""
+    now = datetime.utcnow()
+    expired = db.query(models.Environment).filter(
+        models.Environment.status == models.EnvironmentStatus.RUNNING,
+        models.Environment.expires_at < now,
+    ).all()
+    cleaned = 0
+    for env in expired:
+        for vm in env.vms:
+            if vm.proxmox_vmid and vm.status == "running":
+                try:
+                    get_gateway().destroy_vm(vm.proxmox_node, vm.proxmox_vmid)
+                except Exception as e:
+                    logger.warning(f"auto-cleanup destroy_vm {vm.proxmox_vmid}: {e}")
+            vm.status = "stopped"
+        env.status = models.EnvironmentStatus.DESTROYED
+        env.destroyed_at = now
+        cleaned += 1
+    if cleaned:
+        db.commit()
+        logger.info(f"Auto-cleanup: destroyed {cleaned} expired environment(s)")
+    return {"cleaned": cleaned}
+
+
+# Register periodic cleanup on startup
+def start_cleanup_scheduler(app):
+    import threading
+    def _run():
+        import time
+        while True:
+            time.sleep(300)  # every 5 minutes
+            try:
+                from ..database import SessionLocal
+                db = SessionLocal()
+                result = _do_cleanup(db)
+                db.close()
+                if result["cleaned"]:
+                    logger.info(f"Scheduled cleanup: {result['cleaned']} environment(s) destroyed")
+            except Exception as e:
+                logger.warning(f"Cleanup scheduler error: {e}")
+    t = threading.Thread(target=_run, daemon=True)
+    t.start()
+    logger.info("Environment cleanup scheduler started (5-min interval)")
+
+
+# ═══════════════════════════════════════════════════════════════════
 #  DESTROY FULL ENVIRONMENT
 # ═══════════════════════════════════════════════════════════════════
 

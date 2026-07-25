@@ -38,6 +38,16 @@ function VMCard({ vmTemplate, envVm, env, onStart, onStop, onPause, onResume, st
   const secsLeft = useCountdown(running && !paused && env?.expires_at_iso ? env.expires_at_iso : null)
   const urgent = secsLeft !== null && secsLeft < 300
   const warn   = secsLeft !== null && secsLeft < 900
+
+  // Auto-stop when timer expires
+  const autoStopRef = React.useRef(false)
+  useEffect(() => {
+    if (secsLeft === 0 && running && !autoStopRef.current) {
+      autoStopRef.current = true
+      addLog('$ ⏰ Time expired — stopping VM automatically')
+      onStop()
+    }
+  }, [secsLeft, running])
   const [consoleUrl, setConsoleUrl] = useState(null)
   const [loadingConsole, setLoadingConsole] = useState(false)
 
