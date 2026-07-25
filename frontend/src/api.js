@@ -326,6 +326,8 @@ export const api = {
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ vm_template_id: vmTemplateId }),
     }).then(handle),
+
+  resetRoomProgress: (roomId) =>
     fetch(`${BASE}/progress/room-answers/${roomId}`, {
       method: 'DELETE',
       headers: authHeaders(),
