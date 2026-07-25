@@ -228,10 +228,60 @@ export default function LandingPage() {
         .step-card:hover{border-color:var(--accent)!important;}
         .cta-btn{transition:box-shadow .25s,transform .15s!important;}
         .cta-btn:hover{box-shadow:0 0 34px rgba(0,194,230,.55)!important;transform:translateY(-1px)!important;}
+
+        /* Landing page responsive */
+        .lp-nav { padding: 0 52px !important; }
+        .lp-nav-links { display: flex !important; }
+        .lp-hero { grid-template-columns: 1fr 1fr !important; padding: 80px 80px 64px !important; }
+        .lp-hero-h1 { font-size: 50px !important; }
+        .lp-stats { padding: 36px 80px !important; }
+        .lp-stats-inner { flex-direction: row !important; }
+        .lp-stats-divider { display: block !important; }
+        .lp-cats { padding: 80px !important; }
+        .lp-cats-grid { grid-template-columns: repeat(4,1fr) !important; }
+        .lp-how { padding: 80px !important; }
+        .lp-steps-grid { grid-template-columns: repeat(4,1fr) !important; }
+        .lp-demo { padding: 80px !important; }
+        .lp-demo-grid { grid-template-columns: 1fr 1fr !important; }
+        .lp-feats-grid { grid-template-columns: 1fr 1fr !important; }
+        .lp-cta { padding: 100px 80px !important; }
+        .lp-footer { padding: 32px 80px !important; flex-direction: row !important; }
+        .lp-footer-links { display: flex !important; }
+
+        @media (max-width: 1024px) {
+          .lp-nav { padding: 0 24px !important; }
+          .lp-nav-links { display: none !important; }
+          .lp-hero { grid-template-columns: 1fr !important; padding: 48px 24px 40px !important; text-align: center; }
+          .lp-hero-h1 { font-size: 36px !important; }
+          .lp-hero-car { display: none !important; }
+          .lp-hero-btns { justify-content: center !important; }
+          .lp-stats { padding: 24px 20px !important; }
+          .lp-stats-inner { flex-wrap: wrap !important; gap: 20px !important; justify-content: center !important; }
+          .lp-stats-divider { display: none !important; }
+          .lp-cats { padding: 48px 20px !important; }
+          .lp-cats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 16px !important; }
+          .lp-how { padding: 48px 20px !important; }
+          .lp-steps-grid { grid-template-columns: repeat(2,1fr) !important; gap: 14px !important; }
+          .lp-steps-connector { display: none !important; }
+          .lp-demo { padding: 48px 20px !important; }
+          .lp-demo-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+          .lp-feats-grid { grid-template-columns: 1fr 1fr !important; }
+          .lp-cta { padding: 60px 20px !important; }
+          .lp-footer { flex-direction: column !important; gap: 16px !important; padding: 24px 20px !important; text-align: center !important; }
+          .lp-footer-links { justify-content: center !important; }
+        }
+
+        @media (max-width: 480px) {
+          .lp-hero-h1 { font-size: 28px !important; }
+          .lp-cats-grid { grid-template-columns: 1fr !important; }
+          .lp-steps-grid { grid-template-columns: 1fr !important; }
+          .lp-feats-grid { grid-template-columns: 1fr !important; }
+          .lp-hero-badge { display: none !important; }
+        }
       `}</style>
 
       {/* ════ NAV ════ */}
-      <nav style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 52px', height:66,
+      <nav className="lp-nav" style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 52px', height:66,
         borderBottom:'1px solid var(--border)', background:'rgba(7,13,22,0.85)', backdropFilter:'blur(20px)',
         position:'sticky', top:0, zIndex:200 }}>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
@@ -241,7 +291,7 @@ export default function LandingPage() {
             <div style={{ fontSize:9, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'.1em' }}>Cyber Range</div>
           </div>
         </div>
-        <div style={{ display:'flex', gap:36, fontSize:13, color:'var(--text-muted)' }}>
+        <div className="lp-nav-links" style={{ display:'flex', gap:36, fontSize:13, color:'var(--text-muted)' }}>
           {['Features','Challenges','How It Works','About'].map(item=>(
             <span key={item} className="nav-link" style={{ cursor:'pointer', transition:'color .15s' }}>{item}</span>
           ))}
@@ -253,7 +303,7 @@ export default function LandingPage() {
       </nav>
 
       {/* ════ HERO ════ */}
-      <section style={{ position:'relative', minHeight:'calc(100vh - 66px)', display:'grid',
+      <section className="lp-hero" style={{ position:'relative', minHeight:'calc(100vh - 66px)', display:'grid',
         gridTemplateColumns:'1fr 1fr', gap:48, alignItems:'center', padding:'80px 80px 64px', overflow:'hidden' }}>
         <Particles/>
         <GridBg/>
@@ -273,7 +323,7 @@ export default function LandingPage() {
             borderRadius:999, padding:'6px 16px' }}>
             <Zap c="var(--accent)" s={11}/>&nbsp;Automotive Cybersecurity Platform
           </div>
-          <h1 style={{ fontSize:50, fontWeight:900, lineHeight:1.08, margin:'0 0 18px', letterSpacing:'-.025em' }}>
+          <h1 className="lp-hero-h1" style={{ fontSize:50, fontWeight:900, lineHeight:1.08, margin:'0 0 18px', letterSpacing:'-.025em' }}>
             REALISTIC<br/>
             <TypeWriter words={['CAN BUS ATTACKS','ECU HACKING','FIRMWARE ANALYSIS','IDS EVASION','OBD-II EXPLOITS','V2X SECURITY']}/>
             <br/>TRAINING
@@ -282,7 +332,7 @@ export default function LandingPage() {
             Train on real automotive attacks and defenses in a fully isolated environment.
             No hardware. No setup. Just hack.
           </p>
-          <div style={{ display:'flex', gap:14 }}>
+          <div className="lp-hero-btns" style={{ display:'flex', gap:14 }}>
             <Link to="/register">
               <button className="btn-primary cta-btn" style={{ padding:'14px 36px', fontSize:15, borderRadius:11 }}>
                 Start Hacking →
@@ -297,22 +347,22 @@ export default function LandingPage() {
 
         </div>
 
-        <div style={{ position:'relative', zIndex:1, display:'flex', justifyContent:'center', animation:'fadeUp .9s .15s ease both' }}>
+        <div className="lp-hero-car" style={{ position:'relative', zIndex:1, display:'flex', justifyContent:'center', animation:'fadeUp .9s .15s ease both' }}>
           <CarHero/>
         </div>
       </section>
 
       {/* ════ STATS BAR ════ */}
-      <div style={{ background:'var(--surface)', borderTop:'1px solid var(--border)', borderBottom:'1px solid var(--border)', padding:'36px 80px' }}>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-around' }}>
+      <div className="lp-stats" style={{ background:'var(--surface)', borderTop:'1px solid var(--border)', borderBottom:'1px solid var(--border)', padding:'36px 80px' }}>
+        <div className="lp-stats-inner" style={{ display:'flex', alignItems:'center', justifyContent:'space-around' }}>
           <Stat target={50} suffix="+" label="Challenges" color="var(--accent)"/>
-          <div style={{width:1,height:48,background:'var(--border)'}}/>
+          <div className="lp-stats-divider" style={{width:1,height:48,background:'var(--border)'}}/>
           <Stat target={3} suffix="" label="Categories" color="var(--defensive)"/>
-          <div style={{width:1,height:48,background:'var(--border)'}}/>
+          <div className="lp-stats-divider" style={{width:1,height:48,background:'var(--border)'}}/>
           <Stat target={4250} suffix="+" label="Learners" color="var(--mitigation)"/>
-          <div style={{width:1,height:48,background:'var(--border)'}}/>
+          <div className="lp-stats-divider" style={{width:1,height:48,background:'var(--border)'}}/>
           <Stat target={98} suffix="%" label="Hands-on Labs" color="var(--warning)"/>
-          <div style={{width:1,height:48,background:'var(--border)'}}/>
+          <div className="lp-stats-divider" style={{width:1,height:48,background:'var(--border)'}}/>
           <div style={{textAlign:'center'}}>
             <div style={{fontFamily:'var(--font-mono)',fontSize:36,fontWeight:900,color:'var(--combined)',lineHeight:1}}>24/7</div>
             <div style={{fontSize:12,color:'var(--text-muted)',marginTop:6}}>Lab Access</div>
@@ -321,12 +371,12 @@ export default function LandingPage() {
       </div>
 
       {/* ════ CATEGORIES ════ */}
-      <section style={{ padding:'80px 80px 64px', background:'linear-gradient(180deg,var(--bg) 0%,var(--surface) 100%)' }}>
+      <section className="lp-cats" style={{ padding:'80px 80px 64px', background:'linear-gradient(180deg,var(--bg) 0%,var(--surface) 100%)' }}>
         <div style={{ textAlign:'center', marginBottom:52 }}>
           <div style={{ fontSize:11, textTransform:'uppercase', letterSpacing:'.14em', color:'var(--accent)', fontWeight:700, marginBottom:12 }}>Challenge Tracks</div>
           <h2 style={{ fontSize:34, fontWeight:900, margin:0, letterSpacing:'-.01em' }}>Pick Your Attack Surface</h2>
         </div>
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:26 }}>
+        <div className="lp-cats-grid" style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:26 }}>
           {cats.map((cat,i)=>(
             <div key={cat.label} className="cat-card"
               style={{ background:`linear-gradient(145deg,${cat.bg},var(--surface-2))`,
@@ -355,14 +405,13 @@ export default function LandingPage() {
       </section>
 
       {/* ════ HOW IT WORKS ════ */}
-      <section style={{ padding:'80px', background:'var(--surface)', borderTop:'1px solid var(--border)' }}>
+      <section className="lp-how" style={{ padding:'80px', background:'var(--surface)', borderTop:'1px solid var(--border)' }}>
         <div style={{ textAlign:'center', marginBottom:52 }}>
           <div style={{ fontSize:11, textTransform:'uppercase', letterSpacing:'.14em', color:'var(--accent)', fontWeight:700, marginBottom:12 }}>How It Works</div>
           <h2 style={{ fontSize:34, fontWeight:900, margin:0, letterSpacing:'-.01em' }}>From Zero to Flag in 4 Steps</h2>
         </div>
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:20, position:'relative' }}>
-          {/* connector line */}
-          <div style={{ position:'absolute', top:36, left:'12%', right:'12%', height:1,
+        <div className="lp-steps-grid" style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:20, position:'relative' }}>
+          <div className="lp-steps-connector" style={{ position:'absolute', top:36, left:'12%', right:'12%', height:1,
             background:'linear-gradient(90deg,transparent,var(--border),var(--border),transparent)', zIndex:0 }}/>
           {steps.map((s,i)=>(
             <div key={s.n} className="step-card"
@@ -380,8 +429,8 @@ export default function LandingPage() {
       </section>
 
       {/* ════ TERMINAL DEMO + FEATURES ════ */}
-      <section style={{ padding:'80px', background:'var(--bg)', borderTop:'1px solid var(--border)' }}>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:56, alignItems:'center' }}>
+      <section className="lp-demo" style={{ padding:'80px', background:'var(--bg)', borderTop:'1px solid var(--border)' }}>
+        <div className="lp-demo-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:56, alignItems:'center' }}>
           {/* left — terminal */}
           <div style={{ animation:'fadeUp .7s ease both' }}>
             <div style={{ fontSize:11, textTransform:'uppercase', letterSpacing:'.14em', color:'var(--accent)', fontWeight:700, marginBottom:12 }}>Live Lab Preview</div>
@@ -392,7 +441,7 @@ export default function LandingPage() {
             <FakeTerminal/>
           </div>
           {/* right — feature list */}
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, animation:'fadeUp .7s .15s ease both' }}>
+          <div className="lp-feats-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, animation:'fadeUp .7s .15s ease both' }}>
             {feats.map((f,i)=>(
               <div key={f.title} className="feat-card"
                 style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:16,
@@ -410,7 +459,7 @@ export default function LandingPage() {
       </section>
 
       {/* ════ CTA BANNER ════ */}
-      <section style={{ position:'relative', padding:'100px 80px', textAlign:'center',
+      <section className="lp-cta" style={{ position:'relative', padding:'100px 80px', textAlign:'center',
         background:'linear-gradient(135deg,rgba(0,194,230,0.07) 0%,rgba(74,144,240,0.07) 50%,rgba(155,124,240,0.05) 100%)',
         borderTop:'1px solid var(--border)', overflow:'hidden' }}>
         <Particles/>
@@ -441,7 +490,7 @@ export default function LandingPage() {
       </section>
 
       {/* ════ FOOTER ════ */}
-      <footer style={{ borderTop:'1px solid var(--border)', padding:'32px 80px',
+      <footer className="lp-footer" style={{ borderTop:'1px solid var(--border)', padding:'32px 80px',
         display:'flex', alignItems:'center', justifyContent:'space-between',
         fontSize:12, color:'var(--text-dim)', background:'var(--surface)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
@@ -449,7 +498,7 @@ export default function LandingPage() {
           <span style={{ fontWeight:600, color:'var(--text-muted)' }}>AutoRange Cyber Range</span>
         </div>
         <span>© 2026 AutoRange · Built for automotive cybersecurity education</span>
-        <div style={{ display:'flex', gap:24 }}>
+        <div className="lp-footer-links" style={{ display:'flex', gap:24 }}>
           {[['Log In','/login'],['Sign Up','/register']].map(([l,h])=>(
             <Link key={l} to={h} style={{ color:'var(--text-dim)', transition:'color .15s' }}
               onMouseEnter={e=>e.target.style.color='var(--text-muted)'}
