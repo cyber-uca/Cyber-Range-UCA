@@ -989,12 +989,3 @@ export default function AdminContent() {
     </div>
   )
 }
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }} className="admin-content-shell">
-        <div style={col} className="admin-col"><PathsPanel selectedPath={selectedPath} onSelect={selectPath} /></div>
-        <div style={col} className="admin-col"><ModulesPanel path={selectedPath} selectedModule={selectedModule} onSelect={selectModule} /></div>
-        <div style={col} className="admin-col"><RoomsPanel module={selectedModule} selectedRoom={selectedRoom} onSelect={r => setSelectedRoom(r)} /></div>
-        <div style={last} className="admin-col-last"><TasksPanel room={selectedRoom} /></div>
-      </div>
-    </div>
-  )
-}
