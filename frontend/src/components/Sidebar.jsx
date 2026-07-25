@@ -3,9 +3,9 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../App.jsx'
 
 const NAV_ALL = [
-  { to: '/',            label: 'Dashboard',  end: true },
-  { to: '/roadmap',     label: 'Roadmap'              },
-  { to: '/leaderboard', label: 'Leaderboard'           },
+  { to: '/dashboard', label: 'Dashboard',  end: true },
+  { to: '/roadmap',   label: 'Roadmap'              },
+  { to: '/leaderboard',label: 'Leaderboard'          },
 ]
 const NAV_LEARNER = [
   { to: '/challenges',  label: 'Challenges'  },

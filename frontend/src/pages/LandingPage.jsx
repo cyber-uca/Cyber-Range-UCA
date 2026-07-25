@@ -192,10 +192,10 @@ export default function LandingPage() {
   useEffect(() => { if (user) navigate('/') }, [user, navigate])
 
   const cats = [
+    { label:'RISK MANAGEMENT', color:'var(--combined)', bg:'rgba(155,124,240,0.10)', hover:'rgba(155,124,240,0.35)', icon:<Layers c="var(--combined)" s={28}/>, desc:'Assess, model and manage cybersecurity risks in OT environments using IEC 62443 and STRIDE.', count:'8+' },
     { label:'OFFENSIVE', color:'var(--offensive)', bg:'rgba(240,82,74,0.10)', hover:'rgba(240,82,74,0.35)', icon:<Hacker c="var(--offensive)" s={28}/>, desc:'Attack ICS/OT systems and exploit real vulnerabilities in PLC, SCADA and CAN bus environments.', count:'20+' },
     { label:'DEFENSIVE', color:'var(--defensive)', bg:'rgba(74,144,240,0.10)', hover:'rgba(74,144,240,0.35)', icon:<Shield c="var(--defensive)" s={28}/>, desc:'Detect threats and protect industrial assets using Wazuh, Suricata and network segmentation.', count:'16+' },
     { label:'MITIGATION', color:'var(--mitigation)', bg:'rgba(20,201,168,0.10)', hover:'rgba(20,201,168,0.35)', icon:<Wrench c="var(--mitigation)" s={28}/>, desc:'Respond to incidents, harden OT systems and recover from ICS attacks.', count:'14+' },
-    { label:'RISK', color:'var(--combined)', bg:'rgba(155,124,240,0.10)', hover:'rgba(155,124,240,0.35)', icon:<Layers c="var(--combined)" s={28}/>, desc:'Assess, model and manage cybersecurity risks in OT environments using IEC 62443 and STRIDE.', count:'8+' },
   ]
   const feats = [
     { icon:<Zap c="#00C2E6" s={22}/>, title:'Real Attack Scenarios', desc:'CAN bus injection, ECU firmware reverse engineering, OBD-II exploitation — all in isolated VMs.' },

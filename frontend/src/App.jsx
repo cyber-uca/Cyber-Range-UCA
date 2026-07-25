@@ -70,12 +70,15 @@ function RequireRole({ roles, children }) {
 }
 
 function AppRoutes() {
+  const { user, loading } = useAuth()
+  if (loading) return null
   return (
     <Routes>
+      <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} />
       <Route path="/home" element={<LandingPage />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>} />
+      <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
+      <Route path="/register" element={user ? <Navigate to="/dashboard" replace /> : <Register />} />
+      <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
       <Route path="/roadmap" element={<RequireAuth><Roadmap /></RequireAuth>} />
       <Route path="/analytics" element={<RequireAuth><Analytics /></RequireAuth>} />
       <Route path="/modules/:moduleId/quiz" element={<RequireAuth><ModuleQuiz /></RequireAuth>} />
@@ -84,7 +87,6 @@ function AppRoutes() {
       <Route path="/challenges" element={<RequireAuth><ChallengeLibrary /></RequireAuth>} />
       <Route path="/challenges/:id" element={<RequireAuth><ChallengeDetail /></RequireAuth>} />
       <Route path="/leaderboard" element={<RequireAuth><Leaderboard /></RequireAuth>} />
-      {/* Workspace is intentionally full-screen (no sidebar chrome) - it needs the space */}
       <Route path="/challenges/:id/workspace" element={<RequireAuthBare><Workspace /></RequireAuthBare>} />
       <Route path="/creator" element={<RequireRole roles={['tutor', 'admin']}><ChallengeCreator /></RequireRole>} />
       <Route path="/admin" element={<RequireRole roles={['admin']}><AdminDashboard /></RequireRole>} />
@@ -93,6 +95,7 @@ function AppRoutes() {
       <Route path="/admin/taxonomy" element={<RequireRole roles={['admin']}><AdminTaxonomy /></RequireRole>} />
       <Route path="/admin/settings" element={<RequireRole roles={['admin']}><AdminSettings /></RequireRole>} />
       <Route path="/admin/content" element={<RequireRole roles={['admin']}><AdminContent /></RequireRole>} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }
