@@ -1,14 +1,12 @@
-import React from 'react'
-import { NavLink } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../App.jsx'
 
-// Links shown to ALL authenticated users
 const NAV_ALL = [
   { to: '/',            label: 'Dashboard',  end: true },
   { to: '/roadmap',     label: 'Roadmap'              },
   { to: '/leaderboard', label: 'Leaderboard'           },
 ]
-// Links shown only to learners
 const NAV_LEARNER = [
   { to: '/challenges',  label: 'Challenges'  },
   { to: '/analytics',   label: 'Analytics'   },
@@ -25,59 +23,88 @@ const ADMIN_NAV = [
 
 export default function Sidebar() {
   const { user, logout } = useAuth()
+  const location = useLocation()
+  const [open, setOpen] = useState(false)
+
+  // Close sidebar on route change (mobile)
+  useEffect(() => { setOpen(false) }, [location.pathname])
+
+  // Close on Escape
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [])
+
   if (!user) return null
+
   const cls = ({ isActive }) => 'nav-link' + (isActive ? ' active' : '')
   const initials = user.name.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase()
   const isLearner = user.role === 'learner'
 
   return (
-    <div className="sidebar">
-      <div className="sidebar-brand">
-        <div className="mark">AR</div>
-        <div>
-          <div className="brand-name">AutoRange</div>
-          <div className="brand-sub">Cyber Range</div>
+    <>
+      {/* Hamburger button — only visible on mobile */}
+      <button
+        className="sidebar-toggle"
+        onClick={() => setOpen(o => !o)}
+        aria-label="Toggle menu"
+      >
+        {open ? '✕' : '☰'}
+      </button>
+
+      {/* Overlay — closes sidebar when tapped */}
+      <div
+        className={`sidebar-overlay${open ? ' open' : ''}`}
+        onClick={() => setOpen(false)}
+      />
+
+      {/* Sidebar */}
+      <div className={`sidebar${open ? ' open' : ''}`}>
+        <div className="sidebar-brand">
+          <div className="mark">AR</div>
+          <div>
+            <div className="brand-name">AutoRange</div>
+            <div className="brand-sub">Cyber Range</div>
+          </div>
+        </div>
+
+        <nav className="sidebar-nav">
+          {NAV_ALL.map(n => (
+            <NavLink key={n.to} to={n.to} end={n.end} className={cls}>{n.label}</NavLink>
+          ))}
+
+          {isLearner && NAV_LEARNER.map(n => (
+            <NavLink key={n.to} to={n.to} className={cls}>{n.label}</NavLink>
+          ))}
+
+          {(user.role === 'tutor' || user.role === 'admin') && (
+            <>
+              <div className="sidebar-section">Teaching</div>
+              {TUTOR_NAV.map(n => <NavLink key={n.to} to={n.to} className={cls}>{n.label}</NavLink>)}
+            </>
+          )}
+
+          {user.role === 'admin' && (
+            <>
+              <div className="sidebar-section">Admin</div>
+              {ADMIN_NAV.map(n => <NavLink key={n.to} to={n.to} end={n.end} className={cls}>{n.label}</NavLink>)}
+            </>
+          )}
+        </nav>
+
+        <div className="sidebar-footer">
+          <div className="user-avatar">{initials}</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="user-name truncate">{user.name}</div>
+            <div className="user-role">{user.role}</div>
+          </div>
+          <button className="btn-ghost btn-sm" onClick={logout}
+            style={{ padding: '5px 9px', fontSize: 11 }}>
+            Out
+          </button>
         </div>
       </div>
-
-      <nav className="sidebar-nav">
-        {NAV_ALL.map(n => (
-          <NavLink key={n.to} to={n.to} end={n.end} className={cls}>{n.label}</NavLink>
-        ))}
-
-        {/* Learner-only links */}
-        {isLearner && NAV_LEARNER.map(n => (
-          <NavLink key={n.to} to={n.to} className={cls}>{n.label}</NavLink>
-        ))}
-
-        {/* Teaching section for tutor and admin */}
-        {(user.role === 'tutor' || user.role === 'admin') && (
-          <>
-            <div className="sidebar-section">Teaching</div>
-            {TUTOR_NAV.map(n => <NavLink key={n.to} to={n.to} className={cls}>{n.label}</NavLink>)}
-          </>
-        )}
-
-        {/* Admin section */}
-        {user.role === 'admin' && (
-          <>
-            <div className="sidebar-section">Admin</div>
-            {ADMIN_NAV.map(n => <NavLink key={n.to} to={n.to} end={n.end} className={cls}>{n.label}</NavLink>)}
-          </>
-        )}
-      </nav>
-
-      <div className="sidebar-footer">
-        <div className="user-avatar">{initials}</div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="user-name truncate">{user.name}</div>
-          <div className="user-role">{user.role}</div>
-        </div>
-        <button className="btn-ghost btn-sm" onClick={logout}
-          style={{ padding: '5px 9px', fontSize: 11 }}>
-          Out
-        </button>
-      </div>
-    </div>
+    </>
   )
 }

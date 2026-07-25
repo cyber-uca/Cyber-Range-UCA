@@ -259,7 +259,7 @@ export default function Roadmap() {
         </div>
       </div>
 
-      <div style={{ display:'flex', gap:14, alignItems:'flex-start', overflowX:'auto', paddingBottom:32 }}>
+      <div style={{ display:'flex', gap:14, alignItems:'flex-start', overflowX:'auto', paddingBottom:32 }} className="roadmap-cols">
         {sorted.map(pathData => {
           const meta = PATH_META[pathData.slug] ?? { label:pathData.title, color:pathData.color ?? 'var(--cyan)', desc:pathData.description }
           return (

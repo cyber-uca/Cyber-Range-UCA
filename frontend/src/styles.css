@@ -485,3 +485,182 @@ textarea { resize: vertical; line-height: 1.6; }
 .canvas-toolbar { position:absolute; bottom:14px; left:14px; display:flex; gap:8px; z-index:5; }
 .flag-row { display:flex; gap:8px; margin-top:12px; }
 .flag-row input { font-family:var(--mono); }
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE — Tablet (≤1024px) and Mobile (≤640px)
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Mobile sidebar toggle button ── */
+.sidebar-toggle {
+  display: none;
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 200;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--border-md);
+  color: var(--text-2);
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* ── Sidebar overlay on mobile ── */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 149;
+  backdrop-filter: blur(4px);
+}
+
+/* ── Tablet (≤1024px) ── */
+@media (max-width: 1024px) {
+  :root { --sidebar-w: 200px; }
+
+  .page { padding: 28px 24px; }
+
+  .stat-row { grid-template-columns: repeat(2, 1fr); }
+
+  .form-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Mobile/small tablet (≤768px) ── */
+@media (max-width: 768px) {
+  :root { --sidebar-w: 224px; }
+
+  /* Show toggle + overlay */
+  .sidebar-toggle { display: flex; }
+  .sidebar-overlay.open { display: block; }
+
+  /* Sidebar slides in/out */
+  .sidebar {
+    position: fixed;
+    left: -240px;
+    top: 0;
+    height: 100vh;
+    z-index: 150;
+    transition: left 0.25s cubic-bezier(.16,1,.3,1);
+    box-shadow: var(--shadow-xl);
+  }
+  .sidebar.open { left: 0; }
+
+  /* Main col takes full width */
+  .app-shell { flex-direction: column; }
+  .main-col { width: 100%; }
+
+  /* Topbar padding for toggle button */
+  .topbar {
+    padding: 0 16px 0 60px;
+    gap: 10px;
+  }
+
+  /* Pages */
+  .page { padding: 20px 16px; }
+  .page-full { padding: 0; }
+
+  /* Stats */
+  .stat-row { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 24px; }
+  .stat-card { padding: 16px; }
+  .stat-card .val { font-size: 24px; }
+
+  /* Cards */
+  .card { padding: 16px; }
+
+  /* Forms */
+  .form-grid { grid-template-columns: 1fr; }
+
+  /* Tables — make scrollable */
+  .data-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Headings */
+  h1 { font-size: 24px; }
+  h2 { font-size: 18px; }
+
+  /* Roadmap — stack columns vertically */
+  .roadmap-cols {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .roadmap-cols > * {
+    max-width: 100% !important;
+    flex: none !important;
+  }
+
+  /* Admin content 4-col drill-down — stack vertically */
+  .admin-content-shell {
+    flex-direction: column !important;
+    overflow: visible !important;
+  }
+  .admin-content-shell > * {
+    flex: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border) !important;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  .admin-content-shell > *:last-child {
+    border-bottom: none !important;
+    max-height: none;
+  }
+
+  /* RoomLab — stack panels vertically */
+  .lab-shell {
+    flex-direction: column !important;
+  }
+  .lab-shell > * {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border) !important;
+  }
+  .lab-task-sidebar {
+    width: 100% !important;
+    max-height: 180px;
+    flex-direction: row !important;
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+  }
+
+  /* Dashboard grid */
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Pill bar */
+  .pill-bar { gap: 4px; }
+  .pill { padding: 4px 10px; font-size: 11px; }
+
+  /* Topbar — hide XP badge on very small screens */
+  .xp-badge { display: none; }
+}
+
+/* ── Small mobile (≤480px) ── */
+@media (max-width: 480px) {
+  .stat-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stat-card .val { font-size: 20px; }
+
+  .page { padding: 16px 12px; }
+
+  h1 { font-size: 20px; }
+  h2 { font-size: 16px; }
+
+  button { padding: 8px 14px; font-size: 12px; }
+  .btn-sm { padding: 4px 10px; font-size: 11px; }
+
+  /* Analytics rings — smaller */
+  .analytics-rings { flex-direction: column; }
+
+  /* Hide some topbar elements */
+  .topbar-divider { display: none; }
+}
