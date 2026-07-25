@@ -31,10 +31,11 @@ function fmt(secs) {
 }
 
 /* ─── VM Card ─────────────────────────────────────────────────────────── */
-function VMCard({ vmTemplate, envVm, env, onStart, onStop, starting, stopping }) {
+function VMCard({ vmTemplate, envVm, env, onStart, onStop, onPause, onResume, starting, stopping, pausing, resuming }) {
   const running = envVm?.status === 'running'
+  const paused  = envVm?.status === 'paused'
   const ip = envVm?.ip_address
-  const secsLeft = useCountdown(running && env?.expires_at_iso ? env.expires_at_iso : null)
+  const secsLeft = useCountdown(running && !paused && env?.expires_at_iso ? env.expires_at_iso : null)
   const urgent = secsLeft !== null && secsLeft < 300
   const warn   = secsLeft !== null && secsLeft < 900
   const [consoleUrl, setConsoleUrl] = useState(null)
@@ -93,6 +94,11 @@ function VMCard({ vmTemplate, envVm, env, onStart, onStop, starting, stopping })
             <div style={{ width:8, height:8, borderRadius:'50%', background:'#14C9A8', boxShadow:'0 0 6px #14C9A8', animation:'pulse 2s infinite' }} />
             <span style={{ fontSize:11, color:'#14C9A8', fontWeight:700 }}>RUNNING</span>
           </div>
+        ) : paused ? (
+          <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+            <div style={{ width:8, height:8, borderRadius:'50%', background:'var(--amber)', boxShadow:'0 0 6px var(--amber)' }} />
+            <span style={{ fontSize:11, color:'var(--amber)', fontWeight:700 }}>PAUSED</span>
+          </div>
         ) : (
           <button onClick={onStart} disabled={starting}
             style={{ padding:'7px 16px', borderRadius:8, fontSize:12, fontWeight:700,
@@ -123,6 +129,42 @@ function VMCard({ vmTemplate, envVm, env, onStart, onStop, starting, stopping })
                 background:'rgba(0,194,230,0.08)', color:'var(--cyan)',
                 border:'1px solid rgba(0,194,230,0.35)', display:'flex', alignItems:'center', gap:5 }}>
               {loadingConsole ? <><Spin size={10}/> …</> : <>🖥 Console</>}
+            </button>
+            <button onClick={onPause} disabled={pausing}
+              style={{ padding:'6px 12px', borderRadius:7, fontSize:11, fontWeight:700,
+                cursor:pausing?'wait':'pointer',
+                background:'rgba(245,166,35,0.08)', color:'var(--amber)',
+                border:'1px solid rgba(245,166,35,0.35)', display:'flex', alignItems:'center', gap:5 }}>
+              {pausing ? <><Spin size={10}/> …</> : <>⏸ Pause</>}
+            </button>
+            <button onClick={onStop} disabled={stopping}
+              style={{ padding:'6px 12px', borderRadius:7, fontSize:11, fontWeight:700,
+                cursor:stopping?'wait':'pointer',
+                background:stopping?'var(--surface-2)':'rgba(240,82,74,0.08)',
+                color:stopping?'var(--text-4)':'var(--red)',
+                border:`1px solid ${stopping?'var(--border)':'rgba(240,82,74,0.35)'}`,
+                display:'flex', alignItems:'center', gap:5 }}>
+              {stopping ? <><Spin size={10}/> …</> : <>⏹ Stop</>}
+            </button>
+          </div>
+        </div>
+      )}
+      {paused && (
+        <div style={{ marginTop:12, display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, flexWrap:'wrap' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:6,
+            background:'rgba(245,166,35,0.1)', border:'1px solid rgba(245,166,35,0.3)',
+            borderRadius:8, padding:'5px 12px' }}>
+            <span style={{ fontFamily:'var(--mono)', fontSize:12, fontWeight:700, color:'var(--amber)' }}>
+              ⏸ Paused — timer frozen
+            </span>
+          </div>
+          <div style={{ display:'flex', gap:6 }}>
+            <button onClick={onResume} disabled={resuming}
+              style={{ padding:'6px 14px', borderRadius:7, fontSize:11, fontWeight:700,
+                cursor:resuming?'wait':'pointer',
+                background:'rgba(20,201,168,0.1)', color:'#14C9A8',
+                border:'1px solid rgba(20,201,168,0.35)', display:'flex', alignItems:'center', gap:5 }}>
+              {resuming ? <><Spin size={10}/> …</> : <>▶ Resume</>}
             </button>
             <button onClick={onStop} disabled={stopping}
               style={{ padding:'6px 12px', borderRadius:7, fontSize:11, fontWeight:700,
@@ -348,7 +390,33 @@ export default function RoomLab() {
     }
   }
 
-  const submitAnswer = async (q) => {
+  const pauseVM = async (vmTpl) => {
+    setVmState(p => ({ ...p, [vmTpl.id]: { ...(p[vmTpl.id]??{}), pausing:true } }))
+    addLog(`$ pausing ${vmTpl.name}…`)
+    try {
+      const env = await api.pauseVM(room.id, vmTpl.id)
+      addLog(`$ ✓ ${vmTpl.name} paused — timer frozen`)
+      setVmState(p => ({ ...p, [vmTpl.id]: { ...(p[vmTpl.id]??{}), envVm:{ ...p[vmTpl.id]?.envVm, status:'paused' }, pausing:false } }))
+    } catch(err) {
+      addLog(`$ [ERROR] ${err.message}`)
+      setVmState(p => ({ ...p, [vmTpl.id]: { ...(p[vmTpl.id]??{}), pausing:false } }))
+    }
+  }
+
+  const resumeVM = async (vmTpl) => {
+    setVmState(p => ({ ...p, [vmTpl.id]: { ...(p[vmTpl.id]??{}), resuming:true } }))
+    addLog(`$ resuming ${vmTpl.name}…`)
+    try {
+      const env = await api.resumeVM(room.id, vmTpl.id)
+      const envVms = (env.vms ?? []).map(v => ({ ...v, environment_id: env.id }))
+      const envVm  = envVms.find(v => v.vm_template?.id === vmTpl.id || v.vm_template?.name === vmTpl.name)
+      addLog(`$ ✓ ${vmTpl.name} resumed — timer restarted`)
+      setVmState(p => ({ ...p, [vmTpl.id]: { env, envVm, pausing:false, resuming:false, starting:false, stopping:false } }))
+    } catch(err) {
+      addLog(`$ [ERROR] ${err.message}`)
+      setVmState(p => ({ ...p, [vmTpl.id]: { ...(p[vmTpl.id]??{}), resuming:false } }))
+    }
+  }
     const val = answers[q.id]
     if (val === undefined || val === '' || (Array.isArray(val) && val.length === 0)) return
     try {
@@ -551,8 +619,12 @@ export default function RoomLab() {
                     envVm={s.envVm}
                     onStart={() => startVM(vm)}
                     onStop={() => stopVM(vm)}
+                    onPause={() => pauseVM(vm)}
+                    onResume={() => resumeVM(vm)}
                     starting={s.starting === true}
                     stopping={s.stopping === true}
+                    pausing={s.pausing === true}
+                    resuming={s.resuming === true}
                   />
                 )
               })}

@@ -39,5 +39,11 @@ class SimulateAdapter(ProvisioningGateway):
     def get_status(self, node: str, vmid: int) -> str:
         return "running"
 
+    def suspend_vm(self, node: str, vmid: int) -> None:
+        time.sleep(0.05)
+
+    def resume_vm(self, node: str, vmid: int) -> None:
+        time.sleep(0.05)
+
     def create_network_segment(self, name: str) -> str:
         return f"sim-vnet-{name}-{random.randint(1000, 9999)}"

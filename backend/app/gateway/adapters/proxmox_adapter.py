@@ -188,6 +188,26 @@ class ProxmoxAdapter(ProvisioningGateway):
         except Exception:
             return "unknown"
 
+    def suspend_vm(self, node: str, vmid: int) -> None:
+        """Suspend (pause) a VM — saves RAM state, VM resumes instantly."""
+        logger.info(f"Suspending VM {vmid} on {node}")
+        try:
+            task = self.client.nodes(node).qemu(vmid).status.suspend.post()
+            self._wait_for_task(node, task)
+        except Exception as e:
+            logger.warning(f"suspend_vm {vmid} failed: {e}")
+            raise
+
+    def resume_vm(self, node: str, vmid: int) -> None:
+        """Resume a suspended VM."""
+        logger.info(f"Resuming VM {vmid} on {node}")
+        try:
+            task = self.client.nodes(node).qemu(vmid).status.resume.post()
+            self._wait_for_task(node, task)
+        except Exception as e:
+            logger.warning(f"resume_vm {vmid} failed: {e}")
+            raise
+
     def create_network_segment(self, name: str) -> str:
         """
         TODO: implement via Proxmox SDN API when your VLAN/VXLAN

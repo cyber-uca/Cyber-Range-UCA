@@ -38,6 +38,7 @@ class EnvironmentStatus(str, enum.Enum):
     PENDING      = "pending"
     PROVISIONING = "provisioning"
     RUNNING      = "running"
+    PAUSED       = "paused"
     DESTROYING   = "destroying"
     DESTROYED    = "destroyed"
     ERROR        = "error"
@@ -459,10 +460,12 @@ class Environment(Base):
     user_id       = Column(String(36), ForeignKey("users.id"), nullable=False)
     room_id       = Column(String(36), ForeignKey("rooms.id"), nullable=False)
     status        = Column(Enum(EnvironmentStatus), default=EnvironmentStatus.PENDING)
-    topology_json = Column(Text, nullable=True)
-    started_at    = Column(DateTime, nullable=True)
-    expires_at    = Column(DateTime, nullable=True)
-    destroyed_at  = Column(DateTime, nullable=True)
+    topology_json         = Column(Text, nullable=True)
+    started_at            = Column(DateTime, nullable=True)
+    expires_at            = Column(DateTime, nullable=True)
+    destroyed_at          = Column(DateTime, nullable=True)
+    paused_at             = Column(DateTime, nullable=True)
+    time_remaining_seconds = Column(Integer, nullable=True)  # saved when paused
 
     user = relationship("User", back_populates="environments")
     room = relationship("Room", back_populates="environments")

@@ -313,7 +313,19 @@ export const api = {
   getRoomAnswers: (roomId) =>
     fetch(`${BASE}/progress/room-answers/${roomId}`, { headers: authHeaders() }).then(handle),
 
-  resetRoomProgress: (roomId) =>
+  pauseVM: (roomId, vmTemplateId) =>
+    fetch(`${BASE}/environments/rooms/${roomId}/pause-vm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ vm_template_id: vmTemplateId }),
+    }).then(handle),
+
+  resumeVM: (roomId, vmTemplateId) =>
+    fetch(`${BASE}/environments/rooms/${roomId}/resume-vm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ vm_template_id: vmTemplateId }),
+    }).then(handle),
     fetch(`${BASE}/progress/room-answers/${roomId}`, {
       method: 'DELETE',
       headers: authHeaders(),

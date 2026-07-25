@@ -36,6 +36,8 @@ def _env_out(env: models.Environment) -> dict:
         "expires_at": env.expires_at,
         "expires_at_iso": env.expires_at.strftime("%Y-%m-%dT%H:%M:%SZ") if env.expires_at else None,
         "time_limit_minutes": tl,
+        "paused_at": env.paused_at.strftime("%Y-%m-%dT%H:%M:%SZ") if env.paused_at else None,
+        "time_remaining_seconds": env.time_remaining_seconds,
         "vms": [
             {
                 "id": v.id,
@@ -206,8 +208,102 @@ def start_single_vm(
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  STOP A SINGLE VM
+#  PAUSE A SINGLE VM
 # ═══════════════════════════════════════════════════════════════════
+
+@router.post("/rooms/{room_id}/pause-vm")
+def pause_single_vm(
+    room_id: str,
+    payload: StopVMPayload,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Suspend the VM on Proxmox and freeze the countdown timer."""
+    env = db.query(models.Environment).filter(
+        models.Environment.user_id == current_user.id,
+        models.Environment.room_id == room_id,
+        models.Environment.status == models.EnvironmentStatus.RUNNING,
+    ).first()
+    if not env:
+        raise HTTPException(status_code=404, detail="No running environment for this room")
+
+    vm = db.query(models.EnvironmentVM).filter(
+        models.EnvironmentVM.environment_id == env.id,
+        models.EnvironmentVM.vm_template_id == payload.vm_template_id,
+        models.EnvironmentVM.status == "running",
+    ).first()
+    if not vm:
+        raise HTTPException(status_code=404, detail="VM not running")
+
+    # Suspend the VM on Proxmox
+    if vm.proxmox_vmid and vm.proxmox_node:
+        try:
+            get_gateway().suspend_vm(vm.proxmox_node, vm.proxmox_vmid)
+        except Exception as e:
+            logger.warning(f"suspend_vm error (continuing anyway): {e}")
+
+    # Save remaining time and mark as paused
+    now = datetime.utcnow()
+    if env.expires_at and env.expires_at > now:
+        env.time_remaining_seconds = int((env.expires_at - now).total_seconds())
+    else:
+        env.time_remaining_seconds = 0
+    env.paused_at = now
+    env.status = models.EnvironmentStatus.PAUSED
+    vm.status = "paused"
+    db.commit()
+    db.refresh(env)
+    return {**_env_out(env), "time_remaining_seconds": env.time_remaining_seconds}
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  RESUME A SINGLE VM
+# ═══════════════════════════════════════════════════════════════════
+
+@router.post("/rooms/{room_id}/resume-vm")
+def resume_single_vm(
+    room_id: str,
+    payload: StopVMPayload,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Resume a suspended VM and restart the countdown from remaining time."""
+    env = db.query(models.Environment).filter(
+        models.Environment.user_id == current_user.id,
+        models.Environment.room_id == room_id,
+        models.Environment.status == models.EnvironmentStatus.PAUSED,
+    ).first()
+    if not env:
+        raise HTTPException(status_code=404, detail="No paused environment for this room")
+
+    vm = db.query(models.EnvironmentVM).filter(
+        models.EnvironmentVM.environment_id == env.id,
+        models.EnvironmentVM.vm_template_id == payload.vm_template_id,
+        models.EnvironmentVM.status == "paused",
+    ).first()
+    if not vm:
+        raise HTTPException(status_code=404, detail="VM not paused")
+
+    # Resume the VM on Proxmox
+    if vm.proxmox_vmid and vm.proxmox_node:
+        try:
+            get_gateway().resume_vm(vm.proxmox_node, vm.proxmox_vmid)
+        except Exception as e:
+            logger.warning(f"resume_vm error (continuing anyway): {e}")
+
+    # Restart timer from remaining time
+    remaining = env.time_remaining_seconds or 3600
+    env.expires_at = datetime.utcnow() + timedelta(seconds=remaining)
+    env.paused_at = None
+    env.time_remaining_seconds = None
+    env.status = models.EnvironmentStatus.RUNNING
+    vm.status = "running"
+    db.commit()
+    db.refresh(env)
+    return _env_out(env)
+
+
+
 
 @router.post("/rooms/{room_id}/stop-vm")
 def stop_single_vm(
