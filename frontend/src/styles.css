@@ -664,3 +664,39 @@ textarea { resize: vertical; line-height: 1.6; }
   /* Hide some topbar elements */
   .topbar-divider { display: none; }
 }
+
+/* ── Admin Content columns ── */
+.admin-col      { flex: 0 0 270px; }
+.admin-col-last { flex: 1; min-width: 0; }
+
+@media (max-width: 1200px) {
+  .admin-col      { flex: 0 0 220px; }
+}
+
+@media (max-width: 1024px) {
+  .admin-col      { flex: 0 0 180px; }
+  .admin-col > *, .admin-col-last > * { font-size: 12px; }
+}
+
+@media (max-width: 768px) {
+  /* Stack columns vertically on mobile */
+  .admin-content-shell {
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+  .admin-col {
+    flex: none !important;
+    width: 100% !important;
+    max-height: 280px;
+    overflow-y: auto;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border) !important;
+  }
+  .admin-col-last {
+    flex: none !important;
+    width: 100% !important;
+    min-height: 300px;
+    border-bottom: none !important;
+  }
+}

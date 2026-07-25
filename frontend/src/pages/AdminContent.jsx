@@ -918,11 +918,11 @@ export default function AdminContent() {
   const selectModule = (m) => { setSelectedModule(m); setSelectedRoom(null) }
 
   const col = {
-    flex: '0 0 270px', borderRight: '1px solid var(--border)',
+    borderRight: '1px solid var(--border)',
     padding: '20px 14px', overflow: 'hidden', display: 'flex', flexDirection: 'column',
   }
   const last = {
-    flex: 1, padding: '20px 14px', overflow: 'hidden',
+    padding: '20px 14px', overflow: 'hidden',
     display: 'flex', flexDirection: 'column', minWidth: 0,
   }
 
@@ -935,10 +935,10 @@ export default function AdminContent() {
         </p>
       </div>
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }} className="admin-content-shell">
-        <div style={col}><PathsPanel selectedPath={selectedPath} onSelect={selectPath} /></div>
-        <div style={col}><ModulesPanel path={selectedPath} selectedModule={selectedModule} onSelect={selectModule} /></div>
-        <div style={col}><RoomsPanel module={selectedModule} selectedRoom={selectedRoom} onSelect={r => setSelectedRoom(r)} /></div>
-        <div style={last}><TasksPanel room={selectedRoom} /></div>
+        <div style={col} className="admin-col"><PathsPanel selectedPath={selectedPath} onSelect={selectPath} /></div>
+        <div style={col} className="admin-col"><ModulesPanel path={selectedPath} selectedModule={selectedModule} onSelect={selectModule} /></div>
+        <div style={col} className="admin-col"><RoomsPanel module={selectedModule} selectedRoom={selectedRoom} onSelect={r => setSelectedRoom(r)} /></div>
+        <div style={last} className="admin-col-last"><TasksPanel room={selectedRoom} /></div>
       </div>
     </div>
   )
