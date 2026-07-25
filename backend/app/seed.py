@@ -111,11 +111,13 @@ def tutor_user(): return db.query(models.User).filter_by(email="tutor@platform.l
 # ── Learning Hierarchy ─────────────────────────────────────────────────────
 if db.query(models.Path).count() == 0:
 
-    # ── PATH: Risk ──────────────────────────────────────────────────────────
+    # ── PATH: Risk Management ──────────────────────────────────────────────────────────
     risk_path = models.Path(
-        slug="risk", title="Risk",
+        slug="risk", title="Risk Management",
         description="Assess, model and manage cybersecurity risks in OT/ICS environments.",
         icon="⚠️", color="#A78BFA",
+        status=models.PublicationStatus.PUBLISHED, sort_order=1,
+    )
         status=models.PublicationStatus.PUBLISHED, sort_order=4,
     )
     db.add(risk_path); db.flush()
@@ -146,7 +148,7 @@ if db.query(models.Path).count() == 0:
         slug="offensive", title="Offensive",
         description="Attack ICS/OT systems — PLC, SCADA, CAN bus exploitation.",
         icon="⚔️", color="#F87171",
-        status=models.PublicationStatus.PUBLISHED, sort_order=1,
+        status=models.PublicationStatus.PUBLISHED, sort_order=2,
     )
     db.add(off_path); db.flush()
 
@@ -166,7 +168,7 @@ if db.query(models.Path).count() == 0:
         slug="defensive", title="Defensive",
         description="Detect threats and protect industrial assets using Wazuh and Suricata.",
         icon="🛡️", color="#60A5FA",
-        status=models.PublicationStatus.PUBLISHED, sort_order=2,
+        status=models.PublicationStatus.PUBLISHED, sort_order=3,
     )
     db.add(def_path); db.flush()
 
@@ -180,7 +182,7 @@ if db.query(models.Path).count() == 0:
         slug="mitigation", title="Mitigation",
         description="Harden systems, respond to incidents and recover from ICS attacks.",
         icon="🔧", color="#2DD4BF",
-        status=models.PublicationStatus.PUBLISHED, sort_order=3,
+        status=models.PublicationStatus.PUBLISHED, sort_order=4,
     )
     db.add(mit_path); db.flush()
 

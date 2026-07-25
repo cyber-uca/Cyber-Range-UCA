@@ -4,10 +4,10 @@ import { api } from '../api.js'
 import { useAuth } from '../App.jsx'
 
 const PATH_META = {
-  offensive:  { label:'Offensive',  color:'var(--cat-offensive)', desc:'Attack ICS/OT — PLC, SCADA, CAN bus' },
-  defensive:  { label:'Defensive',  color:'var(--cat-defensive)', desc:'Detect and respond with Wazuh, Suricata' },
-  mitigation: { label:'Mitigation', color:'var(--cat-mitigation)', desc:'Harden systems, recover from incidents' },
-  risk:       { label:'Risk',       color:'var(--cat-risk)',       desc:'Assess and model OT cybersecurity risk' },
+  risk:       { label:'Risk Management', color:'var(--cat-risk)',       desc:'Assess and model OT cybersecurity risk' },
+  offensive:  { label:'Offensive',       color:'var(--cat-offensive)', desc:'Attack ICS/OT — PLC, SCADA, CAN bus' },
+  defensive:  { label:'Defensive',       color:'var(--cat-defensive)', desc:'Detect and respond with Wazuh, Suricata' },
+  mitigation: { label:'Mitigation',      color:'var(--cat-mitigation)', desc:'Harden systems, recover from incidents' },
 }
 const DIFF_COLOR = {
   beginner:'var(--green)', easy:'var(--green)',
@@ -223,7 +223,7 @@ export default function Roadmap() {
     api.getMyModuleProgress().then(setModuleProgress).catch(() => {})
   }, [user])
 
-  const pathOrder = ['offensive', 'defensive', 'mitigation', 'risk']
+  const pathOrder = ['risk', 'offensive', 'defensive', 'mitigation']
   const sorted = pathOrder.map(slug => paths.find(p => p.slug === slug)).filter(Boolean)
   const allRooms = paths.flatMap(p => (p.modules ?? []).flatMap(m => m.rooms ?? []))
   const totalTasks = allRooms.reduce((s, r) => s + (r.task_count ?? 0), 0)
