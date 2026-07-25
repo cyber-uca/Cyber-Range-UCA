@@ -417,6 +417,8 @@ export default function RoomLab() {
       setVmState(p => ({ ...p, [vmTpl.id]: { ...(p[vmTpl.id]??{}), resuming:false } }))
     }
   }
+
+  const submitAnswer = async (q) => {
     const val = answers[q.id]
     if (val === undefined || val === '' || (Array.isArray(val) && val.length === 0)) return
     try {
