@@ -118,8 +118,6 @@ if db.query(models.Path).count() == 0:
         icon="⚠️", color="#A78BFA",
         status=models.PublicationStatus.PUBLISHED, sort_order=1,
     )
-        status=models.PublicationStatus.PUBLISHED, sort_order=4,
-    )
     db.add(risk_path); db.flush()
 
     # ── MODULE: Accidental Risk ─────────────────────────────────────────────
