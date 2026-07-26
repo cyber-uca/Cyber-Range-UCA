@@ -197,6 +197,138 @@ function VMCard({ vmTemplate, envVm, env, onStart, onStop, onPause, onResume, st
   )
 }
 
+/* ─── Matching question block ─────────────────────────────────────────── */
+function MatchingBlock({ q, answer, onAnswer, submitted, correct }) {
+  const [selectedLeft, setSelectedLeft] = useState(null)
+  const opts      = q.options ?? []
+  const leftOpts  = opts.filter(o => o.match_key?.startsWith('L_')).sort((a,b) => a.sort_order - b.sort_order)
+  const rightOpts = opts.filter(o => o.match_key?.startsWith('R_')).sort((a,b) => a.sort_order - b.sort_order)
+
+  // Stable shuffle of right column (based on question id so same each load)
+  const shuffled = React.useMemo(() => {
+    if (submitted) return rightOpts
+    const seed = parseInt(q.id.replace(/-/g,'').slice(-8), 16) || 0
+    return [...rightOpts].sort((a, b) => {
+      const ha = parseInt(a.id.replace(/-/g,'').slice(-4),16) ^ seed
+      const hb = parseInt(b.id.replace(/-/g,'').slice(-4),16) ^ seed
+      return ha - hb
+    })
+  }, [q.id, submitted])
+
+  const userPairs  = (answer && typeof answer === 'object' && !Array.isArray(answer)) ? answer : {}
+  const vd         = q.validation_data ?? {}
+  const correctMap = Object.fromEntries((vd.pairs ?? []).map(p => [p.left_id, p.right_id]))
+
+  const handleLeft  = (id) => { if (!submitted) setSelectedLeft(prev => prev === id ? null : id) }
+  const handleRight = (id) => {
+    if (submitted || !selectedLeft) return
+    onAnswer({ ...userPairs, [selectedLeft]: id })
+    setSelectedLeft(null)
+  }
+
+  if (leftOpts.length === 0) return (
+    <p style={{ color:'var(--text-4)', fontSize:12 }}>No matching pairs defined yet.</p>
+  )
+
+  return (
+    <div>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 32px 1fr', gap:'6px 8px', alignItems:'start' }}>
+        {/* Headers */}
+        <div style={{ fontSize:10, fontWeight:700, color:'var(--text-4)', textTransform:'uppercase', letterSpacing:'.08em', paddingBottom:4 }}>Premise</div>
+        <div />
+        <div style={{ fontSize:10, fontWeight:700, color:'var(--text-4)', textTransform:'uppercase', letterSpacing:'.08em', paddingBottom:4 }}>Match</div>
+
+        {/* Left items */}
+        <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+          {leftOpts.map(lo => {
+            const sel      = selectedLeft === lo.id
+            const paired   = userPairs[lo.id]
+            const pairedRO = rightOpts.find(r => r.id === paired)
+            const isRight  = submitted && correctMap[lo.id] === paired
+            const isWrong  = submitted && paired && !isRight
+            return (
+              <div key={lo.id} onClick={() => handleLeft(lo.id)} style={{
+                padding:'8px 12px', borderRadius:8, cursor: submitted ? 'default' : 'pointer',
+                fontSize:13, fontWeight:500, transition:'all .15s', minHeight:36,
+                background: isRight ? 'rgba(20,201,168,0.1)' : isWrong ? 'rgba(240,82,74,0.08)' : sel ? 'rgba(0,194,230,0.12)' : 'rgba(7,13,22,0.5)',
+                border:`1px solid ${isRight ? 'rgba(20,201,168,0.4)' : isWrong ? 'rgba(240,82,74,0.35)' : sel ? 'rgba(0,194,230,0.5)' : 'var(--border)'}`,
+                color: isRight ? '#14C9A8' : isWrong ? 'var(--red)' : sel ? 'var(--cyan)' : 'var(--text)',
+              }}>
+                {lo.text}
+                {pairedRO && !submitted && (
+                  <span style={{ fontSize:10, color:'var(--text-4)', marginLeft:8 }}>→ {pairedRO.text}</span>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Arrow col */}
+        <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+          {leftOpts.map(lo => {
+            const hasPair = !!userPairs[lo.id]
+            return (
+              <div key={lo.id} style={{ height:36, display:'flex', alignItems:'center', justifyContent:'center',
+                fontSize:14, color: hasPair ? 'var(--cyan)' : 'var(--border-md)' }}>
+                →
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Right items (shuffled) */}
+        <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+          {shuffled.map(ro => {
+            const isPaired   = Object.values(userPairs).includes(ro.id)
+            const canSelect  = !submitted && selectedLeft && !isPaired
+            const isRight    = submitted && Object.entries(correctMap).some(([lid,rid]) => rid===ro.id && userPairs[lid]===ro.id)
+            const isWrong    = submitted && isPaired && !isRight
+            return (
+              <div key={ro.id} onClick={() => handleRight(ro.id)} style={{
+                padding:'8px 12px', borderRadius:8, minHeight:36,
+                cursor: canSelect ? 'pointer' : submitted ? 'default' : isPaired ? 'default' : 'not-allowed',
+                fontSize:13, fontWeight:500, transition:'all .15s',
+                opacity: !submitted && isPaired && selectedLeft ? 0.45 : 1,
+                background: isRight ? 'rgba(20,201,168,0.1)' : isWrong ? 'rgba(240,82,74,0.08)' : canSelect ? 'rgba(0,194,230,0.06)' : 'rgba(7,13,22,0.5)',
+                border:`1px solid ${isRight ? 'rgba(20,201,168,0.4)' : isWrong ? 'rgba(240,82,74,0.35)' : canSelect ? 'rgba(0,194,230,0.3)' : 'var(--border)'}`,
+                color: isRight ? '#14C9A8' : isWrong ? 'var(--red)' : 'var(--text)',
+              }}>
+                {ro.text}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Help text */}
+      {!submitted && (
+        <p style={{ fontSize:11, color:'var(--text-4)', marginTop:8 }}>
+          {selectedLeft ? '↑ Now click the matching item on the right →' : 'Click a premise on the left, then click its match on the right'}
+        </p>
+      )}
+
+      {/* Correct pairs reveal */}
+      {submitted && !correct && (vd.pairs??[]).length > 0 && (
+        <div style={{ marginTop:10, padding:'10px 14px', borderRadius:8,
+          background:'rgba(20,201,168,0.05)', border:'1px solid rgba(20,201,168,0.2)' }}>
+          <div style={{ fontSize:11, color:'#14C9A8', fontWeight:700, marginBottom:6 }}>Correct pairings:</div>
+          {(vd.pairs??[]).map(p => {
+            const lo = leftOpts.find(o=>o.id===p.left_id)
+            const ro = rightOpts.find(o=>o.id===p.right_id)
+            return lo && ro ? (
+              <div key={p.left_id} style={{ fontSize:12, color:'var(--text-3)', marginBottom:3 }}>
+                <span style={{color:'var(--text)'}}>{lo.text}</span>
+                <span style={{color:'var(--cyan)',margin:'0 6px'}}>→</span>
+                <span style={{color:'#14C9A8'}}>{ro.text}</span>
+              </div>
+            ) : null
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 /* ─── Question renderer ───────────────────────────────────────────────── */
 function QuestionBlock({ q, idx, answer, onAnswer, submitted, result }) {
   const isMcq    = q.question_type === 'mcq_single' || q.question_type === 'mcq_multi'
@@ -274,115 +406,15 @@ function QuestionBlock({ q, idx, answer, onAnswer, submitted, result }) {
       )}
 
       {/* Matching question */}
-      {q.question_type === 'matching' && (() => {
-        const opts = q.options ?? []
-        const leftOpts  = opts.filter(o => o.match_key?.startsWith('L_')).sort((a,b)=>a.sort_order-b.sort_order)
-        const rightOpts = [...opts.filter(o => o.match_key?.startsWith('R_')).sort((a,b)=>a.sort_order-b.sort_order)]
-        // Shuffle right column for the learner (stable shuffle based on question id)
-        const shuffled = submitted ? rightOpts : rightOpts.map((o,i,arr) => arr[(parseInt(q.id.slice(-4),16)+i)%arr.length])
-        const userPairs = (answer && typeof answer === 'object') ? answer : {}  // {left_id: right_id}
-        const [selectedLeft, setSelectedLeft] = React.useState(null)
-
-        const vd = q.validation_data ?? {}
-        const correctPairs = Object.fromEntries((vd.pairs??[]).map(p=>[p.left_id,p.right_id]))
-
-        const handleClick = (side, optId) => {
-          if (submitted) return
-          if (side === 'left') {
-            setSelectedLeft(optId === selectedLeft ? null : optId)
-          } else {
-            if (selectedLeft) {
-              const newPairs = { ...userPairs, [selectedLeft]: optId }
-              onAnswer(newPairs)
-              setSelectedLeft(null)
-            }
-          }
-        }
-
-        return (
-          <div style={{ display:'grid', gridTemplateColumns:'1fr auto 1fr', gap:'8px 12px', alignItems:'start' }}>
-            {/* Left column */}
-            <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-              <div style={{ fontSize:10, fontWeight:700, color:'var(--text-4)', textTransform:'uppercase', letterSpacing:'.08em', marginBottom:4 }}>Premise</div>
-              {leftOpts.map(lo => {
-                const isSelected = selectedLeft === lo.id
-                const pairedRightId = userPairs[lo.id]
-                const pairedRight = rightOpts.find(r=>r.id===pairedRightId)
-                const isCorrectPair = submitted && correctPairs[lo.id] === pairedRightId
-                const isWrongPair   = submitted && pairedRightId && correctPairs[lo.id] !== pairedRightId
-                return (
-                  <div key={lo.id} onClick={() => handleClick('left', lo.id)} style={{
-                    padding:'8px 12px', borderRadius:8, cursor:submitted?'default':'pointer',
-                    fontSize:13, fontWeight:500, transition:'all .15s',
-                    background: isCorrectPair ? 'rgba(20,201,168,0.1)' : isWrongPair ? 'rgba(240,82,74,0.08)' : isSelected ? 'rgba(0,194,230,0.12)' : 'rgba(7,13,22,0.5)',
-                    border:`1px solid ${isCorrectPair ? 'rgba(20,201,168,0.4)' : isWrongPair ? 'rgba(240,82,74,0.35)' : isSelected ? 'rgba(0,194,230,0.5)' : 'var(--border)'}`,
-                    color: isCorrectPair ? '#14C9A8' : isWrongPick ? 'var(--red)' : isSelected ? 'var(--cyan)' : 'var(--text)',
-                  }}>
-                    {lo.text}
-                    {pairedRight && !submitted && <span style={{ fontSize:10, color:'var(--text-4)', marginLeft:6 }}>→ {pairedRight.text}</span>}
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Arrow column */}
-            <div style={{ display:'flex', flexDirection:'column', gap:6, paddingTop:28, alignItems:'center' }}>
-              {leftOpts.map(lo => {
-                const hasPair = !!userPairs[lo.id]
-                return <div key={lo.id} style={{ height:36, display:'flex', alignItems:'center', fontSize:16, color: hasPair ? 'var(--cyan)' : 'var(--border-md)' }}>→</div>
-              })}
-            </div>
-
-            {/* Right column (shuffled) */}
-            <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-              <div style={{ fontSize:10, fontWeight:700, color:'var(--text-4)', textTransform:'uppercase', letterSpacing:'.08em', marginBottom:4 }}>Match</div>
-              {shuffled.map(ro => {
-                const isPaired = Object.values(userPairs).includes(ro.id)
-                const isTarget = selectedLeft && !isPaired
-                const pairedLeft = leftOpts.find(l=>userPairs[l.id]===ro.id)
-                const isCorrectPair = submitted && Object.entries(correctPairs).some(([lid,rid])=>rid===ro.id && userPairs[lid]===ro.id)
-                const isWrongPair   = submitted && isPaired && !isCorrectPair
-                return (
-                  <div key={ro.id} onClick={() => handleClick('right', ro.id)} style={{
-                    padding:'8px 12px', borderRadius:8,
-                    cursor: submitted ? 'default' : (selectedLeft && !isPaired ? 'pointer' : isPaired ? 'default' : 'not-allowed'),
-                    fontSize:13, fontWeight:500, transition:'all .15s',
-                    opacity: (!submitted && isPaired && selectedLeft) ? 0.5 : 1,
-                    background: isCorrectPair ? 'rgba(20,201,168,0.1)' : isWrongPair ? 'rgba(240,82,74,0.08)' : isTarget ? 'rgba(0,194,230,0.06)' : 'rgba(7,13,22,0.5)',
-                    border:`1px solid ${isCorrectPair ? 'rgba(20,201,168,0.4)' : isWrongPair ? 'rgba(240,82,74,0.35)' : isTarget ? 'rgba(0,194,230,0.3)' : 'var(--border)'}`,
-                    color: isCorrectPair ? '#14C9A8' : isWrongPair ? 'var(--red)' : 'var(--text)',
-                  }}>
-                    {ro.text}
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Help text */}
-            {!submitted && (
-              <div style={{ gridColumn:'1/-1', fontSize:11, color:'var(--text-4)', marginTop:4 }}>
-                {selectedLeft ? '↑ Now click the matching item on the right' : 'Click a premise on the left, then click its match on the right'}
-              </div>
-            )}
-
-            {/* Correct pairs reveal after wrong */}
-            {submitted && !correct && (
-              <div style={{ gridColumn:'1/-1', marginTop:8, padding:'8px 12px', borderRadius:8, background:'rgba(20,201,168,0.05)', border:'1px solid rgba(20,201,168,0.2)' }}>
-                <div style={{ fontSize:11, color:'#14C9A8', fontWeight:700, marginBottom:6 }}>Correct pairs:</div>
-                {(vd.pairs??[]).map(p => {
-                  const lo = leftOpts.find(o=>o.id===p.left_id)
-                  const ro = rightOpts.find(o=>o.id===p.right_id)
-                  return lo && ro ? (
-                    <div key={p.left_id} style={{ fontSize:12, color:'var(--text-3)', marginBottom:2 }}>
-                      {lo.text} <span style={{color:'var(--cyan)'}}>→</span> {ro.text}
-                    </div>
-                  ) : null
-                })}
-              </div>
-            )}
-          </div>
-        )
-      })()}
+      {q.question_type === 'matching' && (
+        <MatchingBlock
+          q={q}
+          answer={answer}
+          onAnswer={onAnswer}
+          submitted={submitted}
+          correct={correct}
+        />
+      )}
       {(q.question_type === 'text_input' || q.question_type === 'flag' || q.question_type === 'practical') && (
         <input value={answer ?? ''} onChange={e => !submitted && onAnswer(e.target.value)}
           placeholder={q.question_type === 'flag' ? 'FLAG{...}' : 'Your answer…'}
