@@ -10,20 +10,69 @@ import riskCompliance from '../docs/06-risk-compliance.md?raw'
 import adminGuide     from '../docs/07-admin-guide.md?raw'
 
 const ALL_SECTIONS = [
-  { id: 'getting-started',   label: 'Getting Started',   content: gettingStarted,  adminOnly: false },
-  { id: 'platform-guide',    label: 'Platform Guide',    content: platformGuide,   adminOnly: false },
-  { id: 'ics-concepts',      label: 'ICS / OT Concepts', content: icsConcepts,     adminOnly: false },
-  { id: 'tools-reference',   label: 'Tools Reference',   content: toolsRef,        adminOnly: false },
-  { id: 'attack-techniques', label: 'Attack Techniques', content: attackTech,      adminOnly: false },
-  { id: 'risk-compliance',   label: 'Risk & Compliance', content: riskCompliance,  adminOnly: false },
-  { id: 'admin-guide',       label: 'Admin Guide',       content: adminGuide,      adminOnly: true  },
+  {
+    id: 'getting-started',
+    label: 'Getting Started',
+    short: 'New here? Start with this.',
+    accent: '#34D399',
+    content: gettingStarted,
+    adminOnly: false,
+  },
+  {
+    id: 'platform-guide',
+    label: 'Platform Guide',
+    short: 'How rooms, tasks and progress work.',
+    accent: '#22D3EE',
+    content: platformGuide,
+    adminOnly: false,
+  },
+  {
+    id: 'ics-concepts',
+    label: 'ICS / OT Concepts',
+    short: 'Purdue model, protocols, CAN bus.',
+    accent: '#FBBF24',
+    content: icsConcepts,
+    adminOnly: false,
+  },
+  {
+    id: 'tools-reference',
+    label: 'Tools Reference',
+    short: 'Every tool used in the labs.',
+    accent: '#60A5FA',
+    content: toolsRef,
+    adminOnly: false,
+  },
+  {
+    id: 'attack-techniques',
+    label: 'Attack Techniques',
+    short: 'MITRE ATT&CK for ICS mapped.',
+    accent: '#F87171',
+    content: attackTech,
+    adminOnly: false,
+  },
+  {
+    id: 'risk-compliance',
+    label: 'Risk & Compliance',
+    short: 'IEC 62443, NIST, risk taxonomy.',
+    accent: '#A78BFA',
+    content: riskCompliance,
+    adminOnly: false,
+  },
+  {
+    id: 'admin-guide',
+    label: 'Admin Guide',
+    short: 'Run the platform without code changes.',
+    accent: '#2DD4BF',
+    content: adminGuide,
+    adminOnly: true,
+  },
 ]
 
 function readingTime(text) {
-  return Math.max(1, Math.round(text.trim().split(/\s+/).length / 200)) + ' min read'
+  return Math.max(1, Math.round(text.trim().split(/\s+/).length / 200)) + ' min'
 }
 
-// ── Inline markdown renderer ───────────────────────────────────────────────
+// ── Markdown renderer ──────────────────────────────────────────────────────
 function renderMarkdown(raw) {
   const lines = raw.split('\n')
   const out = []
@@ -54,12 +103,7 @@ function renderMarkdown(raw) {
   while (i < lines.length) {
     const line = lines[i]
     if (line.trim() === '') { i++; continue }
-
-    if (/^---+$/.test(line.trim())) {
-      out.push(<hr key={k()} className="doc-hr" />)
-      i++; continue
-    }
-
+    if (/^---+$/.test(line.trim())) { out.push(<div key={k()} className="doc-divider" />); i++; continue }
     if (line.startsWith('# '))   { out.push(<h1 key={k()} className="doc-h1">{inline(line.slice(2))}</h1>);  i++; continue }
     if (line.startsWith('## '))  { out.push(<h2 key={k()} className="doc-h2">{inline(line.slice(3))}</h2>);  i++; continue }
     if (line.startsWith('### ')) { out.push(<h3 key={k()} className="doc-h3">{inline(line.slice(4))}</h3>);  i++; continue }
@@ -106,14 +150,14 @@ function renderMarkdown(raw) {
     if (/^[-*] /.test(line)) {
       const items = []
       while (i < lines.length && /^[-*] /.test(lines[i])) { items.push(lines[i].replace(/^[-*] /, '')); i++ }
-      out.push(<ul key={k()} className="doc-ul">{items.map((item, j) => <li key={j}>{inline(item)}</li>)}</ul>)
+      out.push(<ul key={k()} className="doc-ul">{items.map((t, j) => <li key={j}>{inline(t)}</li>)}</ul>)
       continue
     }
 
     if (/^\d+\. /.test(line)) {
       const items = []
       while (i < lines.length && /^\d+\. /.test(lines[i])) { items.push(lines[i].replace(/^\d+\. /, '')); i++ }
-      out.push(<ol key={k()} className="doc-ol">{items.map((item, j) => <li key={j}>{inline(item)}</li>)}</ol>)
+      out.push(<ol key={k()} className="doc-ol">{items.map((t, j) => <li key={j}>{inline(t)}</li>)}</ol>)
       continue
     }
 
@@ -125,10 +169,37 @@ function renderMarkdown(raw) {
       !/^[-*] /.test(lines[i]) && !/^\d+\. /.test(lines[i]) &&
       !lines[i].includes('|')
     ) { paraLines.push(lines[i]); i++ }
-
     if (paraLines.length) out.push(<p key={k()} className="doc-p">{inline(paraLines.join(' '))}</p>)
   }
   return out
+}
+
+// ── Landing cards ──────────────────────────────────────────────────────────
+function DocsLanding({ sections, onSelect }) {
+  return (
+    <div className="doc-landing">
+      <div className="doc-landing-header">
+        <h1 className="doc-landing-title">Documentation</h1>
+        <p className="doc-landing-sub">
+          Everything you need to use, understand, and operate the AutoRange platform.
+        </p>
+      </div>
+      <div className="doc-landing-grid">
+        {sections.map(s => (
+          <button key={s.id} className="doc-card" onClick={() => onSelect(s.id)}
+            style={{ '--card-accent': s.accent }}>
+            <div className="doc-card-accent-bar" />
+            <div className="doc-card-body">
+              <div className="doc-card-title">{s.label}</div>
+              <div className="doc-card-desc">{s.short}</div>
+              <div className="doc-card-meta">{readingTime(s.content)} read</div>
+            </div>
+            {s.adminOnly && <span className="doc-card-tag">Admin</span>}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -137,34 +208,41 @@ export default function Documentation() {
   const isPrivileged = user?.role === 'admin' || user?.role === 'tutor'
   const sections = ALL_SECTIONS.filter(s => !s.adminOnly || isPrivileged)
 
-  const [activeId, setActiveId] = useState(sections[0].id)
-  const contentRef = useRef(null)
-  const tabsRef = useRef(null)
-  const active = sections.find(s => s.id === activeId) || sections[0]
+  const [activeId, setActiveId] = useState(null) // null = landing
+  const scrollRef = useRef(null)
+
+  const active = sections.find(s => s.id === activeId)
 
   useEffect(() => {
-    if (contentRef.current) contentRef.current.scrollTop = 0
-  }, [activeId])
-
-  // Scroll active tab into view on mobile
-  useEffect(() => {
-    if (tabsRef.current) {
-      const activeTab = tabsRef.current.querySelector('.doc-tab.active')
-      if (activeTab) activeTab.scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' })
-    }
+    if (scrollRef.current) scrollRef.current.scrollTop = 0
   }, [activeId])
 
   return (
     <div className="doc-page">
 
-      {/* ── Tab bar ── */}
-      <div className="doc-tabs-wrap" ref={tabsRef}>
+      {/* Ambient background */}
+      <div className="doc-bg-canvas" aria-hidden="true">
+        <div className="doc-bg-orb doc-bg-orb-1" />
+        <div className="doc-bg-orb doc-bg-orb-2" />
+        <div className="doc-bg-grid" />
+      </div>
+
+      {/* Tab bar — always visible */}
+      <div className="doc-tabs-wrap">
         <div className="doc-tabs">
+          <button
+            className={`doc-tab${activeId === null ? ' active' : ''}`}
+            onClick={() => setActiveId(null)}
+          >
+            Overview
+          </button>
+          <div className="doc-tab-sep" />
           {sections.map(s => (
             <button
               key={s.id}
               className={`doc-tab${activeId === s.id ? ' active' : ''}`}
               onClick={() => setActiveId(s.id)}
+              style={activeId === s.id ? { '--tab-color': s.accent } : {}}
             >
               {s.label}
               {s.adminOnly && <span className="doc-tab-admin">Admin</span>}
@@ -173,14 +251,27 @@ export default function Documentation() {
         </div>
       </div>
 
-      {/* ── Content ── */}
-      <div className="doc-scroll" ref={contentRef}>
-        <div className="doc-body">
-          <div className="doc-reading-time">{readingTime(active.content)}</div>
-          {renderMarkdown(active.content)}
-        </div>
+      {/* Content */}
+      <div className="doc-scroll" ref={scrollRef}>
+        {activeId === null
+          ? <DocsLanding sections={sections} onSelect={setActiveId} />
+          : (
+            <div className="doc-body">
+              {/* Section breadcrumb strip */}
+              <div className="doc-section-bar" style={{ '--bar-color': active.accent }}>
+                <button className="doc-back" onClick={() => setActiveId(null)}>
+                  ← Overview
+                </button>
+                <span className="doc-section-name">{active.label}</span>
+                <span className="doc-section-time">{readingTime(active.content)} read</span>
+              </div>
+              <div className="doc-prose">
+                {renderMarkdown(active.content)}
+              </div>
+            </div>
+          )
+        }
       </div>
-
     </div>
   )
 }
