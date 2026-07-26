@@ -73,8 +73,13 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
         
-        # Prevent clickjacking
-        response.headers["X-Frame-Options"] = "DENY"
+        # Exempt documentation endpoints from strict CSP
+        request_path = request.url.path
+        is_docs_endpoint = request_path in ["/docs", "/redoc", "/openapi.json"]
+        
+        # Prevent clickjacking (but allow iframes for docs)
+        if not is_docs_endpoint:
+            response.headers["X-Frame-Options"] = "DENY"
         
         # Prevent MIME type sniffing
         response.headers["X-Content-Type-Options"] = "nosniff"
@@ -92,8 +97,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         if os.getenv("ENVIRONMENT") == "production":
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         
-        # CSP header
-        response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+        # CSP header - relaxed for documentation endpoints
+        if is_docs_endpoint:
+            response.headers["Content-Security-Policy"] = "default-src *; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'"
+        else:
+            response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
         
         return response
 

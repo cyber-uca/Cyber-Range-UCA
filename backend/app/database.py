@@ -16,9 +16,11 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-# Load .env from the backend root (one level above this file's package)
-_env_path = Path(__file__).resolve().parent.parent / ".env"
-load_dotenv(_env_path)
+# Load .env from the backend root (one level above this file's package).
+# .env.local overrides .env for machine-specific dev settings (gitignored).
+_backend_root = Path(__file__).resolve().parent.parent
+load_dotenv(_backend_root / ".env")
+load_dotenv(_backend_root / ".env.local", override=True)
 
 def _build_url() -> str:
     """Build DATABASE_URL from individual .env vars, or fall back to SQLite."""
