@@ -22,6 +22,7 @@ import Roadmap from './pages/Roadmap.jsx'
 import RoomDetail from './pages/RoomDetail.jsx'
 import RoomLab from './pages/RoomLab.jsx'
 import LandingPage from './pages/LandingPage.jsx'
+import Documentation from './pages/Documentation.jsx'
 
 export const AuthContext = createContext(null)
 export const useAuth = () => useContext(AuthContext)
@@ -87,6 +88,7 @@ function AppRoutes() {
       <Route path="/challenges" element={<RequireAuth><ChallengeLibrary /></RequireAuth>} />
       <Route path="/challenges/:id" element={<RequireAuth><ChallengeDetail /></RequireAuth>} />
       <Route path="/leaderboard" element={<RequireAuth><Leaderboard /></RequireAuth>} />
+      <Route path="/docs" element={<RequireAuth><Documentation /></RequireAuth>} />
       <Route path="/challenges/:id/workspace" element={<RequireAuthBare><Workspace /></RequireAuthBare>} />
       <Route path="/creator" element={<RequireRole roles={['tutor', 'admin']}><ChallengeCreator /></RequireRole>} />
       <Route path="/admin" element={<RequireRole roles={['admin']}><AdminDashboard /></RequireRole>} />
