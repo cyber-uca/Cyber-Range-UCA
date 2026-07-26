@@ -75,7 +75,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         
         # Exempt documentation endpoints from strict CSP
         request_path = request.url.path
-        is_docs_endpoint = request_path in ["/docs", "/redoc", "/openapi.json"]
+        is_docs_endpoint = request_path in ["/api-docs", "/api-redoc", "/api-openapi.json"]
         
         # Prevent clickjacking (but allow iframes for docs)
         if not is_docs_endpoint:

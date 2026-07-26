@@ -142,12 +142,16 @@ server {
         proxy_read_timeout 300;
     }
 
-    location /docs {
-        proxy_pass http://127.0.0.1:8000/docs;
+    location /api-docs {
+        proxy_pass http://127.0.0.1:8000/api-docs;
     }
 
-    location /openapi.json {
-        proxy_pass http://127.0.0.1:8000/openapi.json;
+    location /api-redoc {
+        proxy_pass http://127.0.0.1:8000/api-redoc;
+    }
+
+    location /api-openapi.json {
+        proxy_pass http://127.0.0.1:8000/api-openapi.json;
     }
 
     # Proxmox WebSocket (vncwebsocket) — must be before the general /proxmox/ block
