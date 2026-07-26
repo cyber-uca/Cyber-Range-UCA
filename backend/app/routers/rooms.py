@@ -300,6 +300,18 @@ def create_question(
                 "correct_option_ids":     correct_opt_ids,
                 "correct_option_indices": correct_indices,
             }
+        elif question.question_type == models.QuestionType.MATCHING:
+            # For MATCHING, options come in pairs: each option has match_key linking left<->right
+            # validation_data stores the correct pairs
+            left_opts  = [o for o in new_opts if o.match_key and o.match_key.startswith("L_")]
+            right_opts = [o for o in new_opts if o.match_key and o.match_key.startswith("R_")]
+            pairs = []
+            for lo in left_opts:
+                key = lo.match_key[2:]  # strip "L_" prefix to get pair key
+                ro = next((r for r in right_opts if r.match_key == f"R_{key}"), None)
+                if ro:
+                    pairs.append({"left_id": lo.id, "right_id": ro.id, "key": key})
+            question.validation_data = {"pairs": pairs}
 
     db.commit(); db.refresh(question)
     return _question_out(question, admin=True)
@@ -351,6 +363,16 @@ def update_question(
                 "correct_option_ids":     correct_opt_ids,
                 "correct_option_indices": correct_indices,
             }
+        elif question.question_type == models.QuestionType.MATCHING:
+            left_opts  = [o for o in new_opts if o.match_key and o.match_key.startswith("L_")]
+            right_opts = [o for o in new_opts if o.match_key and o.match_key.startswith("R_")]
+            pairs = []
+            for lo in left_opts:
+                key = lo.match_key[2:]
+                ro = next((r for r in right_opts if r.match_key == f"R_{key}"), None)
+                if ro:
+                    pairs.append({"left_id": lo.id, "right_id": ro.id, "key": key})
+            question.validation_data = {"pairs": pairs}
 
     db.commit()
     db.refresh(question)

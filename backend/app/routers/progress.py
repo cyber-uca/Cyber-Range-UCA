@@ -110,9 +110,27 @@ def _validate_answer(question: models.Question, value: Optional[str], data: Opti
         return is_ok, ("Correct!" if is_ok else f"Expected {target} (±{tol}).")
 
     if qtype in (models.QuestionType.FILE_UPLOAD, models.QuestionType.MANUAL_REVIEW,
-                 models.QuestionType.ORDERING, models.QuestionType.MATCHING):
-        # These require manual review or more complex logic — auto-accept for now
+                 models.QuestionType.ORDERING):
         return True, "Submission recorded. Awaiting review."
+
+    if qtype == models.QuestionType.MATCHING:
+        # data = {"pairs": [{"left_id": "...", "right_id": "..."}, ...]}
+        submitted_pairs = {
+            p["left_id"]: p["right_id"]
+            for p in (data or {}).get("pairs", [])
+        }
+        correct_pairs = {
+            p["left_id"]: p["right_id"]
+            for p in vd.get("pairs", [])
+        }
+        if not correct_pairs:
+            return True, "Submission recorded."
+        is_ok = submitted_pairs == correct_pairs
+        if is_ok:
+            return True, "Correct! All pairs matched."
+        # Count how many were right
+        right = sum(1 for lid, rid in correct_pairs.items() if submitted_pairs.get(lid) == rid)
+        return False, f"{right}/{len(correct_pairs)} pairs correct — try again."
 
     return False, "Unknown question type."
 

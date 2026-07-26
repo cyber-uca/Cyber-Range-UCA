@@ -227,7 +227,7 @@ function TaskModal({ initial, onSave, onClose }) {
 
 /* ── Question modal ───────────────────────────────────────────── */
 function QuestionModal({ initial, onSave, onClose }) {
-  const blank = { question_type: 'mcq_single', text: '', explanation: '', points: 20, is_mandatory: true, sort_order: 0, validation_data: '', options: [] }
+  const blank = { question_type: 'mcq_single', text: '', explanation: '', points: 20, is_mandatory: true, sort_order: 0, validation_data: '', options: [], pairs: [] }
 
   // When editing, compute is_correct for each option from validation_data
   const initForm = () => {
@@ -235,6 +235,19 @@ function QuestionModal({ initial, onSave, onClose }) {
     const vd = initial.validation_data ?? {}
     const correctId  = vd.correct_option_id
     const correctIds = vd.correct_option_ids ?? []
+
+    // For MATCHING: reconstruct pairs from options grouped by match_key
+    if (initial.question_type === 'matching') {
+      const opts = initial.options ?? []
+      const leftOpts  = opts.filter(o => o.match_key?.startsWith('L_'))
+      const rightOpts = opts.filter(o => o.match_key?.startsWith('R_'))
+      const pairs = leftOpts.map(lo => {
+        const key = lo.match_key.slice(2)
+        const ro = rightOpts.find(r => r.match_key === `R_${key}`)
+        return { key, left: lo.text, right: ro?.text ?? '' }
+      })
+      return { ...initial, pairs, options: [] }
+    }
     const opts = (initial.options ?? []).map(o => ({
       ...o,
       is_correct: o.id === correctId || correctIds.includes(o.id),
@@ -259,11 +272,14 @@ function QuestionModal({ initial, onSave, onClose }) {
   const updateOption = (i, key, val) => set('options', form.options.map((o, idx) => idx === i ? { ...o, [key]: val } : o))
   const removeOption = (i) => set('options', form.options.filter((_, idx) => idx !== i))
 
+  const isMatching = form.question_type === 'matching'
   const isMcq = form.question_type?.startsWith('mcq')
 
   const save = async () => {
     if (!form.text.trim()) { setErr('Question text is required'); return }
     if (isMcq && (!form.options || form.options.length < 2)) { setErr('MCQ questions need at least 2 options'); return }
+    if (isMatching && (!form.pairs || form.pairs.length < 2)) { setErr('Matching questions need at least 2 pairs'); return }
+    if (isMatching && form.pairs.some(p => !p.left.trim() || !p.right.trim())) { setErr('All pairs must have both left and right text'); return }
     setSaving(true); setErr('')
     const payload = {
       question_type:  form.question_type,
@@ -272,8 +288,15 @@ function QuestionModal({ initial, onSave, onClose }) {
       points:         form.points,
       is_mandatory:   form.is_mandatory,
       sort_order:     form.sort_order,
-      validation_data: isMcq ? null : (form.validation_data ? { answer: form.validation_data } : null),
-      options: isMcq ? form.options.map((o, i) => ({ text: o.text, is_correct: !!o.is_correct, sort_order: i })) : [],
+      validation_data: isMcq || isMatching ? null : (form.validation_data ? { answer: form.validation_data } : null),
+      options: isMcq
+        ? form.options.map((o, i) => ({ text: o.text, is_correct: !!o.is_correct, sort_order: i }))
+        : isMatching
+          ? (form.pairs ?? []).flatMap((p, i) => [
+              { text: p.left,  is_correct: false, sort_order: i * 2,     match_key: `L_${i}` },
+              { text: p.right, is_correct: false, sort_order: i * 2 + 1, match_key: `R_${i}` },
+            ])
+          : [],
     }
     try { await onSave(payload); onClose() }
     catch (e) { setErr(e.message) } finally { setSaving(false) }
@@ -287,6 +310,7 @@ function QuestionModal({ initial, onSave, onClose }) {
           <select value={form.question_type} onChange={e => set('question_type', e.target.value)}>
             <option value="mcq_single">MCQ Single</option>
             <option value="mcq_multi">MCQ Multi</option>
+            <option value="matching">Matching</option>
             <option value="text_input">Text Input</option>
             <option value="flag">Flag</option>
             <option value="practical">Practical</option>
@@ -303,7 +327,41 @@ function QuestionModal({ initial, onSave, onClose }) {
       </div>
       <Field label="Question Text"><textarea value={form.text} onChange={e => set('text', e.target.value)} rows={3} style={{ width: '100%', resize: 'vertical' }} /></Field>
       <Field label="Explanation (shown after answer)"><textarea value={form.explanation ?? ''} onChange={e => set('explanation', e.target.value)} rows={2} style={{ width: '100%', resize: 'vertical' }} /></Field>
-      {!isMcq && <Field label="Expected Answer / Flag"><input value={form.validation_data ?? ''} onChange={e => set('validation_data', e.target.value)} placeholder="e.g. FLAG{...} or exact answer" /></Field>}
+      {!isMcq && !isMatching && <Field label="Expected Answer / Flag"><input value={form.validation_data ?? ''} onChange={e => set('validation_data', e.target.value)} placeholder="e.g. FLAG{...} or exact answer" /></Field>}
+
+      {/* Matching pair editor */}
+      {isMatching && (
+        <Field label="Matching Pairs — each row links a left item to its correct right item">
+          <p style={{ fontSize:11, color:'var(--text-4)', margin:'0 0 8px' }}>
+            Left column = premise (e.g. attack name) · Right column = response (e.g. description)
+          </p>
+          {(form.pairs ?? []).map((p, i) => (
+            <div key={i} style={{ display:'flex', gap:8, alignItems:'center', marginBottom:8 }}>
+              <span style={{ fontSize:11, color:'var(--text-4)', minWidth:18, textAlign:'center', fontFamily:'var(--mono)' }}>{i+1}</span>
+              <input
+                value={p.left}
+                onChange={e => set('pairs', form.pairs.map((pair, idx) => idx===i ? {...pair, left: e.target.value} : pair))}
+                placeholder="Left item (premise)"
+                style={{ flex:1 }}
+              />
+              <span style={{ color:'var(--cyan)', fontSize:14, flexShrink:0 }}>↔</span>
+              <input
+                value={p.right}
+                onChange={e => set('pairs', form.pairs.map((pair, idx) => idx===i ? {...pair, right: e.target.value} : pair))}
+                placeholder="Right item (answer)"
+                style={{ flex:1 }}
+              />
+              <button onClick={() => set('pairs', form.pairs.filter((_,idx)=>idx!==i))}
+                style={{ background:'none', border:'none', color:'var(--text-4)', cursor:'pointer', fontSize:16, padding:'0 2px', flexShrink:0 }}>×</button>
+            </div>
+          ))}
+          <button className="btn-ghost btn-sm"
+            onClick={() => set('pairs', [...(form.pairs??[]), {left:'', right:''}])}
+            style={{ marginTop:4 }}>
+            + Add pair
+          </button>
+        </Field>
+      )}
       {isMcq && (
         <Field label="Options">
           {form.question_type === 'mcq_single' && (
