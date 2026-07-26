@@ -208,10 +208,10 @@ export default function Documentation() {
   const isPrivileged = user?.role === 'admin' || user?.role === 'tutor'
   const sections = ALL_SECTIONS.filter(s => !s.adminOnly || isPrivileged)
 
-  const [activeId, setActiveId] = useState(null) // null = landing
+  const [activeId, setActiveId] = useState(sections[0].id)
   const scrollRef = useRef(null)
 
-  const active = sections.find(s => s.id === activeId)
+  const active = sections.find(s => s.id === activeId) || sections[0]
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = 0
@@ -230,13 +230,6 @@ export default function Documentation() {
       {/* Tab bar — always visible */}
       <div className="doc-tabs-wrap">
         <div className="doc-tabs">
-          <button
-            className={`doc-tab${activeId === null ? ' active' : ''}`}
-            onClick={() => setActiveId(null)}
-          >
-            Overview
-          </button>
-          <div className="doc-tab-sep" />
           {sections.map(s => (
             <button
               key={s.id}
@@ -253,24 +246,15 @@ export default function Documentation() {
 
       {/* Content */}
       <div className="doc-scroll" ref={scrollRef}>
-        {activeId === null
-          ? <DocsLanding sections={sections} onSelect={setActiveId} />
-          : (
-            <div className="doc-body">
-              {/* Section breadcrumb strip */}
-              <div className="doc-section-bar" style={{ '--bar-color': active.accent }}>
-                <button className="doc-back" onClick={() => setActiveId(null)}>
-                  ← Overview
-                </button>
-                <span className="doc-section-name">{active.label}</span>
-                <span className="doc-section-time">{readingTime(active.content)} read</span>
-              </div>
-              <div className="doc-prose">
-                {renderMarkdown(active.content)}
-              </div>
-            </div>
-          )
-        }
+        <div className="doc-body">
+          <div className="doc-section-bar" style={{ '--bar-color': active.accent }}>
+            <span className="doc-section-name">{active.label}</span>
+            <span className="doc-section-time">{readingTime(active.content)} read</span>
+          </div>
+          <div className="doc-prose">
+            {renderMarkdown(active.content)}
+          </div>
+        </div>
       </div>
     </div>
   )
