@@ -281,6 +281,7 @@ def create_question(
             question_id=question.id,
             text=o.text,
             sort_order=o.sort_order,
+            match_key=o.match_key,
         )
         db.add(opt); db.flush()
         new_opts.append(opt)
@@ -343,6 +344,7 @@ def update_question(
                 question_id=question.id,
                 text=o.text,
                 sort_order=o.sort_order,
+                match_key=o.match_key,
             )
             db.add(opt)
             db.flush()
