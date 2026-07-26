@@ -20,8 +20,7 @@ const ALL_SECTIONS = [
 ]
 
 function readingTime(text) {
-  const mins = Math.max(1, Math.round(text.trim().split(/\s+/).length / 200))
-  return `${mins} min read`
+  return Math.max(1, Math.round(text.trim().split(/\s+/).length / 200)) + ' min read'
 }
 
 // ── Inline markdown renderer ───────────────────────────────────────────────
@@ -61,16 +60,12 @@ function renderMarkdown(raw) {
       i++; continue
     }
 
-    if (line.startsWith('# '))  { out.push(<h1 key={k()} className="doc-h1">{inline(line.slice(2))}</h1>);  i++; continue }
-    if (line.startsWith('## ')) { out.push(<h2 key={k()} className="doc-h2">{inline(line.slice(3))}</h2>); i++; continue }
-    if (line.startsWith('### ')){ out.push(<h3 key={k()} className="doc-h3">{inline(line.slice(4))}</h3>); i++; continue }
+    if (line.startsWith('# '))   { out.push(<h1 key={k()} className="doc-h1">{inline(line.slice(2))}</h1>);  i++; continue }
+    if (line.startsWith('## '))  { out.push(<h2 key={k()} className="doc-h2">{inline(line.slice(3))}</h2>);  i++; continue }
+    if (line.startsWith('### ')) { out.push(<h3 key={k()} className="doc-h3">{inline(line.slice(4))}</h3>);  i++; continue }
 
     if (line.startsWith('> ')) {
-      out.push(
-        <div key={k()} className="doc-callout">
-          {inline(line.slice(2))}
-        </div>
-      )
+      out.push(<div key={k()} className="doc-callout">{inline(line.slice(2))}</div>)
       i++; continue
     }
 
@@ -82,7 +77,7 @@ function renderMarkdown(raw) {
       i++
       out.push(
         <div key={k()} className="doc-code">
-          {lang && <div className="doc-code-bar"><span>{lang}</span></div>}
+          {lang && <div className="doc-code-bar">{lang}</div>}
           <pre><code>{codeLines.join('\n')}</code></pre>
         </div>
       )
@@ -111,22 +106,14 @@ function renderMarkdown(raw) {
     if (/^[-*] /.test(line)) {
       const items = []
       while (i < lines.length && /^[-*] /.test(lines[i])) { items.push(lines[i].replace(/^[-*] /, '')); i++ }
-      out.push(
-        <ul key={k()} className="doc-ul">
-          {items.map((item, j) => <li key={j}>{inline(item)}</li>)}
-        </ul>
-      )
+      out.push(<ul key={k()} className="doc-ul">{items.map((item, j) => <li key={j}>{inline(item)}</li>)}</ul>)
       continue
     }
 
     if (/^\d+\. /.test(line)) {
       const items = []
       while (i < lines.length && /^\d+\. /.test(lines[i])) { items.push(lines[i].replace(/^\d+\. /, '')); i++ }
-      out.push(
-        <ol key={k()} className="doc-ol">
-          {items.map((item, j) => <li key={j}>{inline(item)}</li>)}
-        </ol>
-      )
+      out.push(<ol key={k()} className="doc-ol">{items.map((item, j) => <li key={j}>{inline(item)}</li>)}</ol>)
       continue
     }
 
@@ -141,7 +128,6 @@ function renderMarkdown(raw) {
 
     if (paraLines.length) out.push(<p key={k()} className="doc-p">{inline(paraLines.join(' '))}</p>)
   }
-
   return out
 }
 
@@ -152,62 +138,49 @@ export default function Documentation() {
   const sections = ALL_SECTIONS.filter(s => !s.adminOnly || isPrivileged)
 
   const [activeId, setActiveId] = useState(sections[0].id)
-  const [mobileOpen, setMobileOpen] = useState(false)
   const contentRef = useRef(null)
+  const tabsRef = useRef(null)
   const active = sections.find(s => s.id === activeId) || sections[0]
 
   useEffect(() => {
     if (contentRef.current) contentRef.current.scrollTop = 0
   }, [activeId])
 
-  function select(id) { setActiveId(id); setMobileOpen(false) }
+  // Scroll active tab into view on mobile
+  useEffect(() => {
+    if (tabsRef.current) {
+      const activeTab = tabsRef.current.querySelector('.doc-tab.active')
+      if (activeTab) activeTab.scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' })
+    }
+  }, [activeId])
 
   return (
-    <div className="doc-shell">
+    <div className="doc-page">
 
-      {/* Mobile top bar */}
-      <button className="doc-mob-bar" onClick={() => setMobileOpen(o => !o)}>
-        <span className="doc-mob-label">{active.label}</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          {mobileOpen
-            ? <path d="M18 6L6 18M6 6l12 12"/>
-            : <path d="M8 6l4 4 4-4M8 12l4 4 4-4"/>
-          }
-        </svg>
-      </button>
-
-      {/* Sidebar */}
-      <aside className={`doc-sidebar${mobileOpen ? ' open' : ''}`}>
-        <div className="doc-sidebar-top">
-          <div className="doc-sidebar-heading">Documentation</div>
-        </div>
-
-        <nav className="doc-nav">
+      {/* ── Tab bar ── */}
+      <div className="doc-tabs-wrap" ref={tabsRef}>
+        <div className="doc-tabs">
           {sections.map(s => (
             <button
               key={s.id}
-              className={`doc-nav-item${activeId === s.id ? ' active' : ''}`}
-              onClick={() => select(s.id)}
+              className={`doc-tab${activeId === s.id ? ' active' : ''}`}
+              onClick={() => setActiveId(s.id)}
             >
-              <span className="doc-nav-label">{s.label}</span>
-              {s.adminOnly && <span className="doc-nav-tag">Admin</span>}
+              {s.label}
+              {s.adminOnly && <span className="doc-tab-admin">Admin</span>}
             </button>
           ))}
-        </nav>
-      </aside>
+        </div>
+      </div>
 
-      {mobileOpen && <div className="doc-overlay" onClick={() => setMobileOpen(false)} />}
-
-      {/* Content */}
-      <main className="doc-content" ref={contentRef}>
+      {/* ── Content ── */}
+      <div className="doc-scroll" ref={contentRef}>
         <div className="doc-body">
-          <div className="doc-meta">
-            <span className="doc-meta-time">{readingTime(active.content)}</span>
-            {active.adminOnly && <span className="doc-meta-badge">Admin only</span>}
-          </div>
+          <div className="doc-reading-time">{readingTime(active.content)}</div>
           {renderMarkdown(active.content)}
         </div>
-      </main>
+      </div>
+
     </div>
   )
 }
