@@ -41,11 +41,15 @@ export default function AdminVmTemplates() {
   }
 
   return (
-    <div className="page fade-up">
-      <div style={{ marginBottom:32 }}>
-        <p style={{ fontSize:11, color:'var(--text-4)', textTransform:'uppercase', letterSpacing:'.1em', fontFamily:'var(--mono)', marginBottom:8 }}>Admin</p>
-        <h1 style={{ fontSize:28, marginBottom:8 }}>VM Templates</h1>
-        <p style={{ color:'var(--text-3)', fontSize:14 }}>Golden images cloned per learner session on Proxmox.</p>
+    <div className="page fade-up" style={{ paddingTop: 0 }}>
+
+      <div className="ad-header">
+        <div className="ad-header-bg" />
+        <div>
+          <div className="ad-eyebrow">Admin · Infrastructure</div>
+          <h1 className="ad-title">VM Templates</h1>
+          <p className="ad-subtitle">Golden images cloned per learner session on Proxmox.</p>
+        </div>
       </div>
 
       {error   && <div className="alert-error">{error}</div>}
