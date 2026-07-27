@@ -132,6 +132,10 @@ export default function App() {
   }
 
   const logout = () => {
+    // Fire this before clearing the token — it needs the Authorization
+    // header — and don't wait on it; keepalive lets it finish even if
+    // the page navigates away right after.
+    api.leaveAllEnvironments().catch(() => {})
     localStorage.removeItem('token')
     setUser(null)
   }

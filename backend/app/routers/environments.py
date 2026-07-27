@@ -164,7 +164,7 @@ class StopVMPayload(BaseModel):
 # How long the lab page can go without a heartbeat before we treat the user
 # as gone and reap their VMs (frees Proxmox resources instead of waiting for
 # the full room timer to expire, which could be up to ~2 hours).
-HEARTBEAT_TIMEOUT_SECONDS =20 #mettre 10 min
+HEARTBEAT_TIMEOUT_SECONDS =3600 #mettre 10 min
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -592,7 +592,7 @@ def cleanup_expired(
 # How long an environment can sit PAUSED (hibernated, resumable) before we
 # treat it as genuinely abandoned rather than "stepped away, coming back"
 # and actually destroy it.
-PAUSED_ABANDON_HOURS = 0.02#24
+PAUSED_ABANDON_HOURS = 24# 0.02#24
 
 
 def _destroy_env_vms(env: models.Environment, db: Session, now: datetime):

@@ -200,6 +200,14 @@ class ProxmoxAdapter(ProvisioningGateway):
             task = self.client.nodes(node).qemu(vmid).status.suspend.post(todisk=1)
             self._wait_for_task(node, task)
         except Exception as e:
+            # Proxmox sometimes reports a spurious task error (e.g. "VM is
+            # locked (suspending)") right as a todisk suspend finishes — the
+            # qemu process exiting as part of succeeding can race with the
+            # task-status report. Don't trust that blindly: check the VM's
+            # actual live status before deciding this really failed.
+            if self.get_status(node, vmid) == "stopped":
+                logger.info(f"suspend_vm {vmid}: task reported '{e}' but VM is stopped/hibernated — treating as success")
+                return
             logger.warning(f"suspend_vm {vmid} failed: {e}")
             raise
 
@@ -214,6 +222,9 @@ class ProxmoxAdapter(ProvisioningGateway):
             task = self.client.nodes(node).qemu(vmid).status.start.post()
             self._wait_for_task(node, task)
         except Exception as e:
+            if self.get_status(node, vmid) == "running":
+                logger.info(f"resume_vm {vmid}: task reported '{e}' but VM is running — treating as success")
+                return
             logger.warning(f"resume_vm {vmid} failed: {e}")
             raise
 

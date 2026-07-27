@@ -1,0 +1,2 @@
+1. Alternative pour mettre en pause
+2. Vérifiez si l'utilisateur quitte la session on suspend l'activité sur les machines déployées

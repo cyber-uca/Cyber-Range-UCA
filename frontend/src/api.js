@@ -78,7 +78,31 @@ export const api = {
       body: JSON.stringify({ vm_template_id: vmTemplateId }),
     }).then(handle),
 
+  // Tells the backend the lab page is still open. If these stop arriving
+  // (tab closed, navigated away, browser crash) the server reaps the VMs
+  // shortly after — see HEARTBEAT_TIMEOUT_SECONDS in environments.py.
+  heartbeat: (roomId) =>
+    fetch(`${BASE}/environments/rooms/${roomId}/heartbeat`, {
+      method: 'POST',
+      headers: authHeaders(),
+      keepalive: true,
+    }).then(handle),
+
   getEnvironment: (id) => fetch(`${BASE}/environments/${id}`, { headers: authHeaders() }).then(handle),
+
+  // Current user's active/paused environment for this room, if any — used
+  // to restore VM state (Running/Paused) when the lab page loads.
+  getMyEnvironment: (roomId) =>
+    fetch(`${BASE}/environments/rooms/${roomId}/mine`, { headers: authHeaders() }).then(handle),
+
+  // Called right before logout — hibernates all of this user's running
+  // VMs immediately instead of waiting for the heartbeat timeout to notice.
+  leaveAllEnvironments: () =>
+    fetch(`${BASE}/environments/leave-all`, {
+      method: 'POST',
+      headers: authHeaders(),
+      keepalive: true,
+    }).then(handle),
 
   getConsoleUrl: (envId, vmId) =>
     fetch(`${BASE}/environments/${envId}/console/${vmId}`, { headers: authHeaders() }).then(handle),

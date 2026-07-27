@@ -9,7 +9,8 @@ __pycache__/
 dist/
 build/
 .eggs/
-
+#For me
+.resume
 # ── Virtual environments ──
 .venv/
 venv/
