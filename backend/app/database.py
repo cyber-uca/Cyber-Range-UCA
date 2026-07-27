@@ -13,7 +13,7 @@ To use MySQL:
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 # Load .env from the backend root (one level above this file's package).
@@ -62,6 +62,22 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def ensure_schema_upgrades():
+    """
+    Base.metadata.create_all() only creates missing tables, not missing columns
+    on tables that already exist. Add any new columns here so upgrades apply to
+    an existing platform.db / MySQL schema without a full migration tool.
+    """
+    insp = inspect(engine)
+    if "environments" not in insp.get_table_names():
+        return
+    cols = [c["name"] for c in insp.get_columns("environments")]
+    if "last_heartbeat" not in cols:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE environments ADD COLUMN last_heartbeat DATETIME"))
+        print("[database] Added environments.last_heartbeat column")
 
 
 def test_connection():

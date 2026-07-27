@@ -70,6 +70,7 @@ def _get_or_create_env(user_id: str, room_id: str, db: Session) -> models.Enviro
         models.Environment.status.in_([
             models.EnvironmentStatus.RUNNING,
             models.EnvironmentStatus.PROVISIONING,
+            models.EnvironmentStatus.PAUSED,  # reconnect to a hibernated session instead of cloning a duplicate
         ]),
     ).first()
 
@@ -81,6 +82,7 @@ def _get_or_create_env(user_id: str, room_id: str, db: Session) -> models.Enviro
             topology_json=json.dumps({"nodes": [], "links": []}),
             started_at=datetime.utcnow(),
             expires_at=datetime.utcnow() + timedelta(minutes=room.estimated_minutes or 120),
+            last_heartbeat=datetime.utcnow(),
         )
         db.add(env)
         db.flush()
@@ -159,6 +161,12 @@ class StopVMPayload(BaseModel):
     vm_template_id: str
 
 
+# How long the lab page can go without a heartbeat before we treat the user
+# as gone and reap their VMs (frees Proxmox resources instead of waiting for
+# the full room timer to expire, which could be up to ~2 hours).
+HEARTBEAT_TIMEOUT_SECONDS =20 #mettre 10 min
+
+
 # ═══════════════════════════════════════════════════════════════════
 #  START A SINGLE VM
 # ═══════════════════════════════════════════════════════════════════
@@ -181,9 +189,21 @@ def start_single_vm(
     already = db.query(models.EnvironmentVM).filter(
         models.EnvironmentVM.environment_id == env.id,
         models.EnvironmentVM.vm_template_id == template.id,
-        models.EnvironmentVM.status == "running",
+        models.EnvironmentVM.status.in_(["running", "paused"]),
     ).first()
     if already:
+        if already.status == "paused":
+            # Hibernated (e.g. auto-paused after the lab page went quiet) —
+            # resume it instead of cloning a brand new VM.
+            get_gateway().resume_vm(already.proxmox_node, already.proxmox_vmid)
+            already.status = "running"
+            remaining = env.time_remaining_seconds or (env.room.estimated_minutes or 120) * 60
+            env.expires_at = datetime.utcnow() + timedelta(seconds=remaining)
+            env.paused_at = None
+            env.time_remaining_seconds = None
+        env.status = models.EnvironmentStatus.RUNNING
+        env.last_heartbeat = datetime.utcnow()
+        db.commit()
         db.refresh(env)
         return _env_out(env)
 
@@ -346,6 +366,81 @@ def stop_single_vm(
 
 
 # ═══════════════════════════════════════════════════════════════════
+#  HEARTBEAT — the lab page pings this while it's open so the cleanup
+#  scheduler can tell a live session apart from an abandoned one.
+# ═══════════════════════════════════════════════════════════════════
+
+@router.post("/rooms/{room_id}/heartbeat")
+def heartbeat(
+    room_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    env = db.query(models.Environment).filter(
+        models.Environment.user_id == current_user.id,
+        models.Environment.room_id == room_id,
+        models.Environment.status.in_([
+            models.EnvironmentStatus.RUNNING,
+            models.EnvironmentStatus.PROVISIONING,
+        ]),
+    ).first()
+    if env:
+        env.last_heartbeat = datetime.utcnow()
+        db.commit()
+    return {"ok": True}
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  MY ENVIRONMENT FOR THIS ROOM
+#  Lets the lab page recover VM state on load/refresh instead of always
+#  starting from a blank slate (which used to risk cloning a duplicate VM
+#  on top of one that's still running or hibernated).
+# ═══════════════════════════════════════════════════════════════════
+
+@router.get("/rooms/{room_id}/mine")
+def get_my_environment(
+    room_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    env = db.query(models.Environment).filter(
+        models.Environment.user_id == current_user.id,
+        models.Environment.room_id == room_id,
+        models.Environment.status.in_([
+            models.EnvironmentStatus.RUNNING,
+            models.EnvironmentStatus.PROVISIONING,
+            models.EnvironmentStatus.PAUSED,
+        ]),
+    ).first()
+    if not env:
+        return None
+    return _env_out(env)
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  LEAVE ALL — called on logout. A deliberate "Sign out" click is a much
+#  stronger signal than a tab just going quiet, so hibernate right away
+#  instead of waiting for the heartbeat timeout to notice.
+# ═══════════════════════════════════════════════════════════════════
+
+@router.post("/leave-all")
+def leave_all(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    now = datetime.utcnow()
+    envs = db.query(models.Environment).filter(
+        models.Environment.user_id == current_user.id,
+        models.Environment.status == models.EnvironmentStatus.RUNNING,
+    ).all()
+    for env in envs:
+        _auto_pause_env(env, db, now)
+    if envs:
+        db.commit()
+    return {"paused": len(envs)}
+
+
+# ═══════════════════════════════════════════════════════════════════
 #  GET ENVIRONMENT
 # ═══════════════════════════════════════════════════════════════════
 
@@ -494,29 +589,101 @@ def cleanup_expired(
     return _do_cleanup(db)
 
 
+# How long an environment can sit PAUSED (hibernated, resumable) before we
+# treat it as genuinely abandoned rather than "stepped away, coming back"
+# and actually destroy it.
+PAUSED_ABANDON_HOURS = 0.02#24
+
+
+def _destroy_env_vms(env: models.Environment, db: Session, now: datetime):
+    for vm in env.vms:
+        if vm.proxmox_vmid and vm.status in ("running", "paused"):
+            try:
+                get_gateway().destroy_vm(vm.proxmox_node, vm.proxmox_vmid)
+            except Exception as e:
+                logger.warning(f"auto-cleanup destroy_vm {vm.proxmox_vmid}: {e}")
+        vm.status = "stopped"
+    env.status = models.EnvironmentStatus.DESTROYED
+    env.destroyed_at = now
+
+
+def _auto_pause_env(env: models.Environment, db: Session, now: datetime):
+    """
+    Hibernate every running VM in the environment and freeze the timer.
+    Used when the lab page's heartbeat goes stale — the user may just have
+    closed the tab to go do something else, so we don't want to nuke their
+    progress. Hibernating actually frees the Proxmox host's RAM/CPU (see
+    ProxmoxAdapter.suspend_vm), and the session resumes right where it left
+    off via the normal Resume action.
+    """
+    for vm in env.vms:
+        if vm.status == "running" and vm.proxmox_vmid and vm.proxmox_node:
+            try:
+                get_gateway().suspend_vm(vm.proxmox_node, vm.proxmox_vmid)
+            except Exception as e:
+                logger.warning(f"auto-pause suspend_vm {vm.proxmox_vmid}: {e}")
+                continue
+            vm.status = "paused"
+    if env.expires_at and env.expires_at > now:
+        env.time_remaining_seconds = int((env.expires_at - now).total_seconds())
+    else:
+        env.time_remaining_seconds = 0
+    env.paused_at = now
+    env.status = models.EnvironmentStatus.PAUSED
+
+
 def _do_cleanup(db):
     """Internal cleanup — can be called from scheduler or endpoint."""
     now = datetime.utcnow()
+    heartbeat_cutoff = now - timedelta(seconds=HEARTBEAT_TIMEOUT_SECONDS)
+    paused_abandon_cutoff = now - timedelta(hours=PAUSED_ABANDON_HOURS)
+
     expired = db.query(models.Environment).filter(
         models.Environment.status == models.EnvironmentStatus.RUNNING,
         models.Environment.expires_at < now,
     ).all()
-    cleaned = 0
+
+    # A RUNNING environment whose lab page stopped sending heartbeats (tab
+    # closed, browser crashed, user navigated away). We don't know *why*
+    # they left, so assume the best case — auto-pause (hibernate) instead
+    # of destroying, freeing resources now while letting them Resume later.
+    abandoned = db.query(models.Environment).filter(
+        models.Environment.status == models.EnvironmentStatus.RUNNING,
+        models.Environment.last_heartbeat.isnot(None),
+        models.Environment.last_heartbeat < heartbeat_cutoff,
+    ).all()
+
+    # Paused (by hand or auto) and never resumed for a long time — that's
+    # a genuine abandonment, not a quick errand. Fully destroy it.
+    stale_paused = db.query(models.Environment).filter(
+        models.Environment.status == models.EnvironmentStatus.PAUSED,
+        models.Environment.paused_at.isnot(None),
+        models.Environment.paused_at < paused_abandon_cutoff,
+    ).all()
+
+    destroyed = 0
+    auto_paused = 0
+
     for env in expired:
-        for vm in env.vms:
-            if vm.proxmox_vmid and vm.status == "running":
-                try:
-                    get_gateway().destroy_vm(vm.proxmox_node, vm.proxmox_vmid)
-                except Exception as e:
-                    logger.warning(f"auto-cleanup destroy_vm {vm.proxmox_vmid}: {e}")
-            vm.status = "stopped"
-        env.status = models.EnvironmentStatus.DESTROYED
-        env.destroyed_at = now
-        cleaned += 1
-    if cleaned:
+        _destroy_env_vms(env, db, now)
+        destroyed += 1
+
+    for env in abandoned:
+        _auto_pause_env(env, db, now)
+        auto_paused += 1
+
+    for env in stale_paused:
+        _destroy_env_vms(env, db, now)
+        destroyed += 1
+
+    if destroyed or auto_paused:
         db.commit()
-        logger.info(f"Auto-cleanup: destroyed {cleaned} expired environment(s)")
-    return {"cleaned": cleaned}
+        logger.info(
+            f"Auto-cleanup: destroyed {destroyed} environment(s) "
+            f"({len(expired)} expired, {len(stale_paused)} abandoned-while-paused), "
+            f"auto-paused {auto_paused} abandoned-while-running session(s)"
+        )
+    return {"destroyed": destroyed, "auto_paused": auto_paused}
 
 
 # Register periodic cleanup on startup
@@ -525,19 +692,19 @@ def start_cleanup_scheduler(app):
     def _run():
         import time
         while True:
-            time.sleep(300)  # every 5 minutes
+            time.sleep(30)  # heartbeats go stale after HEARTBEAT_TIMEOUT_SECONDS — poll often enough to catch that
             try:
                 from ..database import SessionLocal
                 db = SessionLocal()
                 result = _do_cleanup(db)
                 db.close()
-                if result["cleaned"]:
-                    logger.info(f"Scheduled cleanup: {result['cleaned']} environment(s) destroyed")
+                if result["destroyed"] or result["auto_paused"]:
+                    logger.info(f"Scheduled cleanup: {result}")
             except Exception as e:
                 logger.warning(f"Cleanup scheduler error: {e}")
     t = threading.Thread(target=_run, daemon=True)
     t.start()
-    logger.info("Environment cleanup scheduler started (5-min interval)")
+    logger.info("Environment cleanup scheduler started (30s interval)")
 
 
 # ═══════════════════════════════════════════════════════════════════

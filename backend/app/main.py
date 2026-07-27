@@ -10,7 +10,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.openapi.utils import get_openapi
 
-from .database import Base, engine, test_connection
+from .database import Base, engine, ensure_schema_upgrades, test_connection
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -30,6 +30,7 @@ setup_audit_logging()
 
 # Create all tables
 Base.metadata.create_all(bind=engine)
+ensure_schema_upgrades()
 test_connection()
 
 app = FastAPI(

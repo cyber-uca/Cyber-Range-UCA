@@ -466,6 +466,7 @@ class Environment(Base):
     destroyed_at          = Column(DateTime, nullable=True)
     paused_at             = Column(DateTime, nullable=True)
     time_remaining_seconds = Column(Integer, nullable=True)  # saved when paused
+    last_heartbeat        = Column(DateTime, nullable=True)  # updated by the lab page while open
 
     user = relationship("User", back_populates="environments")
     room = relationship("Room", back_populates="environments")

@@ -189,20 +189,29 @@ class ProxmoxAdapter(ProvisioningGateway):
             return "unknown"
 
     def suspend_vm(self, node: str, vmid: int) -> None:
-        """Suspend (pause) a VM — saves RAM state, VM resumes instantly."""
-        logger.info(f"Suspending VM {vmid} on {node}")
+        """
+        Hibernate a VM to disk — state is written to storage and the qemu
+        process exits, so the host's RAM/CPU allocation is actually freed
+        (unlike a plain RAM-suspend, which keeps the VM's memory reserved
+        on the host the whole time it's "paused").
+        """
+        logger.info(f"Hibernating VM {vmid} on {node} (suspend to disk)")
         try:
-            task = self.client.nodes(node).qemu(vmid).status.suspend.post()
+            task = self.client.nodes(node).qemu(vmid).status.suspend.post(todisk=1)
             self._wait_for_task(node, task)
         except Exception as e:
             logger.warning(f"suspend_vm {vmid} failed: {e}")
             raise
 
     def resume_vm(self, node: str, vmid: int) -> None:
-        """Resume a suspended VM."""
-        logger.info(f"Resuming VM {vmid} on {node}")
+        """
+        Resume a hibernated VM. A todisk-suspended VM is fully stopped on
+        Proxmox, so resuming it means starting it again — Proxmox detects
+        the saved vmstate and restores it automatically.
+        """
+        logger.info(f"Resuming VM {vmid} on {node} (start from saved state)")
         try:
-            task = self.client.nodes(node).qemu(vmid).status.resume.post()
+            task = self.client.nodes(node).qemu(vmid).status.start.post()
             self._wait_for_task(node, task)
         except Exception as e:
             logger.warning(f"resume_vm {vmid} failed: {e}")
