@@ -29,16 +29,46 @@ export const useAuth = () => useContext(AuthContext)
 
 function Topbar() {
   const { user, logout } = useAuth()
+  const initials = user.name.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase()
   return (
     <div className="topbar">
-      <div style={{ marginRight: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)', display: 'inline-block', boxShadow: '0 0 8px var(--green)', animation: 'pulse 2.5s ease-in-out infinite' }} />
-        <span style={{ fontSize: 12, color: 'var(--text-4)', fontFamily: 'var(--mono)' }}>LIVE</span>
+      {/* Live indicator */}
+      <div style={{ marginRight: 'auto', display: 'flex', alignItems: 'center', gap: 7 }}>
+        <span style={{
+          position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          width: 8, height: 8,
+        }}>
+          <span style={{ position: 'absolute', width: '100%', height: '100%', borderRadius: '50%', background: 'var(--green)', animation: 'glow-ping 1.8s ease-out infinite', opacity: 0.6 }} />
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)', display: 'inline-block', boxShadow: '0 0 6px var(--green)' }} />
+        </span>
+        <span style={{ fontSize: 11, color: 'var(--text-4)', fontFamily: 'var(--mono)', letterSpacing: '.06em' }}>LIVE</span>
       </div>
-      {user.role === 'learner' && <span className="xp-badge">{user.points} XP</span>}
-      <div style={{ width: 1, height: 16, background: 'var(--border)' }} />
-      <span style={{ fontSize: 13, color: 'var(--text-3)' }}>{user.name}</span>
-      <button className="btn-ghost btn-sm" onClick={logout}>Sign out</button>
+
+      {/* XP badge for learners */}
+      {user.role === 'learner' && (
+        <div className="topbar-xp">
+          <span className="topbar-xp-icon">⚡</span>
+          <span className="topbar-xp-val">{user.points}</span>
+          <span className="topbar-xp-lbl">XP</span>
+        </div>
+      )}
+
+      <div style={{ width: 1, height: 20, background: 'var(--border)' }} />
+
+      {/* User pill */}
+      <div className="topbar-user">
+        <div className="topbar-avatar">{initials}</div>
+        <div className="topbar-user-info">
+          <span className="topbar-name">{user.name.split(' ')[0]}</span>
+          <span className="topbar-role">{user.role}</span>
+        </div>
+      </div>
+
+      <button className="btn-ghost btn-sm topbar-signout" onClick={logout}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
+        </svg>
+      </button>
     </div>
   )
 }
