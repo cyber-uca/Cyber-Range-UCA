@@ -2407,3 +2407,164 @@ textarea { resize: vertical; line-height: 1.6; }
 }
 
 .mq-actions { display: flex; gap: 10px; margin-top: 28px; }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   PHASE 5 — CHALLENGE DETAIL + ROOM LAB POLISH
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Challenge Detail — grid responsive ── */
+@media (max-width: 900px) {
+  .challenge-detail-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── Room Lab — task sidebar item hover ── */
+.lab-task-item:hover {
+  background: rgba(34,211,238,0.05) !important;
+  border-color: rgba(34,211,238,0.12) !important;
+}
+
+/* ── VM Card enhanced states ── */
+.vm-card-running {
+  background: rgba(20,201,168,0.06) !important;
+  border-color: rgba(20,201,168,0.3) !important;
+  box-shadow: 0 0 0 1px rgba(20,201,168,0.08) inset !important;
+}
+
+.vm-card-paused {
+  background: rgba(251,191,36,0.05) !important;
+  border-color: rgba(251,191,36,0.25) !important;
+}
+
+/* ── Lab topbar progress bar animation ── */
+.lab-progress-fill {
+  background: linear-gradient(90deg, var(--cyan), var(--teal));
+  position: relative;
+  overflow: hidden;
+}
+.lab-progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%; right: 0; bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: shimmer 2s linear infinite;
+}
+
+/* ── Terminal log text colors ── */
+.log-ok    { color: var(--green) !important; }
+.log-err   { color: var(--red) !important; }
+.log-cmd   { color: var(--cyan) !important; }
+.log-info  { color: #4ADE80 !important; }
+
+/* ── Question block focus ring ── */
+.question-block:focus-within {
+  border-color: rgba(34,211,238,0.25) !important;
+}
+
+/* ── MCQ option hover glow ── */
+.mcq-option:hover:not([style*='default']):not([style*='wait']) {
+  box-shadow: 0 0 0 1px rgba(34,211,238,0.15);
+}
+
+/* ── Flag input in lab ── */
+.lab-flag-input {
+  font-family: var(--mono) !important;
+  letter-spacing: 0.04em;
+}
+
+/* ── Submit button pulse when all answered ── */
+@keyframes submit-ready {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34,211,238,0); }
+  50%       { box-shadow: 0 0 0 4px rgba(34,211,238,0.15); }
+}
+.btn-submit-ready {
+  animation: submit-ready 2s ease-in-out infinite;
+}
+
+/* ── Matching block arrows ── */
+.match-arrow-active { color: var(--cyan) !important; }
+.match-arrow-empty  { color: var(--border-md) !important; }
+
+/* ── Task completion indicator in sidebar ── */
+.task-complete-check {
+  background: rgba(20,201,168,0.15) !important;
+  color: #14C9A8 !important;
+  border-color: rgba(20,201,168,0.3) !important;
+  box-shadow: 0 0 8px rgba(20,201,168,0.1);
+}
+
+/* ── VM console button ── */
+.vm-console-btn {
+  background: rgba(34,211,238,0.08) !important;
+  color: var(--cyan) !important;
+  border: 1px solid rgba(34,211,238,0.25) !important;
+  transition: background 0.15s, border-color 0.15s !important;
+}
+.vm-console-btn:hover {
+  background: rgba(34,211,238,0.14) !important;
+  border-color: rgba(34,211,238,0.4) !important;
+}
+
+/* ── VM stop button ── */
+.vm-stop-btn {
+  background: rgba(248,113,113,0.08) !important;
+  color: var(--red) !important;
+  border: 1px solid rgba(248,113,113,0.25) !important;
+  transition: background 0.15s !important;
+}
+.vm-stop-btn:hover {
+  background: rgba(248,113,113,0.15) !important;
+}
+
+/* ── VM pause button ── */
+.vm-pause-btn {
+  background: rgba(251,191,36,0.08) !important;
+  color: var(--amber) !important;
+  border: 1px solid rgba(251,191,36,0.25) !important;
+  transition: background 0.15s !important;
+}
+.vm-pause-btn:hover {
+  background: rgba(251,191,36,0.14) !important;
+}
+
+/* ── Lab shell grid on mobile ── */
+@media (max-width: 768px) {
+  .lab-inner-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .lab-vm-panel {
+    border-right: none !important;
+    border-top: 1px solid var(--border) !important;
+    max-height: 360px;
+  }
+}
+
+/* ── ChallengeDetail VM card ── */
+.cd-vm-card {
+  border-radius: var(--r) !important;
+  transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+.cd-vm-card:hover {
+  border-color: var(--border-hi) !important;
+}
+
+/* ── Flag submit feedback ── */
+.flag-correct {
+  background: var(--green-dim) !important;
+  border: 1px solid rgba(52,211,153,0.25) !important;
+  color: var(--green) !important;
+  animation: fadeUp 0.3s cubic-bezier(.16,1,.3,1) both;
+}
+.flag-wrong {
+  background: var(--red-dim) !important;
+  border: 1px solid rgba(248,113,113,0.25) !important;
+  color: var(--red) !important;
+  animation: fadeUp 0.3s cubic-bezier(.16,1,.3,1) both;
+}
+
+/* ── Lab activity log scrollbar ── */
+.lab-log::-webkit-scrollbar { width: 4px; }
+.lab-log::-webkit-scrollbar-track { background: transparent; }
+.lab-log::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 2px; }
