@@ -82,7 +82,7 @@ function VMCard({ vmTemplate, envVm, env, onStart, onStop, onPause, onResume, st
       borderRadius:12, padding:'14px 16px', transition:'all .2s', marginBottom:10,
     }}>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0, flex:1 }}>
           <div style={{ width:36, height:36, borderRadius:9, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center',
             background: running ? 'rgba(20,201,168,0.15)' : 'rgba(0,194,230,0.08)',
             border:`1px solid ${running ? 'rgba(20,201,168,0.35)' : 'rgba(0,194,230,0.2)'}` }}>
@@ -91,9 +91,13 @@ function VMCard({ vmTemplate, envVm, env, onStart, onStop, onPause, onResume, st
               <line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
             </svg>
           </div>
-          <div>
-            <div style={{ fontSize:13, fontWeight:700 }}>{vmTemplate.name}</div>
-            <div style={{ fontSize:11, color:'var(--text-4)', fontFamily:'var(--mono)', marginTop:2 }}>
+          <div style={{ minWidth:0, flex:1 }}>
+            <div style={{ fontSize:13, fontWeight:700,
+              overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+              {vmTemplate.name}
+            </div>
+            <div style={{ fontSize:11, color:'var(--text-4)', fontFamily:'var(--mono)', marginTop:2,
+              overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
               {vmTemplate.zone}
               {running && ip && <span style={{ color:'#14C9A8', marginLeft:8 }}>· {ip}</span>}
             </div>
@@ -115,7 +119,8 @@ function VMCard({ vmTemplate, envVm, env, onStart, onStop, onPause, onResume, st
               cursor:starting?'wait':'pointer',
               background:starting?'var(--surface-2)':'var(--cyan)',
               color:starting?'var(--text-4)':'#000',
-              border:'none', display:'flex', alignItems:'center', gap:6 }}>
+              border:'none', display:'flex', alignItems:'center', gap:6,
+              flexShrink:0, whiteSpace:'nowrap' }}>
             {starting ? <><Spin /> Starting…</> : <>▶ Start</>}
           </button>
         )}
