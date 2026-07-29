@@ -2778,3 +2778,139 @@ textarea { resize: vertical; line-height: 1.6; }
   .au-table th:nth-child(3),
   .au-table td:nth-child(3) { display: none; }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   LIGHT THEME
+   Applied when <html data-theme="light">
+═══════════════════════════════════════════════════════════════ */
+
+[data-theme="light"] {
+  /* Backgrounds */
+  --bg:        #F4F6FB;
+  --bg-up:     #EDF0F7;
+  --surface:   #FFFFFF;
+  --surface-2: #F0F3FA;
+  --surface-3: #E4E9F4;
+  --surface-4: #D8DFEE;
+
+  /* Borders */
+  --border:    rgba(0,0,0,0.08);
+  --border-md: rgba(0,0,0,0.12);
+  --border-hi: rgba(0,0,0,0.20);
+
+  /* Text */
+  --text:      #0F172A;
+  --text-2:    #334155;
+  --text-3:    #64748B;
+  --text-4:    #94A3B8;
+
+  /* Accent — keep cyan but slightly deeper for contrast on white */
+  --cyan:      #0891B2;
+  --cyan-dim:  rgba(8,145,178,0.08);
+  --cyan-glow: rgba(8,145,178,0.20);
+  --on-cyan:   #FFFFFF;
+
+  /* Semantic — slightly deeper for readability on light bg */
+  --red:       #DC2626;  --red-dim:   rgba(220,38,38,0.08);
+  --amber:     #D97706;  --amber-dim: rgba(217,119,6,0.10);
+  --green:     #059669;  --green-dim: rgba(5,150,105,0.08);
+  --blue:      #2563EB;  --blue-dim:  rgba(37,99,235,0.08);
+  --violet:    #7C3AED;  --violet-dim:rgba(124,58,237,0.08);
+  --teal:      #0D9488;  --teal-dim:  rgba(13,148,136,0.08);
+
+  /* Category colors */
+  --cat-offensive:  #DC2626;
+  --cat-defensive:  #2563EB;
+  --cat-mitigation: #059669;
+  --cat-risk:       #7C3AED;
+
+  /* Shadows — lighter on white */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow:    0 4px 16px rgba(0,0,0,0.10);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.12);
+  --shadow-xl: 0 24px 80px rgba(0,0,0,0.16);
+  --glow-cyan: 0 0 24px rgba(8,145,178,0.20);
+  --glow-sm:   0 0 12px rgba(8,145,178,0.15);
+}
+
+/* Light mode body — remove dark noise texture */
+[data-theme="light"] body {
+  background-image: none;
+}
+
+/* Light mode topbar */
+[data-theme="light"] .topbar {
+  background: rgba(255,255,255,0.9);
+  border-bottom-color: var(--border);
+}
+
+/* Light mode sidebar */
+[data-theme="light"] .sidebar {
+  background: linear-gradient(180deg, #FFFFFF 0%, #F4F6FB 100%);
+}
+
+/* Light mode glass card */
+[data-theme="light"] .glass {
+  background: linear-gradient(135deg, rgba(255,255,255,0.8), rgba(255,255,255,0.6));
+}
+
+/* Light mode code blocks */
+[data-theme="light"] .doc-code,
+[data-theme="light"] .doc-code-block {
+  background: #F8FAFC;
+}
+[data-theme="light"] .doc-code code,
+[data-theme="light"] .doc-code-block code {
+  color: #1E293B;
+}
+
+/* Light mode nav link active */
+[data-theme="light"] .nav-link.active {
+  background: rgba(8,145,178,0.08);
+  color: var(--cyan);
+}
+
+/* Light mode stat cards */
+[data-theme="light"] .stat-card,
+[data-theme="light"] .dash-stat-card,
+[data-theme="light"] .ad-stat-card {
+  background: #FFFFFF;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Theme toggle button ── */
+.theme-toggle {
+  width: 36px; height: 20px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  border: 1px solid var(--border-md);
+  cursor: pointer;
+  position: relative;
+  padding: 0;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.theme-toggle-thumb {
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--cyan);
+  transition: transform 0.2s cubic-bezier(.16,1,.3,1), background 0.2s;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px;
+}
+
+[data-theme="light"] .theme-toggle {
+  background: rgba(8,145,178,0.15);
+}
+
+[data-theme="light"] .theme-toggle-thumb {
+  transform: translateX(16px);
+}
+
+.theme-toggle-icon {
+  font-size: 9px; line-height: 1;
+}

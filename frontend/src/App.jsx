@@ -27,8 +27,27 @@ import Documentation from './pages/Documentation.jsx'
 export const AuthContext = createContext(null)
 export const useAuth = () => useContext(AuthContext)
 
+// ── Theme hook ────────────────────────────────────────────────
+function useTheme() {
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('theme') || 'dark'
+  })
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    localStorage.setItem('theme', theme)
+  }, [theme])
+
+  const toggle = () => setTheme(t => t === 'dark' ? 'light' : 'dark')
+  return { theme, toggle }
+}
+
+export const ThemeContext = createContext({ theme: 'dark', toggle: () => {} })
+export const useThemeCtx = () => useContext(ThemeContext)
+
 function Topbar() {
   const { user, logout } = useAuth()
+  const { theme, toggle } = useThemeCtx()
   const initials = user.name.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase()
   return (
     <div className="topbar">
@@ -52,6 +71,20 @@ function Topbar() {
           <span className="topbar-xp-lbl">XP</span>
         </div>
       )}
+
+      <div style={{ width: 1, height: 20, background: 'var(--border)' }} />
+
+      {/* Theme toggle */}
+      <button
+        className="theme-toggle"
+        onClick={toggle}
+        title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        aria-label="Toggle theme"
+      >
+        <div className="theme-toggle-thumb">
+          <span className="theme-toggle-icon">{theme === 'dark' ? '🌙' : '☀️'}</span>
+        </div>
+      </button>
 
       <div style={{ width: 1, height: 20, background: 'var(--border)' }} />
 
@@ -142,6 +175,7 @@ function RequireAuthBare({ children }) {
 export default function App() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const { theme, toggle } = useTheme()
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -171,10 +205,12 @@ export default function App() {
   }
 
   return (
-    <AuthContext.Provider value={{ user, setUser, login, register, logout, loading }}>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
-    </AuthContext.Provider>
+    <ThemeContext.Provider value={{ theme, toggle }}>
+      <AuthContext.Provider value={{ user, setUser, login, register, logout, loading }}>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </AuthContext.Provider>
+    </ThemeContext.Provider>
   )
 }
