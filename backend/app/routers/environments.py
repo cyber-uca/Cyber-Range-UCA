@@ -468,8 +468,12 @@ def get_my_environment(
 
 # ═══════════════════════════════════════════════════════════════════
 #  LEAVE ALL — called on logout. A deliberate "Sign out" click is a much
-#  stronger signal than a tab just going quiet, so hibernate right away
-#  instead of waiting for the heartbeat timeout to notice.
+#  stronger signal than a tab just going quiet: instead of hibernating (which
+#  keeps the environment/VM rows around, resumable), fully destroy every
+#  running or paused environment the user has across all rooms so nothing
+#  of the old session lingers in the DB for the next login to collide with.
+#  In-flight PROVISIONING clones are left alone — destroying mid-clone would
+#  race the still-running start-vm request.
 # ═══════════════════════════════════════════════════════════════════
 
 @router.post("/leave-all")
@@ -480,13 +484,16 @@ def leave_all(
     now = datetime.utcnow()
     envs = db.query(models.Environment).filter(
         models.Environment.user_id == current_user.id,
-        models.Environment.status == models.EnvironmentStatus.RUNNING,
+        models.Environment.status.in_([
+            models.EnvironmentStatus.RUNNING,
+            models.EnvironmentStatus.PAUSED,
+        ]),
     ).all()
     for env in envs:
-        _auto_pause_env(env, db, now)
+        _destroy_env_vms(env, db, now)
     if envs:
         db.commit()
-    return {"paused": len(envs)}
+    return {"destroyed": len(envs)}
 
 
 # ═══════════════════════════════════════════════════════════════════

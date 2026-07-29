@@ -95,8 +95,9 @@ export const api = {
   getMyEnvironment: (roomId) =>
     fetch(`${BASE}/environments/rooms/${roomId}/mine`, { headers: authHeaders() }).then(handle),
 
-  // Called right before logout — hibernates all of this user's running
-  // VMs immediately instead of waiting for the heartbeat timeout to notice.
+  // Called right before logout — destroys all of this user's running/paused
+  // VMs immediately instead of leaving them resumable (and their DB rows
+  // around) for the next login.
   leaveAllEnvironments: () =>
     fetch(`${BASE}/environments/leave-all`, {
       method: 'POST',
