@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../App.jsx'
+import { useAuth, useThemeCtx } from '../App.jsx'
 
 function Particles() {
   const ref = useRef(null)
@@ -41,6 +41,7 @@ function Particles() {
 
 export default function Login() {
   const { login } = useAuth()
+  const { theme, toggle } = useThemeCtx()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -57,6 +58,18 @@ export default function Login() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-ui)', position: 'relative' }}>
+
+      {/* Floating theme toggle */}
+      <button
+        className="theme-toggle"
+        onClick={toggle}
+        title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        style={{ position: 'fixed', top: 16, right: 16, zIndex: 100 }}
+      >
+        <div className="theme-toggle-thumb">
+          <span className="theme-toggle-icon">{theme === 'dark' ? '🌙' : '☀️'}</span>
+        </div>
+      </button>
       <style>{`
         @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
         @keyframes glowPulse{0%,100%{box-shadow:0 0 16px rgba(0,194,230,.2)}50%{box-shadow:0 0 30px rgba(0,194,230,.5)}}

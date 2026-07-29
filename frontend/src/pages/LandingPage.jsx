@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../App.jsx'
+import { useAuth, useThemeCtx } from '../App.jsx'
 
 /* ─────────── icons ─────────── */
 const Shield = ({c='currentColor',s=24})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -188,6 +188,7 @@ function CarHero() {
 /* ─────────── main export ─────────── */
 export default function LandingPage() {
   const { user } = useAuth()
+  const { theme, toggle } = useThemeCtx()
   const navigate = useNavigate()
   useEffect(() => { if (user) navigate('/') }, [user, navigate])
 
@@ -296,7 +297,17 @@ export default function LandingPage() {
             <span key={item} className="nav-link" style={{ cursor:'pointer', transition:'color .15s' }}>{item}</span>
           ))}
         </div>
-        <div style={{ display:'flex', gap:10 }}>
+        <div style={{ display:'flex', gap:10, alignItems:'center' }}>
+          <button
+            className="theme-toggle"
+            onClick={toggle}
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label="Toggle theme"
+          >
+            <div className="theme-toggle-thumb">
+              <span className="theme-toggle-icon">{theme === 'dark' ? '🌙' : '☀️'}</span>
+            </div>
+          </button>
           <Link to="/login"><button className="btn-secondary" style={{ padding:'8px 22px' }}>Log In</button></Link>
           <Link to="/register"><button className="btn-primary cta-btn" style={{ padding:'8px 22px', animation:'glowPulse 3s ease-in-out infinite' }}>Sign Up Free</button></Link>
         </div>
