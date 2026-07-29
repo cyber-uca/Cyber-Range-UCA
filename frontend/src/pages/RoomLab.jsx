@@ -674,35 +674,59 @@ export default function RoomLab() {
       <style>{ANIM}</style>
 
       {/* topbar */}
-      <div style={{ height:50, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'space-between',
+      <div style={{ height:52, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'space-between',
         padding:'0 20px', borderBottom:'1px solid var(--border)',
-        background:'rgba(13,24,38,0.97)', backdropFilter:'blur(16px)', position:'sticky', top:0, zIndex:100 }}>
+        background:'rgba(7,12,20,0.97)', backdropFilter:'blur(20px)',
+        position:'sticky', top:0, zIndex:100,
+        boxShadow:'0 1px 0 var(--border), 0 4px 20px rgba(0,0,0,0.4)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-          <Link to={`/rooms/${slug}`} style={{ fontSize:12, color:'var(--text-4)' }}>← {room.title}</Link>
+          <Link to={`/rooms/${slug}`}
+            style={{ fontSize:12, color:'var(--text-4)', display:'flex', alignItems:'center', gap:5,
+              textDecoration:'none', transition:'color .15s' }}
+            onMouseEnter={e => e.currentTarget.style.color='var(--cyan)'}
+            onMouseLeave={e => e.currentTarget.style.color='var(--text-4)'}>
+            ← {room.title}
+          </Link>
           <div style={{ width:1, height:16, background:'var(--border)' }}/>
-          <span style={{ fontSize:12, color:'var(--text-4)' }}>{tasks.length} tasks · {room.estimated_minutes} min</span>
-        </div>
-        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-          <span style={{ fontSize:12, color:'var(--text-4)' }}>
-            <span style={{ fontFamily:'var(--mono)', color:'var(--amber)', fontWeight:700 }}>{earnedPts}</span>
-            {' / '}{totalPts} pts
+          <span style={{ fontSize:11, color:'var(--text-4)', fontFamily:'var(--mono)' }}>
+            {tasks.length} tasks · {room.estimated_minutes}m
           </span>
-          <div style={{ width:90, height:4, borderRadius:999, background:'var(--border)', overflow:'hidden' }}>
-            <div style={{ height:'100%', borderRadius:999, background:'var(--cyan)',
-              width:`${totalPts>0?(earnedPts/totalPts)*100:0}%`, transition:'width .4s' }}/>
+          {/* Live indicator */}
+          <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+            <div style={{ position:'relative', width:8, height:8 }}>
+              <div style={{ position:'absolute', inset:0, borderRadius:'50%', background:'var(--green)',
+                animation:'glow-ping 1.8s ease-out infinite', opacity:0.5 }} />
+              <div style={{ width:8, height:8, borderRadius:'50%', background:'var(--green)',
+                boxShadow:'0 0 6px var(--green)' }} />
+            </div>
+            <span style={{ fontSize:10, color:'var(--text-4)', fontFamily:'var(--mono)', letterSpacing:'.06em' }}>LIVE</span>
           </div>
+        </div>
+        <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+          {/* Score */}
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            <span style={{ fontFamily:'var(--mono)', fontWeight:800, fontSize:13, color:'var(--amber)' }}>
+              {earnedPts}
+            </span>
+            <span style={{ fontSize:12, color:'var(--text-4)' }}>/ {totalPts} pts</span>
+          </div>
+          {/* Progress bar */}
+          <div style={{ width:100, height:4, borderRadius:999, background:'var(--surface-3)', overflow:'hidden', position:'relative' }}>
+            <div className="lab-progress-fill" style={{
+              height:'100%', borderRadius:999,
+              width:`${totalPts > 0 ? (earnedPts / totalPts) * 100 : 0}%`,
+              transition:'width .5s cubic-bezier(.16,1,.3,1)',
+            }}/>
+          </div>
+          {/* Reset */}
           <button onClick={resetLab} disabled={resetting}
-            title="Reset all progress and start the lab again"
-            style={{
-              padding:'5px 12px', borderRadius:7, fontSize:11, fontWeight:700,
+            title="Reset all progress"
+            style={{ padding:'5px 11px', borderRadius:7, fontSize:11, fontWeight:700,
               cursor: resetting ? 'wait' : 'pointer',
-              background:'rgba(240,82,74,0.08)',
-              color:'var(--red)',
-              border:'1px solid rgba(240,82,74,0.3)',
-              display:'flex', alignItems:'center', gap:5,
-              opacity: resetting ? 0.6 : 1,
-            }}>
-            {resetting ? <><Spin size={10}/> Resetting…</> : <>↺ Reset Lab</>}
+              background:'rgba(248,113,113,0.08)', color:'var(--red)',
+              border:'1px solid rgba(248,113,113,0.2)',
+              display:'flex', alignItems:'center', gap:4, opacity: resetting ? 0.6 : 1 }}>
+            {resetting ? <><Spin size={10}/> Resetting…</> : '↺ Reset'}
           </button>
         </div>
       </div>
@@ -710,39 +734,58 @@ export default function RoomLab() {
       <div style={{ flex:1, display:'flex', overflow:'hidden' }}>
 
         {/* task sidebar */}
-        <div style={{ width:240, flexShrink:0, borderRight:'1px solid var(--border)',
-          background:'rgba(10,18,30,0.97)', overflowY:'auto', padding:'14px 10px' }}>
+        <div className="lab-task-sidebar" style={{ width:240, flexShrink:0, borderRight:'1px solid var(--border)',
+          background:'rgba(7,12,20,0.98)', overflowY:'auto', padding:'16px 10px' }}>
           <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'.1em',
-            color:'var(--text-4)', fontWeight:700, marginBottom:12, paddingLeft:4 }}>
-            Tasks ({tasks.length})
+            color:'var(--text-4)', fontWeight:700, marginBottom:14, paddingLeft:4,
+            display:'flex', alignItems:'center', gap:6 }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+            </svg>
+            Tasks
           </div>
           {tasks.map((t, idx) => {
             const qs = t.questions ?? []
             const solved = qs.filter(q => results[q.id]?.is_correct).length
+            const complete = qs.length > 0 && solved === qs.length
             const active = idx === activeTaskIdx
             return (
               <div key={t.id} onClick={() => setActiveTaskIdx(idx)}
+                className="lab-task-item"
                 style={{ display:'flex', alignItems:'center', gap:10, padding:'10px',
                   borderRadius:10, marginBottom:4, cursor:'pointer',
-                  background: active ? 'rgba(0,194,230,0.08)' : 'transparent',
-                  border:`1px solid ${active ? 'rgba(0,194,230,0.25)' : 'transparent'}`,
+                  background: active ? 'rgba(34,211,238,0.07)' : 'transparent',
+                  border:`1px solid ${active ? 'rgba(34,211,238,0.2)' : 'transparent'}`,
                   transition:'all .15s' }}>
-                <div style={{ width:26, height:26, borderRadius:'50%', flexShrink:0,
+                {/* step indicator */}
+                <div style={{ width:28, height:28, borderRadius:'50%', flexShrink:0,
                   display:'flex', alignItems:'center', justifyContent:'center',
-                  fontSize:11, fontWeight:800, fontFamily:'var(--mono)',
-                  background: solved===qs.length&&qs.length>0 ? 'rgba(20,201,168,0.15)' : active ? 'rgba(0,194,230,0.1)' : 'var(--surface-2)',
-                  color: solved===qs.length&&qs.length>0 ? '#14C9A8' : active ? 'var(--cyan)' : 'var(--text-4)',
-                  border:`1px solid ${solved===qs.length&&qs.length>0 ? 'rgba(20,201,168,0.3)' : active ? 'rgba(0,194,230,0.3)' : 'var(--border)'}` }}>
-                  {solved===qs.length&&qs.length>0 ? '✓' : String(idx+1).padStart(2,'0')}
+                  fontSize:complete ? 12 : 11, fontWeight:800, fontFamily:'var(--mono)',
+                  background: complete ? 'rgba(20,201,168,0.15)' : active ? 'rgba(34,211,238,0.1)' : 'var(--surface-2)',
+                  color: complete ? '#14C9A8' : active ? 'var(--cyan)' : 'var(--text-4)',
+                  border:`1px solid ${complete ? 'rgba(20,201,168,0.35)' : active ? 'rgba(34,211,238,0.3)' : 'var(--border)'}`,
+                  boxShadow: complete ? '0 0 8px rgba(20,201,168,0.15)' : 'none',
+                  transition:'all .2s' }}>
+                  {complete ? '✓' : String(idx + 1).padStart(2, '0')}
                 </div>
-                <div style={{ minWidth:0 }}>
-                  <div style={{ fontSize:12, fontWeight:active?700:500,
-                    color:active?'var(--text)':'var(--text-4)',
-                    overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                <div style={{ minWidth:0, flex:1 }}>
+                  <div style={{ fontSize:12, fontWeight: active ? 700 : 500,
+                    color: complete ? '#14C9A8' : active ? 'var(--text)' : 'var(--text-3)',
+                    overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
+                    marginBottom:2 }}>
                     {t.title}
                   </div>
-                  <div style={{ fontSize:10, color:'var(--text-4)', marginTop:1 }}>
-                    {solved}/{qs.length} questions · {t.points} pts
+                  <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                    <span style={{ fontSize:10, color: complete ? 'rgba(20,201,168,0.7)' : 'var(--text-4)' }}>
+                      {solved}/{qs.length}
+                    </span>
+                    {qs.length > 0 && (
+                      <div style={{ flex:1, height:2, borderRadius:999, background:'var(--surface-3)', overflow:'hidden' }}>
+                        <div style={{ height:'100%', borderRadius:999,
+                          background: complete ? '#14C9A8' : 'var(--cyan)',
+                          width:`${(solved / qs.length) * 100}%`, transition:'width .3s' }} />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

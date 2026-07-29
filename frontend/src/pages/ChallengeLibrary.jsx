@@ -9,59 +9,66 @@ const layerMeta  = Object.fromEntries(api.LAB_LAYERS.map(l => [l.slug, l]))
 function ChallengeCard({ c, idx }) {
   const navigate = useNavigate()
   const cc = CAT_COLOR[c.category?.slug] ?? 'var(--cyan)'
+  const dc = DIFF_COLOR[c.difficulty?.slug] ?? 'var(--text-4)'
   const lyr = layerMeta[c.lab_layer]
 
   return (
-    <div className="card card-hover"
+    <div
+      className="clib-card"
       onClick={() => navigate(`/challenges/${c.id}`)}
-      style={{ padding: '20px', position: 'relative', overflow: 'hidden', cursor: 'pointer',
-        animation: `fadeUp .4s ${idx * .03}s cubic-bezier(.16,1,.3,1) both` }}>
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2,
-        background: `linear-gradient(90deg, ${cc}80, transparent)` }} />
+      style={{ '--cc': cc, animationDelay: `${idx * .03}s` }}
+    >
+      <div className="clib-card-bar" />
 
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
-        <span className={`badge badge-${c.category.slug}`}>{c.category.name}</span>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 13, fontWeight: 700, color: 'var(--amber)' }}>{c.points}</span>
+      <div className="clib-card-top">
+        <span className={`badge badge-${c.category?.slug}`}>{c.category?.name}</span>
+        <span className="clib-pts">{c.points}</span>
       </div>
 
-      <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8, lineHeight: 1.35 }}>{c.title}</div>
+      <div className="clib-card-title">{c.title}</div>
 
       {c.tags && (
-        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 12 }}>
+        <div className="clib-tags">
           {c.tags.split(',').slice(0, 3).map(t => (
-            <span key={t} style={{ fontSize: 10, padding: '2px 7px', borderRadius: 999,
-              background: 'var(--surface-3)', color: 'var(--text-4)', border: '1px solid var(--border)' }}>
-              {t.trim()}
-            </span>
+            <span key={t} className="clib-tag">{t.trim()}</span>
           ))}
         </div>
       )}
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 11, color: DIFF_COLOR[c.difficulty?.slug] ?? 'var(--text-4)', fontWeight: 600, textTransform: 'capitalize' }}>
-            {c.difficulty.name}
-          </span>
+      <div className="clib-card-footer">
+        <div className="clib-card-meta">
+          <span style={{ color: dc, fontWeight: 600 }}>{c.difficulty?.name}</span>
           {lyr && <>
-            <span style={{ color: 'var(--text-4)', fontSize: 10 }}>·</span>
-            <span style={{ fontSize: 11, color: 'var(--text-4)' }}>{lyr.label}</span>
+            <span className="clib-dot">·</span>
+            <span>{lyr.label}</span>
           </>}
         </div>
-        <span style={{ fontSize: 12, color: 'var(--text-4)' }}>→</span>
+        <span className="clib-arrow">→</span>
       </div>
     </div>
   )
 }
 
+function FilterPill({ active, onClick, children }) {
+  return (
+    <button
+      className={`clib-pill${active ? ' active' : ''}`}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  )
+}
+
 export default function ChallengeLibrary() {
-  const [challenges, setChallenges]  = useState([])
-  const [categories, setCategories]  = useState([])
+  const [challenges, setChallenges]     = useState([])
+  const [categories, setCategories]     = useState([])
   const [difficulties, setDifficulties] = useState([])
   const [searchParams, setSearchParams] = useSearchParams()
-  const category = searchParams.get('category') || ''
-  const [difficulty, setDifficulty]  = useState('')
-  const [activeLayer, setActiveLayer]= useState('')
-  const [search, setSearch]          = useState('')
+  const category     = searchParams.get('category') || ''
+  const [difficulty, setDifficulty]     = useState('')
+  const [activeLayer, setActiveLayer]   = useState('')
+  const [search, setSearch]             = useState('')
 
   useEffect(() => {
     api.listCategoriesPublic().then(setCategories).catch(() => {})
@@ -79,76 +86,85 @@ export default function ChallengeLibrary() {
 
   const visible = challenges.filter(c => {
     const q = search.toLowerCase()
-    return (!q || c.title.toLowerCase().includes(q) || (c.tags||'').toLowerCase().includes(q))
+    return (!q || c.title.toLowerCase().includes(q) || (c.tags || '').toLowerCase().includes(q))
         && (!activeLayer || c.lab_layer === activeLayer)
   })
 
   return (
-    <div className="page fade-up">
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 32, flexWrap: 'wrap', gap: 16 }}>
-        <div>
-          <p style={{ fontSize: 11, color: 'var(--text-4)', textTransform: 'uppercase', letterSpacing: '.1em', fontFamily: 'var(--mono)', marginBottom: 8 }}>
-            Challenge Library
+    <div className="page fade-up" style={{ paddingTop: 0 }}>
+
+      {/* Page header */}
+      <div className="clib-header">
+        <div className="clib-header-bg" />
+        <div className="clib-header-content">
+          <div className="clib-eyebrow">Challenge Library</div>
+          <h1 className="clib-title">All Challenges</h1>
+          <p className="clib-subtitle">
+            {challenges.length} challenges across {categories.length} categories.
           </p>
-          <h1 style={{ fontSize: 28 }}>All Challenges</h1>
         </div>
         <Link to="/roadmap">
           <button className="btn-secondary">Learning Roadmap →</button>
         </Link>
       </div>
 
-      {/* Filters */}
-      <div className="pill-bar">
-        <span className={`pill${activeLayer===''?' active':''}`} onClick={() => setActiveLayer('')}>All Layers</span>
-        {api.LAB_LAYERS.map(l => (
-          <span key={l.slug} className={`pill${activeLayer===l.slug?' active':''}`} onClick={() => setActiveLayer(l.slug)}>
-            {l.label}
-          </span>
-        ))}
-      </div>
-      <div className="pill-bar">
-        <span className={`pill${category===''?' active':''}`} onClick={() => setCategory('')}>All Categories</span>
-        {categories.map(c => (
-          <span key={c.id} className={`pill${category===c.slug?' active':''}`} onClick={() => setCategory(c.slug)}>
-            {c.name}
-          </span>
-        ))}
-      </div>
-
-      {/* Search + count */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 28, alignItems: 'center' }}>
-        <div style={{ position: 'relative', maxWidth: 280 }}>
-          <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search challenges…"
-            style={{ paddingLeft: 36 }} />
-          <svg style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', opacity: .4 }}
-            width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
+      {/* Filter section */}
+      <div className="clib-filters">
+        {/* Layer filter */}
+        <div className="clib-filter-row">
+          <FilterPill active={activeLayer === ''} onClick={() => setActiveLayer('')}>All Layers</FilterPill>
+          {api.LAB_LAYERS.map(l => (
+            <FilterPill key={l.slug} active={activeLayer === l.slug} onClick={() => setActiveLayer(l.slug)}>
+              {l.label}
+            </FilterPill>
+          ))}
         </div>
-        <select value={difficulty} onChange={e => setDifficulty(e.target.value)} style={{ width: 'auto' }}>
-          <option value="">All difficulties</option>
-          {difficulties.map(d => <option key={d.id} value={d.slug}>{d.name}</option>)}
-        </select>
-        <span style={{ marginLeft: 'auto', fontSize: 13, color: 'var(--text-4)', fontFamily: 'var(--mono)' }}>
-          {visible.length} results
-        </span>
+
+        {/* Category filter */}
+        <div className="clib-filter-row">
+          <FilterPill active={category === ''} onClick={() => setCategory('')}>All Categories</FilterPill>
+          {categories.map(c => (
+            <FilterPill key={c.id} active={category === c.slug} onClick={() => setCategory(c.slug)}>
+              {c.name}
+            </FilterPill>
+          ))}
+        </div>
+
+        {/* Search + difficulty + count */}
+        <div className="clib-search-row">
+          <div className="clib-search-wrap">
+            <svg className="clib-search-icon" width="14" height="14" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              className="clib-search"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search challenges…"
+            />
+          </div>
+          <select
+            value={difficulty}
+            onChange={e => setDifficulty(e.target.value)}
+            className="clib-select"
+          >
+            <option value="">All difficulties</option>
+            {difficulties.map(d => <option key={d.id} value={d.slug}>{d.name}</option>)}
+          </select>
+          <span className="clib-count">{visible.length} results</span>
+        </div>
       </div>
 
-      {/* Card grid — editorial */}
+      {/* Grid */}
       {visible.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-4)' }}>
-          <div style={{ fontSize: 40, marginBottom: 12, opacity: .3 }}>∅</div>
-          <p style={{ color: 'var(--text-4)' }}>No challenges match these filters.</p>
+        <div className="clib-empty">
+          <div className="clib-empty-icon">∅</div>
+          <p>No challenges match these filters.</p>
         </div>
       ) : (
-        <div style={{ columns: '280px 3', gap: 14 }}>
-          {visible.map((c, i) => (
-            <div key={c.id} style={{ breakInside: 'avoid', marginBottom: 14 }}>
-              <ChallengeCard c={c} idx={i} />
-            </div>
-          ))}
+        <div className="clib-grid">
+          {visible.map((c, i) => <ChallengeCard key={c.id} c={c} idx={i} />)}
         </div>
       )}
     </div>

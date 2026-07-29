@@ -27,11 +27,15 @@ export default function AdminSettings() {
   )
 
   return (
-    <div className="page fade-up">
-      <div style={{ marginBottom:32 }}>
-        <p style={{ fontSize:11, color:'var(--text-4)', textTransform:'uppercase', letterSpacing:'.1em', fontFamily:'var(--mono)', marginBottom:8 }}>Admin</p>
-        <h1 style={{ fontSize:28, marginBottom:8 }}>Platform Settings</h1>
-        <p style={{ color:'var(--text-3)', fontSize:14 }}>Centralized configuration for the entire platform.</p>
+    <div className="page fade-up" style={{ paddingTop: 0 }}>
+
+      <div className="ad-header">
+        <div className="ad-header-bg" />
+        <div>
+          <div className="ad-eyebrow">Admin · Settings</div>
+          <h1 className="ad-title">Platform Settings</h1>
+          <p className="ad-subtitle">Centralized configuration for the entire platform.</p>
+        </div>
       </div>
 
       {message && <div className={msgType==='success'?'alert-success':'alert-error'}>{message}</div>}

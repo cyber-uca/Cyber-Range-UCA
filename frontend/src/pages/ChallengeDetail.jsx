@@ -57,7 +57,7 @@ function VMCard({ vmTemplate, envVm, env, onStart, onStop, starting, stopping })
     }}>
       {/* Name + status */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0, flex:1 }}>
           <div style={{ width:32, height:32, borderRadius:'var(--r-sm)', flexShrink:0,
             background: running ? 'rgba(52,211,153,0.12)' : 'var(--cyan-dim)',
             border: `1px solid ${running ? 'rgba(52,211,153,0.3)' : 'rgba(34,211,238,0.2)'}`,
@@ -65,9 +65,13 @@ function VMCard({ vmTemplate, envVm, env, onStart, onStop, starting, stopping })
             fontFamily:'var(--mono)', fontWeight:700, fontSize:9, color: running ? 'var(--green)' : 'var(--cyan)' }}>
             VM
           </div>
-          <div>
-            <div style={{ fontSize:13, fontWeight:700, color:'var(--text-2)' }}>{vmTemplate.name}</div>
-            <div style={{ fontSize:11, color:'var(--text-4)', fontFamily:'var(--mono)', marginTop:1 }}>
+          <div style={{ minWidth:0, flex:1 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:'var(--text-2)',
+              overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+              {vmTemplate.name}
+            </div>
+            <div style={{ fontSize:11, color:'var(--text-4)', fontFamily:'var(--mono)', marginTop:1,
+              overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
               {vmTemplate.zone}
               {running && ip && <span style={{ color:'var(--green)', marginLeft:8 }}>· {ip}</span>}
             </div>
@@ -86,10 +90,11 @@ function VMCard({ vmTemplate, envVm, env, onStart, onStop, starting, stopping })
               background: starting ? 'var(--surface-3)' : 'var(--cyan)',
               color: starting ? 'var(--text-4)' : 'var(--on-cyan)',
               border:'none', display:'flex', alignItems:'center', gap:6,
-              boxShadow: starting ? 'none' : 'var(--glow-sm)' }}>
+              boxShadow: starting ? 'none' : 'var(--glow-sm)',
+              flexShrink:0, whiteSpace:'nowrap', maxWidth:160, overflow:'hidden' }}>
             {starting
-              ? <><div style={{ width:10, height:10, border:'2px solid currentColor', borderTopColor:'transparent', borderRadius:'50%', animation:'spin .7s linear infinite' }} /> Starting…</>
-              : `▶ Start ${vmTemplate.name}`
+              ? <><div style={{ width:10, height:10, border:'2px solid currentColor', borderTopColor:'transparent', borderRadius:'50%', animation:'spin .7s linear infinite', flexShrink:0 }} /> Starting…</>
+              : `▶ Start`
             }
           </button>
         )}
