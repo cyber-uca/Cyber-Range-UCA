@@ -370,12 +370,15 @@ def stop_single_vm(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
+    # A hibernated (paused) VM must also be stoppable — it wasn't running,
+    # but it still holds Proxmox disk/vmid resources that Stop should free.
     env = db.query(models.Environment).filter(
         models.Environment.user_id == current_user.id,
         models.Environment.room_id == room_id,
         models.Environment.status.in_([
             models.EnvironmentStatus.RUNNING,
             models.EnvironmentStatus.PROVISIONING,
+            models.EnvironmentStatus.PAUSED,
         ]),
     ).first()
     if not env:
@@ -384,7 +387,7 @@ def stop_single_vm(
     vm = db.query(models.EnvironmentVM).filter(
         models.EnvironmentVM.environment_id == env.id,
         models.EnvironmentVM.vm_template_id == payload.vm_template_id,
-        models.EnvironmentVM.status == "running",
+        models.EnvironmentVM.status.in_(["running", "paused"]),
     ).first()
     if not vm:
         raise HTTPException(status_code=404, detail="VM not running")
@@ -396,7 +399,7 @@ def stop_single_vm(
             logger.warning(f"destroy_vm error: {e}")
 
     vm.status = "stopped"
-    if all(v.status != "running" for v in env.vms):
+    if all(v.status not in ("running", "paused") for v in env.vms):
         env.status = models.EnvironmentStatus.DESTROYED
         env.destroyed_at = datetime.utcnow()
     db.commit()
