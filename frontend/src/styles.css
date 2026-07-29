@@ -251,7 +251,7 @@ textarea { resize: vertical; line-height: 1.6; }
 .user-role { font-size: 11px; color: var(--text-4); text-transform: capitalize; }
 
 /* ─── Main col ───────────────────────────────────────────────── */
-.main-col { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow-x: hidden; }
+.main-col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 
 /* ─── Topbar ─────────────────────────────────────────────────── */
 .topbar {
@@ -272,7 +272,7 @@ textarea { resize: vertical; line-height: 1.6; }
 }
 
 /* ─── Page shell ─────────────────────────────────────────────── */
-.page { flex: 1; padding: 40px 44px; max-width: 1280px; width: 100%; }
+.page { flex: 1; padding: 40px 44px; max-width: 1280px; width: 100%; min-width: 0; }
 .page-wide { max-width: none; padding: 0; }
 .page-full { max-width: none; }
 
@@ -2786,89 +2786,112 @@ textarea { resize: vertical; line-height: 1.6; }
 ═══════════════════════════════════════════════════════════════ */
 
 [data-theme="light"] {
-  /* Backgrounds */
-  --bg:        #F4F6FB;
-  --bg-up:     #EDF0F7;
+  /* Backgrounds — warm white layered */
+  --bg:        #F0F4FF;
+  --bg-up:     #E8EEFF;
   --surface:   #FFFFFF;
-  --surface-2: #F0F3FA;
-  --surface-3: #E4E9F4;
-  --surface-4: #D8DFEE;
+  --surface-2: #EEF2FF;
+  --surface-3: #E0E7FF;
+  --surface-4: #C7D2FE;
 
-  /* Borders */
-  --border:    rgba(0,0,0,0.08);
-  --border-md: rgba(0,0,0,0.12);
-  --border-hi: rgba(0,0,0,0.20);
+  /* Borders — blue-tinted */
+  --border:    rgba(99,102,241,0.12);
+  --border-md: rgba(99,102,241,0.20);
+  --border-hi: rgba(99,102,241,0.32);
 
   /* Text */
   --text:      #0F172A;
-  --text-2:    #334155;
-  --text-3:    #64748B;
+  --text-2:    #1E293B;
+  --text-3:    #475569;
   --text-4:    #94A3B8;
 
-  /* Accent — keep cyan but slightly deeper for contrast on white */
-  --cyan:      #0891B2;
-  --cyan-dim:  rgba(8,145,178,0.08);
-  --cyan-glow: rgba(8,145,178,0.20);
+  /* Accent — deeper cyan for contrast on white */
+  --cyan:      #0284C7;
+  --cyan-dim:  rgba(2,132,199,0.10);
+  --cyan-glow: rgba(2,132,199,0.22);
   --on-cyan:   #FFFFFF;
 
-  /* Semantic — slightly deeper for readability on light bg */
-  --red:       #DC2626;  --red-dim:   rgba(220,38,38,0.08);
-  --amber:     #D97706;  --amber-dim: rgba(217,119,6,0.10);
-  --green:     #059669;  --green-dim: rgba(5,150,105,0.08);
-  --blue:      #2563EB;  --blue-dim:  rgba(37,99,235,0.08);
-  --violet:    #7C3AED;  --violet-dim:rgba(124,58,237,0.08);
-  --teal:      #0D9488;  --teal-dim:  rgba(13,148,136,0.08);
+  /* Semantic */
+  --red:       #DC2626;  --red-dim:   rgba(220,38,38,0.10);
+  --amber:     #B45309;  --amber-dim: rgba(180,83,9,0.10);
+  --green:     #047857;  --green-dim: rgba(4,120,87,0.10);
+  --blue:      #1D4ED8;  --blue-dim:  rgba(29,78,216,0.10);
+  --violet:    #6D28D9;  --violet-dim:rgba(109,40,217,0.10);
+  --teal:      #0F766E;  --teal-dim:  rgba(15,118,110,0.10);
 
   /* Category colors */
   --cat-offensive:  #DC2626;
-  --cat-defensive:  #2563EB;
-  --cat-mitigation: #059669;
-  --cat-risk:       #7C3AED;
+  --cat-defensive:  #1D4ED8;
+  --cat-mitigation: #047857;
+  --cat-risk:       #6D28D9;
 
-  /* Shadows — lighter on white */
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
-  --shadow:    0 4px 16px rgba(0,0,0,0.10);
-  --shadow-lg: 0 12px 40px rgba(0,0,0,0.12);
-  --shadow-xl: 0 24px 80px rgba(0,0,0,0.16);
-  --glow-cyan: 0 0 24px rgba(8,145,178,0.20);
-  --glow-sm:   0 0 12px rgba(8,145,178,0.15);
+  /* Shadows — crisp on white */
+  --shadow-sm: 0 1px 4px rgba(15,23,42,0.08), 0 0 0 1px rgba(99,102,241,0.06);
+  --shadow:    0 4px 16px rgba(15,23,42,0.10), 0 0 0 1px rgba(99,102,241,0.08);
+  --shadow-lg: 0 12px 40px rgba(15,23,42,0.14);
+  --shadow-xl: 0 24px 80px rgba(15,23,42,0.18);
+  --glow-cyan: 0 0 24px rgba(2,132,199,0.22);
+  --glow-sm:   0 0 12px rgba(2,132,199,0.16);
 }
 
-/* Light mode body — remove dark noise texture */
+/* Light mode — remove dark noise, add subtle gradient */
 [data-theme="light"] body {
-  background-image: none;
+  background-image:
+    radial-gradient(ellipse 80% 40% at 20% -10%, rgba(99,102,241,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 100%, rgba(2,132,199,0.06) 0%, transparent 60%);
 }
 
 /* Light mode topbar */
 [data-theme="light"] .topbar {
-  background: rgba(255,255,255,0.9);
-  border-bottom-color: var(--border);
+  background: rgba(255,255,255,0.92);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 0 var(--border);
 }
 
 /* Light mode sidebar */
 [data-theme="light"] .sidebar {
-  background: linear-gradient(180deg, #FFFFFF 0%, #F4F6FB 100%);
+  background: linear-gradient(180deg, #FFFFFF 0%, #F0F4FF 100%);
+  border-right: 1px solid var(--border);
 }
 
-/* Light mode glass card */
-[data-theme="light"] .glass {
-  background: linear-gradient(135deg, rgba(255,255,255,0.8), rgba(255,255,255,0.6));
+/* Light mode sidebar brand mark */
+[data-theme="light"] .sidebar-brand .mark {
+  background: rgba(2,132,199,0.12);
+  border-color: rgba(2,132,199,0.3);
 }
 
-/* Light mode code blocks */
-[data-theme="light"] .doc-code,
-[data-theme="light"] .doc-code-block {
-  background: #F8FAFC;
+/* Light mode nav link */
+[data-theme="light"] .nav-link {
+  color: var(--text-3);
 }
-[data-theme="light"] .doc-code code,
-[data-theme="light"] .doc-code-block code {
-  color: #1E293B;
+[data-theme="light"] .nav-link:hover {
+  background: var(--surface-2);
+  color: var(--text);
 }
-
-/* Light mode nav link active */
 [data-theme="light"] .nav-link.active {
-  background: rgba(8,145,178,0.08);
+  background: rgba(2,132,199,0.10);
   color: var(--cyan);
+}
+[data-theme="light"] .nav-link.active::before {
+  background: var(--cyan);
+  box-shadow: none;
+}
+
+/* Light mode cards */
+[data-theme="light"] .card {
+  background: #FFFFFF;
+  border-color: var(--border);
+  box-shadow: var(--shadow-sm);
+}
+[data-theme="light"] .card:hover {
+  box-shadow: var(--shadow);
+}
+
+/* Light mode glass */
+[data-theme="light"] .glass {
+  background: rgba(255,255,255,0.7);
+  border-color: var(--border);
+  backdrop-filter: blur(20px);
 }
 
 /* Light mode stat cards */
@@ -2877,6 +2900,147 @@ textarea { resize: vertical; line-height: 1.6; }
 [data-theme="light"] .ad-stat-card {
   background: #FFFFFF;
   box-shadow: var(--shadow-sm);
+}
+[data-theme="light"] .stat-card::before {
+  background: linear-gradient(135deg, rgba(99,102,241,0.04) 0%, transparent 60%);
+}
+
+/* Light mode hero sections */
+[data-theme="light"] .dash-hero-bg,
+[data-theme="light"] .rd-hero-bg,
+[data-theme="light"] .clib-header-bg,
+[data-theme="light"] .lb-header-bg,
+[data-theme="light"] .an-header-bg,
+[data-theme="light"] .ad-header-bg,
+[data-theme="light"] .au-header-bg,
+[data-theme="light"] .doc-bg-orb-1,
+[data-theme="light"] .doc-bg-orb-2 {
+  opacity: 0.5;
+}
+
+/* Light mode inputs */
+[data-theme="light"] input,
+[data-theme="light"] textarea,
+[data-theme="light"] select {
+  background: #FFFFFF;
+  border-color: var(--border-md);
+  color: var(--text);
+}
+[data-theme="light"] input:focus,
+[data-theme="light"] textarea:focus,
+[data-theme="light"] select:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(2,132,199,0.12);
+}
+
+/* Light mode code blocks */
+[data-theme="light"] .doc-code,
+[data-theme="light"] .doc-code-block {
+  background: #F8FAFC;
+  border-color: var(--border-md);
+}
+[data-theme="light"] .doc-code code,
+[data-theme="light"] .doc-code-block code,
+[data-theme="light"] .doc-code pre code {
+  color: #1E293B;
+}
+[data-theme="light"] .doc-code-bar,
+[data-theme="light"] .doc-code-header {
+  background: #F1F5F9;
+  border-bottom-color: var(--border);
+}
+
+/* Light mode inline code */
+[data-theme="light"] .doc-ic,
+[data-theme="light"] .doc-inline-code {
+  background: rgba(2,132,199,0.08);
+  border-color: rgba(2,132,199,0.2);
+  color: var(--cyan);
+}
+
+/* Light mode progress bars */
+[data-theme="light"] .progress-bar {
+  background: var(--surface-3);
+}
+
+/* Light mode pills */
+[data-theme="light"] .pill {
+  background: #FFFFFF;
+  border-color: var(--border-md);
+  color: var(--text-3);
+}
+[data-theme="light"] .pill.active {
+  background: rgba(2,132,199,0.10);
+  color: var(--cyan);
+  border-color: rgba(2,132,199,0.3);
+}
+
+/* Light mode table rows */
+[data-theme="light"] .data-table tbody tr:hover td {
+  background: var(--surface-2);
+}
+
+/* Light mode badges */
+[data-theme="light"] .badge-offensive  { background: rgba(220,38,38,0.08);   border-color: rgba(220,38,38,0.2); }
+[data-theme="light"] .badge-defensive  { background: rgba(29,78,216,0.08);   border-color: rgba(29,78,216,0.2); }
+[data-theme="light"] .badge-mitigation { background: rgba(4,120,87,0.08);    border-color: rgba(4,120,87,0.2); }
+[data-theme="light"] .badge-risk       { background: rgba(109,40,217,0.08);  border-color: rgba(109,40,217,0.2); }
+[data-theme="light"] .badge-easy       { background: rgba(4,120,87,0.08);    border-color: rgba(4,120,87,0.2); }
+[data-theme="light"] .badge-medium     { background: rgba(180,83,9,0.08);    border-color: rgba(180,83,9,0.2); }
+[data-theme="light"] .badge-hard       { background: rgba(220,38,38,0.08);   border-color: rgba(220,38,38,0.2); }
+
+/* Light mode room detail stats card */
+[data-theme="light"] .rd-stats-card {
+  background: #FFFFFF;
+  box-shadow: var(--shadow);
+}
+
+/* Light mode leaderboard podium */
+[data-theme="light"] .lb-podium-card {
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Light mode doc sidebar */
+[data-theme="light"] .doc-sidebar {
+  background: #FFFFFF;
+  border-right-color: var(--border);
+}
+[data-theme="light"] .doc-tab.active {
+  color: var(--cyan);
+  border-bottom-color: var(--cyan);
+}
+[data-theme="light"] .doc-h2 {
+  border-bottom-color: var(--border);
+}
+[data-theme="light"] .doc-callout {
+  background: rgba(2,132,199,0.05);
+  border-left-color: var(--cyan);
+}
+
+/* Light mode XP badge */
+[data-theme="light"] .topbar-xp {
+  background: rgba(180,83,9,0.10);
+  border-color: rgba(180,83,9,0.2);
+}
+[data-theme="light"] .topbar-xp-val,
+[data-theme="light"] .topbar-xp-lbl { color: var(--amber); }
+
+/* Light mode user avatar */
+[data-theme="light"] .topbar-avatar {
+  background: rgba(2,132,199,0.12);
+  border-color: rgba(2,132,199,0.3);
+  color: var(--cyan);
+}
+
+/* Light mode toggle */
+[data-theme="light"] .theme-toggle {
+  background: rgba(2,132,199,0.15);
+  border-color: rgba(2,132,199,0.3);
+}
+[data-theme="light"] .theme-toggle-thumb {
+  transform: translateX(16px);
+  background: var(--cyan);
 }
 
 /* ── Theme toggle button ── */
@@ -2888,7 +3052,7 @@ textarea { resize: vertical; line-height: 1.6; }
   cursor: pointer;
   position: relative;
   padding: 0;
-  transition: background 0.2s;
+  transition: background 0.2s, border-color 0.2s;
   flex-shrink: 0;
 }
 
@@ -2898,19 +3062,8 @@ textarea { resize: vertical; line-height: 1.6; }
   width: 14px; height: 14px;
   border-radius: 50%;
   background: var(--cyan);
-  transition: transform 0.2s cubic-bezier(.16,1,.3,1), background 0.2s;
+  transition: transform 0.25s cubic-bezier(.16,1,.3,1);
   display: flex; align-items: center; justify-content: center;
-  font-size: 8px;
 }
 
-[data-theme="light"] .theme-toggle {
-  background: rgba(8,145,178,0.15);
-}
-
-[data-theme="light"] .theme-toggle-thumb {
-  transform: translateX(16px);
-}
-
-.theme-toggle-icon {
-  font-size: 9px; line-height: 1;
-}
+.theme-toggle-icon { font-size: 9px; line-height: 1; }
