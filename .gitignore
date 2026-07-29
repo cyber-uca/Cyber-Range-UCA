@@ -11,6 +11,7 @@ build/
 .eggs/
 #For me
 .resume
+ACorriger.txt
 # ── Virtual environments ──
 .venv/
 venv/

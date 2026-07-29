@@ -34,7 +34,9 @@ function fmt(secs) {
 function VMCard({ vmTemplate, envVm, env, onStart, onStop, onPause, onResume, starting, stopping, pausing, resuming }) {
   const running = envVm?.status === 'running'
   const paused  = envVm?.status === 'paused'
+  const provisioning = envVm?.status === 'provisioning' || starting
   const ip = envVm?.ip_address
+  const pausedSecsLeft = paused ? env?.time_remaining_seconds : null
   const secsLeft = useCountdown(running && !paused && env?.expires_at_iso ? env.expires_at_iso : null)
   const urgent = secsLeft !== null && secsLeft < 300
   const warn   = secsLeft !== null && secsLeft < 900
@@ -112,6 +114,11 @@ function VMCard({ vmTemplate, envVm, env, onStart, onStop, onPause, onResume, st
             <div style={{ width:8, height:8, borderRadius:'50%', background:'var(--amber)', boxShadow:'0 0 6px var(--amber)' }} />
             <span style={{ fontSize:11, color:'var(--amber)', fontWeight:700 }}>PAUSED</span>
           </div>
+        ) : provisioning ? (
+          <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0, color:'var(--text-4)' }}>
+            <Spin />
+            <span style={{ fontSize:11, fontWeight:700 }}>STARTING…</span>
+          </div>
         ) : (
           <button onClick={onStart} disabled={starting}
             style={{ padding:'7px 16px', borderRadius:8, fontSize:12, fontWeight:700,
@@ -134,6 +141,7 @@ function VMCard({ vmTemplate, envVm, env, onStart, onStop, onPause, onResume, st
                 color:urgent?'var(--red)':warn?'var(--amber)':'var(--text-4)' }}>
                 {fmt(secsLeft)}
               </span>
+              <span style={{ fontSize:10, color:'var(--text-4)' }}>until auto-destroy</span>
             </div>
           )}
           <div style={{ display:'flex', gap:6 }}>
@@ -168,7 +176,7 @@ function VMCard({ vmTemplate, envVm, env, onStart, onStop, onPause, onResume, st
             background:'rgba(245,166,35,0.1)', border:'1px solid rgba(245,166,35,0.3)',
             borderRadius:8, padding:'5px 12px' }}>
             <span style={{ fontFamily:'var(--mono)', fontSize:12, fontWeight:700, color:'var(--amber)' }}>
-              ⏸ Paused — timer frozen
+              ⏸ Paused — {pausedSecsLeft != null ? `${fmt(pausedSecsLeft)} left before auto-destroy` : 'timer frozen'}
             </span>
           </div>
           <div style={{ display:'flex', gap:6 }}>
@@ -454,6 +462,37 @@ export default function RoomLab() {
   const [logs, setLogs] = useState(['$ ready — start VMs when needed'])
   const logRef = useRef(null)
 
+  // Reconciles local VM state with whatever the server last reported —
+  // used both for the initial restore-on-load and on every heartbeat tick,
+  // so a status change that happened server-side (auto-pause, another tab
+  // resuming/stopping the VM, etc.) actually reaches the front instead of
+  // only ever flowing one way.
+  const syncFromEnv = useCallback((env, isInitialLoad) => {
+    if (!env?.vms?.length) return
+    setVmState(prev => {
+      const next = { ...prev }
+      let changed = false
+      env.vms.forEach(v => {
+        const tplId = v.vm_template.id
+        const cur = next[tplId] ?? {}
+        if (['running', 'paused', 'provisioning'].includes(v.status)) {
+          if (cur.envVm?.status !== v.status || cur.env?.time_remaining_seconds !== env.time_remaining_seconds || isInitialLoad) {
+            next[tplId] = {
+              ...cur, env, envVm: { ...v, environment_id: env.id },
+              starting: v.status === 'provisioning', stopping: false, pausing: false, resuming: false,
+            }
+            changed = true
+          }
+        } else if (cur.envVm && cur.envVm.status !== v.status) {
+          next[tplId] = { ...cur, envVm: { ...cur.envVm, status: v.status } }
+          changed = true
+        }
+      })
+      return changed ? next : prev
+    })
+    if (isInitialLoad) setLogs(p => [...p, '$ restored VM(s) from your previous session'])
+  }, [])
+
   // Reset all state and reload progress when user or room changes
   useEffect(() => {
     // Clear previous user's state immediately
@@ -492,39 +531,28 @@ export default function RoomLab() {
         if (firstIncomplete !== -1) setActiveTaskIdx(firstIncomplete)
       }).catch(() => {})
 
-      // Restore any VM(s) already running or hibernated from a previous
-      // visit — otherwise every reload/return shows blank "Start" buttons
-      // and clicking Start would clone a duplicate VM on top of the old one.
-      api.getMyEnvironment(r.id).then(env => {
-        if (!env?.vms?.length) return
-        const restored = {}
-        env.vms.forEach(v => {
-          if (v.status === 'running' || v.status === 'paused') {
-            restored[v.vm_template.id] = {
-              env, envVm: { ...v, environment_id: env.id },
-              starting: false, stopping: false, pausing: false, resuming: false,
-            }
-          }
-        })
-        if (Object.keys(restored).length) {
-          setVmState(p => ({ ...p, ...restored }))
-          setLogs(p => [...p, '$ restored VM(s) from your previous session'])
-        }
-      }).catch(() => {})
+      // Restore any VM(s) already running/paused/still-cloning from a
+      // previous visit — otherwise a reload shows blank "Start" buttons and
+      // clicking Start again would clone a duplicate VM on top of the old
+      // one (or, for one still mid-clone, on top of that in-flight one).
+      api.getMyEnvironment(r.id).then(env => syncFromEnv(env, true)).catch(() => {})
     }).catch(() => {})
-  }, [slug, user?.id])
+  }, [slug, user?.id, syncFromEnv])
   useEffect(() => { if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight }, [logs])
 
   // While this page is open, tell the backend we're still here. If the tab
   // is closed or the user navigates away, this interval stops and the
   // backend reaps the running VM(s) shortly after — instead of holding
-  // Proxmox resources until the full room timer expires.
+  // Proxmox resources until the full room timer expires. The response also
+  // carries the environment's real status, so an out-of-band change (e.g.
+  // auto-pause, or another tab pausing/resuming) reaches this page too.
   useEffect(() => {
     if (!room?.id) return
-    api.heartbeat(room.id).catch(() => {})
-    const id = setInterval(() => { api.heartbeat(room.id).catch(() => {}) }, 20000)
+    const ping = () => api.heartbeat(room.id).then(res => syncFromEnv(res?.env)).catch(() => {})
+    ping()
+    const id = setInterval(ping, 20000)
     return () => clearInterval(id)
-  }, [room?.id])
+  }, [room?.id, syncFromEnv])
 
   const [resetting, setResetting] = useState(false)
 
@@ -581,7 +609,7 @@ export default function RoomLab() {
     try {
       const env = await api.pauseVM(room.id, vmTpl.id)
       addLog(`$ ✓ ${vmTpl.name} paused — timer frozen`)
-      setVmState(p => ({ ...p, [vmTpl.id]: { ...(p[vmTpl.id]??{}), envVm:{ ...p[vmTpl.id]?.envVm, status:'paused' }, pausing:false } }))
+      setVmState(p => ({ ...p, [vmTpl.id]: { ...(p[vmTpl.id]??{}), env, envVm:{ ...p[vmTpl.id]?.envVm, status:'paused' }, pausing:false } }))
     } catch(err) {
       addLog(`$ [ERROR] ${err.message}`)
       setVmState(p => ({ ...p, [vmTpl.id]: { ...(p[vmTpl.id]??{}), pausing:false } }))

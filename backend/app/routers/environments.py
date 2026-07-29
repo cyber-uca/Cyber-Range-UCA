@@ -189,9 +189,19 @@ def start_single_vm(
     already = db.query(models.EnvironmentVM).filter(
         models.EnvironmentVM.environment_id == env.id,
         models.EnvironmentVM.vm_template_id == template.id,
-        models.EnvironmentVM.status.in_(["running", "paused"]),
+        models.EnvironmentVM.status.in_(["running", "paused", "provisioning"]),
     ).first()
     if already:
+        if already.status == "provisioning":
+            # A clone is already in flight for this template — e.g. the user
+            # double-clicked Start, or refreshed the page while the first
+            # clone+start (which can take minutes on real Proxmox) was still
+            # running. Don't clone a second VM on top of it; the original
+            # request will flip this row to "running" when it finishes.
+            env.last_heartbeat = datetime.utcnow()
+            db.commit()
+            db.refresh(env)
+            return _env_out(env)
         if already.status == "paused":
             # Hibernated (e.g. auto-paused after the lab page went quiet) —
             # resume it instead of cloning a brand new VM.
@@ -207,20 +217,48 @@ def start_single_vm(
         db.refresh(env)
         return _env_out(env)
 
-    provisioned = get_gateway().clone_vm(
-        template_ref=template.proxmox_template_id,
-        name_hint=f"{template.name}-{env.id[:8]}",
-    )
-    get_gateway().start_vm(provisioned.node, provisioned.vmid)
-
-    db.add(models.EnvironmentVM(
+    # Claim a "provisioning" slot for this template *before* the slow
+    # clone+start calls, in the same transaction. This is what actually
+    # closes the duplicate-clone race: any request that lands while the
+    # clone is still running (a second click, or a page refresh calling
+    # start-vm again) will hit the `already.status == "provisioning"`
+    # branch above instead of cloning a second VM.
+    vm_row = models.EnvironmentVM(
         environment_id=env.id,
         vm_template_id=template.id,
-        proxmox_vmid=provisioned.vmid,
-        proxmox_node=provisioned.node,
-        ip_address=provisioned.ip_address,
-        status="running",
-    ))
+        status="provisioning",
+    )
+    db.add(vm_row)
+    env.status = models.EnvironmentStatus.PROVISIONING
+    db.commit()
+    db.refresh(vm_row)
+
+    try:
+        provisioned = get_gateway().clone_vm(
+            template_ref=template.proxmox_template_id,
+            name_hint=f"{template.name}-{env.id[:8]}",
+        )
+        get_gateway().start_vm(provisioned.node, provisioned.vmid)
+    except Exception as e:
+        db.delete(vm_row)
+        remaining = [v for v in env.vms if v.id != vm_row.id]
+        if any(v.status == "running" for v in remaining):
+            env.status = models.EnvironmentStatus.RUNNING
+        elif any(v.status == "paused" for v in remaining):
+            env.status = models.EnvironmentStatus.PAUSED
+        else:
+            # Nothing else running in this environment — leave no dangling
+            # PROVISIONING row behind (it would never get cleaned up and
+            # would block re-provisioning on retry).
+            env.status = models.EnvironmentStatus.DESTROYED
+            env.destroyed_at = datetime.utcnow()
+        db.commit()
+        raise HTTPException(status_code=502, detail=f"Failed to provision VM: {e}")
+
+    vm_row.proxmox_vmid = provisioned.vmid
+    vm_row.proxmox_node = provisioned.node
+    vm_row.ip_address = provisioned.ip_address
+    vm_row.status = "running"
     env.status = models.EnvironmentStatus.RUNNING
     db.commit()
     db.refresh(env)
@@ -376,18 +414,29 @@ def heartbeat(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
+    """
+    The heartbeat used to be a one-way ping (front → back) and never told the
+    front what actually happened server-side (e.g. an auto-pause). Now it
+    round-trips the current environment state so the front can reconcile its
+    local status (running/paused/provisioning) on every ping instead of only
+    on a manual page reload.
+    """
     env = db.query(models.Environment).filter(
         models.Environment.user_id == current_user.id,
         models.Environment.room_id == room_id,
         models.Environment.status.in_([
             models.EnvironmentStatus.RUNNING,
             models.EnvironmentStatus.PROVISIONING,
+            models.EnvironmentStatus.PAUSED,
         ]),
     ).first()
-    if env:
+    if not env:
+        return {"ok": True, "env": None}
+    if env.status in (models.EnvironmentStatus.RUNNING, models.EnvironmentStatus.PROVISIONING):
         env.last_heartbeat = datetime.utcnow()
         db.commit()
-    return {"ok": True}
+        db.refresh(env)
+    return {"ok": True, "env": _env_out(env)}
 
 
 # ═══════════════════════════════════════════════════════════════════
