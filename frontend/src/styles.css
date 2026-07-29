@@ -3070,3 +3070,131 @@ textarea { resize: vertical; line-height: 1.6; }
 }
 
 .theme-toggle-icon { font-size: 9px; line-height: 1; }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTH + LANDING — LIGHT MODE OVERRIDES
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Auth card (Login / Register form box) ── */
+.auth-card {
+  background: rgba(13,24,38,0.85);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+[data-theme="light"] .auth-card {
+  background: rgba(255,255,255,0.96) !important;
+  border: 1px solid var(--border-md) !important;
+  box-shadow: 0 8px 40px rgba(15,23,42,0.12), 0 0 0 1px rgba(99,102,241,0.08) !important;
+  color: var(--text);
+}
+
+/* ── Demo chips ── */
+.auth-demo-chips {
+  background: rgba(13,24,38,0.7);
+  border: 1px solid var(--border);
+}
+
+[data-theme="light"] .auth-demo-chips {
+  background: rgba(240,244,255,0.9) !important;
+  border: 1px solid var(--border-md) !important;
+}
+
+/* ── Auth page outer background ── */
+[data-theme="light"] .auth-page-bg {
+  background: linear-gradient(135deg, #EEF2FF 0%, #F0F4FF 50%, #E8EEFF 100%);
+}
+
+/* Auth page headings and text in light mode */
+[data-theme="light"] .auth-card h2 {
+  color: var(--text);
+}
+[data-theme="light"] .auth-card label {
+  color: var(--text-3);
+}
+[data-theme="light"] .auth-card input {
+  background: #F8FAFF;
+  border-color: var(--border-md);
+  color: var(--text);
+}
+
+/* ── Landing page light mode ── */
+
+/* Navbar */
+[data-theme="light"] .lp-nav-wrap {
+  background: rgba(255,255,255,0.92) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+/* Hero section */
+[data-theme="light"] .lp-hero-section {
+  background: linear-gradient(135deg, #EEF2FF 0%, #F0F4FF 100%) !important;
+}
+
+/* Stats bar */
+[data-theme="light"] .lp-stats-bar {
+  background: #FFFFFF !important;
+  border-color: var(--border) !important;
+}
+
+/* Category cards */
+[data-theme="light"] .cat-card {
+  background: #FFFFFF !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+/* Feature cards */
+[data-theme="light"] .feat-card {
+  background: #FFFFFF !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+/* Step cards */
+[data-theme="light"] .step-card {
+  background: #FFFFFF !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+/* Terminal demo — keep dark in light mode, it's intentional */
+[data-theme="light"] .lp-terminal {
+  filter: none;
+}
+
+/* How it works section */
+[data-theme="light"] .lp-how-section {
+  background: #F8FAFF !important;
+  border-color: var(--border) !important;
+}
+
+/* CTA section */
+[data-theme="light"] .lp-cta-section {
+  background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(2,132,199,0.08)) !important;
+  border-color: var(--border) !important;
+}
+
+/* Footer */
+[data-theme="light"] .lp-footer-section {
+  background: #FFFFFF !important;
+  border-color: var(--border) !important;
+}
+
+/* Landing page text in light mode */
+[data-theme="light"] .lp-hero-section h1,
+[data-theme="light"] .lp-hero-section h2 {
+  color: var(--text);
+}
+
+/* Landing page nav text */
+[data-theme="light"] .lp-nav-section {
+  color: var(--text-3);
+}
+
+/* Demo section background */
+[data-theme="light"] .lp-demo-section {
+  background: #F0F4FF !important;
+  border-color: var(--border) !important;
+}

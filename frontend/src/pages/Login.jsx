@@ -86,8 +86,7 @@ export default function Login() {
         </div>
 
         {/* form box */}
-        <div style={{ background: 'rgba(13,24,38,0.85)', border: '1px solid var(--border)',
-          borderRadius: 18, padding: '32px 30px', backdropFilter: 'blur(16px)',
+        <div className="auth-card" style={{ borderRadius: 18, padding: '32px 30px', backdropFilter: 'blur(16px)',
           boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
 
           <h2 style={{ margin: '0 0 24px', fontSize: 22, fontWeight: 800, letterSpacing: '-.01em' }}>Welcome back</h2>
@@ -129,8 +128,7 @@ export default function Login() {
         </div>
 
         {/* demo chips */}
-        <div style={{ marginTop: 16, background: 'rgba(13,24,38,0.7)', border: '1px solid var(--border)',
-          borderRadius: 12, overflow: 'hidden', backdropFilter: 'blur(12px)' }}>
+        <div className="auth-demo-chips" style={{ marginTop: 16, borderRadius: 12, overflow: 'hidden', backdropFilter: 'blur(12px)' }}>
           {[['learner@platform.local','learner123','Learner'],
             ['tutor@platform.local','tutor123','Tutor'],
             ['admin@platform.local','admin123','Admin']].map(([e, p, role], i) => (

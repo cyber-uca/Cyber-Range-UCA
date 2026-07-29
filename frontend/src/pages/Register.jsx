@@ -99,8 +99,7 @@ export default function Register() {
         </div>
 
         {/* form box */}
-        <div style={{ background: 'rgba(13,24,38,0.85)', border: '1px solid var(--border)',
-          borderRadius: 18, padding: '32px 30px', backdropFilter: 'blur(16px)',
+        <div className="auth-card" style={{ borderRadius: 18, padding: '32px 30px', backdropFilter: 'blur(16px)',
           boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
 
           <h2 style={{ margin: '0 0 24px', fontSize: 22, fontWeight: 800, letterSpacing: '-.01em' }}>Create account</h2>

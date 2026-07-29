@@ -281,7 +281,7 @@ export default function LandingPage() {
       `}</style>
 
       {/* ════ NAV ════ */}
-      <nav className="lp-nav" style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 52px', height:66,
+      <nav className="lp-nav-wrap lp-nav" style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 52px', height:66,
         borderBottom:'1px solid var(--border)', background:'rgba(7,13,22,0.85)', backdropFilter:'blur(20px)',
         position:'sticky', top:0, zIndex:200 }}>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
@@ -405,7 +405,7 @@ export default function LandingPage() {
       </section>
 
       {/* ════ HOW IT WORKS ════ */}
-      <section className="lp-how" style={{ padding:'80px', background:'var(--surface)', borderTop:'1px solid var(--border)' }}>
+      <section className="lp-how-section lp-how" style={{ padding:'80px', background:'var(--surface)', borderTop:'1px solid var(--border)' }}>
         <div style={{ textAlign:'center', marginBottom:52 }}>
           <div style={{ fontSize:11, textTransform:'uppercase', letterSpacing:'.14em', color:'var(--accent)', fontWeight:700, marginBottom:12 }}>How It Works</div>
           <h2 style={{ fontSize:34, fontWeight:900, margin:0, letterSpacing:'-.01em' }}>From Zero to Flag in 4 Steps</h2>
