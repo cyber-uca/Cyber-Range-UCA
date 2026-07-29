@@ -251,7 +251,7 @@ textarea { resize: vertical; line-height: 1.6; }
 .user-role { font-size: 11px; color: var(--text-4); text-transform: capitalize; }
 
 /* ─── Main col ───────────────────────────────────────────────── */
-.main-col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.main-col { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow-x: hidden; }
 
 /* ─── Topbar ─────────────────────────────────────────────────── */
 .topbar {
@@ -272,9 +272,9 @@ textarea { resize: vertical; line-height: 1.6; }
 }
 
 /* ─── Page shell ─────────────────────────────────────────────── */
-.page { flex: 1; padding: 40px 44px; max-width: 1280px; width: 100%; min-width: 0; }
-.page-wide { max-width: none; padding: 0; }
-.page-full { max-width: none; }
+.page { flex: 1; padding: 40px 44px; width: 100%; min-width: 0; }
+.page-wide { padding: 0; }
+.page-full { }
 
 /* ─── Glass card ─────────────────────────────────────────────── */
 .glass {
@@ -1816,10 +1816,12 @@ textarea { resize: vertical; line-height: 1.6; }
 /* Hero */
 .rd-hero {
   position: relative;
-  margin-left: -44px; margin-right: -44px;
+  margin-left: -44px;
+  margin-right: -44px;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 40px; overflow: hidden;
+  margin-bottom: 40px;
 }
+
 .rd-hero-bg {
   position: absolute; inset: 0;
   background:
@@ -1849,10 +1851,11 @@ textarea { resize: vertical; line-height: 1.6; }
   display: flex; align-items: flex-start;
   justify-content: space-between; gap: 32px;
   padding: 28px 0 44px; flex-wrap: wrap;
+  min-width: 0;
 }
 
-.rd-hero-left { flex: 1; max-width: 620px; }
-.rd-hero-right { flex-shrink: 0; min-width: 220px; }
+.rd-hero-left { flex: 1; max-width: 620px; min-width: 0; }
+.rd-hero-right { flex-shrink: 0; width: 220px; max-width: 220px; min-width: 0; }
 
 /* Badges */
 .rd-badges { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
