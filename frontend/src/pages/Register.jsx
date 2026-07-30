@@ -103,11 +103,8 @@ export default function Register() {
 
         {/* logo */}
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(0,194,230,0.1)',
-            border: '1px solid rgba(0,194,230,0.3)', display: 'inline-flex', alignItems: 'center',
-            justifyContent: 'center', fontSize: 18, fontWeight: 900, color: 'var(--accent)',
-            fontFamily: 'var(--font-mono)', marginBottom: 14, boxShadow: '0 0 24px rgba(0,194,230,0.12)' }}>AR</div>
-          <div style={{ fontWeight: 800, fontSize: 17 }}>AutoRange</div>
+          <img src="/logo.jpeg" alt="CyberForge" style={{ width: 52, height: 52, borderRadius: 14, objectFit: 'cover', marginBottom: 14, boxShadow: '0 0 24px rgba(0,194,230,0.18)' }} />
+          <div style={{ fontWeight: 800, fontSize: 17 }}>CyberForge</div>
           <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginTop: 2 }}>Cyber Range</div>
         </div>
 

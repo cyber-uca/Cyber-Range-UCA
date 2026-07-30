@@ -97,9 +97,9 @@ export default function Sidebar() {
       <div className={`sidebar${open ? ' open' : ''}`}>
         {/* Brand */}
         <div className="sidebar-brand">
-          <div className="mark">AR</div>
+          <img src="/logo.jpeg" alt="CyberForge" style={{ width: 32, height: 32, borderRadius: 9, objectFit: 'cover', flexShrink: 0 }} />
           <div>
-            <div className="brand-name">AutoRange</div>
+            <div className="brand-name">CyberForge</div>
             <div className="brand-sub">Cyber Range</div>
           </div>
         </div>

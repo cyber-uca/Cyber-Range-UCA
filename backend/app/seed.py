@@ -34,7 +34,7 @@ if db.query(models.User).count() == 0:
 
 # ── Platform settings ──────────────────────────────────────────────────────
 if db.query(models.PlatformSettings).count() == 0:
-    db.add(models.PlatformSettings(id="singleton", platform_name="AutoRange Cyber Range"))
+    db.add(models.PlatformSettings(id="singleton", platform_name="CyberForge"))
     db.commit()
     print("✓ Platform settings seeded.")
 
