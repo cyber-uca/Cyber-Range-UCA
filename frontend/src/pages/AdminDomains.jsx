@@ -77,13 +77,11 @@ export default function AdminDomains() {
                   <th>Color</th>
                   <th>Order</th>
                   <th>Status</th>
-                  <th>Paths</th>
                   <th style={{ textAlign: 'right', paddingRight: 16 }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {domains.map(d => {
-                  const assigned = paths.filter(p => p.domain_id === d.id)
                   return (
                     <tr key={d.id} style={{ background: editingId === d.id ? 'rgba(34,211,238,0.02)' : 'transparent' }}>
                       <td>
@@ -113,12 +111,6 @@ export default function AdminDomains() {
                         }}>
                           {d.is_active ? 'Active' : 'Coming Soon'}
                         </span>
-                      </td>
-                      <td style={{ fontSize: 12, color: 'var(--text-4)' }}>
-                        {assigned.length > 0
-                          ? assigned.map(p => p.title).join(', ')
-                          : <span style={{ color: 'var(--text-4)', fontStyle: 'italic' }}>None</span>
-                        }
                       </td>
                       <td>
                         <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
