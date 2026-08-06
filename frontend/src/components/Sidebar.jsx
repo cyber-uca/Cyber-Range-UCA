@@ -53,6 +53,7 @@ const TUTOR_NAV = [
 const ADMIN_NAV = [
   { to: '/admin',              label: 'Overview',      icon: 'overview',    end: true },
   { to: '/admin/content',      label: 'Content',       icon: 'content'               },
+  { to: '/admin/domains',      label: 'Domains',       icon: 'roadmap'               },
   { to: '/admin/users',        label: 'Users',         icon: 'users'                 },
   { to: '/admin/vm-templates', label: 'Infrastructure',icon: 'infra'                 },
   { to: '/admin/taxonomy',     label: 'Categories',    icon: 'categories'            },

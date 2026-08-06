@@ -71,6 +71,19 @@ def _get_module_or_404(module_id: str, db: Session) -> models.Module:
 # ═══════════════════════════════════════════════════════════════════
 #  PUBLIC — any authenticated user
 # ═══════════════════════════════════════════════════════════════════
+#  DOMAINS — public read
+# ═══════════════════════════════════════════════════════════════════
+
+@router.get("/domains", response_model=List[schemas.DomainOut])
+def list_domains_public(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """List all domains — all authenticated users."""
+    return db.query(models.Domain).order_by(models.Domain.sort_order).all()
+
+
+# ═══════════════════════════════════════════════════════════════════
 
 @router.get("", response_model=List[schemas.PathCard])
 def list_paths(

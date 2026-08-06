@@ -16,6 +16,7 @@ import AdminVmTemplates from './pages/AdminVmTemplates.jsx'
 import AdminTaxonomy from './pages/AdminTaxonomy.jsx'
 import AdminSettings from './pages/AdminSettings.jsx'
 import AdminContent from './pages/AdminContent.jsx'
+import AdminDomains from './pages/AdminDomains.jsx'
 import Analytics from './pages/Analytics.jsx'
 import ModuleQuiz from './pages/ModuleQuiz.jsx'
 import Roadmap from './pages/Roadmap.jsx'
@@ -160,6 +161,7 @@ function AppRoutes() {
       <Route path="/admin/taxonomy" element={<RequireRole roles={['admin']}><AdminTaxonomy /></RequireRole>} />
       <Route path="/admin/settings" element={<RequireRole roles={['admin']}><AdminSettings /></RequireRole>} />
       <Route path="/admin/content" element={<RequireRole roles={['admin']}><AdminContent /></RequireRole>} />
+      <Route path="/admin/domains" element={<RequireRole roles={['admin']}><AdminDomains /></RequireRole>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

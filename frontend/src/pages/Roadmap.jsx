@@ -3,48 +3,6 @@ import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../api.js'
 import { useAuth } from '../App.jsx'
 
-// ── Domain definitions ─────────────────────────────────────────────────────
-// Each domain lists the path slugs that belong to it.
-// When a new domain is added to the platform, add an entry here.
-const DOMAINS = [
-  {
-    id: 'automotive',
-    label: 'Automotive',
-    icon: '🚗',
-    color: '#22D3EE',
-    desc: 'CAN bus, ECU, OTA updates, V2X — automotive cybersecurity from risk to exploit.',
-    pathSlugs: ['risk', 'offensive', 'defensive', 'mitigation'],
-    status: 'active',
-  },
-  {
-    id: 'smart-grid',
-    label: 'Smart Grid',
-    icon: '⚡',
-    color: '#FBBF24',
-    desc: 'Power grid SCADA, substation automation, smart meter attacks and grid resilience.',
-    pathSlugs: [],
-    status: 'coming',
-  },
-  {
-    id: 'aeronautics',
-    label: 'Aeronautics',
-    icon: '✈️',
-    color: '#60A5FA',
-    desc: 'Avionics systems, ACARS protocol exploitation, ground control security.',
-    pathSlugs: [],
-    status: 'coming',
-  },
-  {
-    id: 'banking',
-    label: 'Banking',
-    icon: '🏦',
-    color: '#34D399',
-    desc: 'Financial infrastructure attacks, fraud detection, SWIFT network security.',
-    pathSlugs: [],
-    status: 'coming',
-  },
-]
-
 const DIFF_COLOR = {
   beginner:'var(--green)', easy:'var(--green)',
   medium:'var(--amber)', hard:'var(--red)',
@@ -268,18 +226,22 @@ function ComingSoonDomain({ domain }) {
 
 export default function Roadmap() {
   const { user } = useAuth()
-  const [paths, setPaths] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [activeDomain, setActiveDomain] = useState('automotive')
-  const [activePath, setActivePath] = useState(null)
+  const [domains, setDomains]     = useState([])
+  const [paths, setPaths]         = useState([])
+  const [loading, setLoading]     = useState(true)
+  const [activeDomain, setActiveDomain] = useState(null) // set after domains load
+  const [activePath, setActivePath]     = useState(null)
   const [moduleProgress, setModuleProgress] = useState({})
 
   useEffect(() => {
-    api.listPaths()
-      .then(cards => Promise.all(cards.map(c => api.getPath(c.slug))))
-      .then(setPaths)
-      .catch(() => {})
-      .finally(() => setLoading(false))
+    Promise.all([
+      api.listDomains(),
+      api.listPaths().then(cards => Promise.all(cards.map(c => api.getPath(c.slug)))),
+    ]).then(([doms, fullPaths]) => {
+      setDomains(doms)
+      setPaths(fullPaths)
+      if (doms.length > 0) setActiveDomain(doms[0].id)
+    }).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
@@ -287,21 +249,21 @@ export default function Roadmap() {
     api.getMyModuleProgress().then(setModuleProgress).catch(() => {})
   }, [user])
 
-  const currentDomain = DOMAINS.find(d => d.id === activeDomain) ?? DOMAINS[0]
+  const currentDomain = domains.find(d => d.id === activeDomain) ?? domains[0]
 
-  // Get paths for the active domain, sorted by DB sort_order
-  const domainPaths = paths
-    .filter(p => currentDomain.pathSlugs.includes(p.slug))
-    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+  const domainPaths = currentDomain
+    ? paths.filter(p => p.domain_id === currentDomain.id)
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    : []
 
-  // Any paths not in any domain definition show in the active domain as fallback
-  const assignedSlugs = new Set(DOMAINS.flatMap(d => d.pathSlugs))
-  const unassigned = paths.filter(p => !assignedSlugs.has(p.slug))
-  const displayPaths = activeDomain === 'automotive'
+  // Paths not assigned to any domain shown under first domain as fallback
+  const assignedIds = new Set(paths.filter(p => p.domain_id).map(p => p.id))
+  const unassigned  = paths.filter(p => !p.domain_id)
+  const displayPaths = currentDomain && domains.indexOf(currentDomain) === 0
     ? [...domainPaths, ...unassigned]
     : domainPaths
 
-  const allRooms = paths.flatMap(p => (p.modules ?? []).flatMap(m => m.rooms ?? []))
+  const allRooms  = paths.flatMap(p => (p.modules ?? []).flatMap(m => m.rooms ?? []))
   const totalTasks = allRooms.reduce((s, r) => s + (r.task_count ?? 0), 0)
 
   if (loading) return (
@@ -341,29 +303,34 @@ export default function Roadmap() {
 
       {/* ── Domain tab bar ── */}
       <div className="rm-domain-tabs">
-        {DOMAINS.map(d => (
+        {domains.map(d => (
           <button
             key={d.id}
-            className={`rm-domain-tab${activeDomain === d.id ? ' active' : ''}${d.status === 'coming' ? ' coming' : ''}`}
+            className={`rm-domain-tab${activeDomain === d.id ? ' active' : ''}${!d.is_active ? ' coming' : ''}`}
             onClick={() => { setActiveDomain(d.id); setActivePath(null) }}
             style={{ '--tab-color': d.color }}
           >
-            <span className="rm-domain-tab-icon">{d.icon}</span>
-            <span className="rm-domain-tab-label">{d.label}</span>
-            {d.status === 'coming' && <span className="rm-domain-tab-soon">Soon</span>}
+            <span className="rm-domain-tab-label">{d.title}</span>
+            {!d.is_active && <span className="rm-domain-tab-soon">Soon</span>}
           </button>
         ))}
+        {domains.length === 0 && (
+          <div style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-4)' }}>
+            No domains configured — add one in Admin → Domains.
+          </div>
+        )}
       </div>
 
       {/* ── Domain description strip ── */}
-      <div className="rm-domain-desc" style={{ '--tab-color': currentDomain.color }}>
-        <span className="rm-domain-desc-icon">{currentDomain.icon}</span>
-        <span className="rm-domain-desc-text">{currentDomain.desc}</span>
-      </div>
+      {currentDomain && (
+        <div className="rm-domain-desc" style={{ '--tab-color': currentDomain.color }}>
+          <span className="rm-domain-desc-text">{currentDomain.description}</span>
+        </div>
+      )}
 
       {/* ── Content ── */}
-      {currentDomain.status === 'coming' ? (
-        <ComingSoonDomain domain={currentDomain} />
+      {currentDomain && !currentDomain.is_active ? (
+        <ComingSoonDomain domain={{ ...currentDomain, desc: currentDomain.description }} />
       ) : (
         <>
           <div style={{ display:'flex', gap:14, alignItems:'flex-start', overflowX:'auto', paddingBottom:32 }} className="roadmap-cols">

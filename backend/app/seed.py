@@ -38,6 +38,21 @@ if db.query(models.PlatformSettings).count() == 0:
     db.commit()
     print("✓ Platform settings seeded.")
 
+# ── Domains ────────────────────────────────────────────────────────────────
+if db.query(models.Domain).count() == 0:
+    db.add_all([
+        models.Domain(slug="automotive",  title="Automotive",  color="#22D3EE", sort_order=1, is_active=True,
+                      description="CAN bus, ECU, OTA updates, V2X — automotive cybersecurity from risk to exploit."),
+        models.Domain(slug="smart-grid",  title="Smart Grid",  color="#FBBF24", sort_order=2, is_active=False,
+                      description="Power grid SCADA, substation automation, smart meter attacks and grid resilience."),
+        models.Domain(slug="aeronautics", title="Aeronautics", color="#60A5FA", sort_order=3, is_active=False,
+                      description="Avionics systems, ACARS protocol exploitation, ground control security."),
+        models.Domain(slug="banking",     title="Banking",     color="#34D399", sort_order=4, is_active=False,
+                      description="Financial infrastructure attacks, fraud detection, SWIFT network security."),
+    ])
+    db.commit()
+    print("✓ Domains seeded.")
+
 # ── Challenge Categories & Difficulties ─────────────────────────────────────
 if db.query(models.Category).count() == 0:
     db.add_all([

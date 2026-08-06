@@ -439,4 +439,26 @@ export const api = {
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(data),
     }).then(handle),
+
+  // ---------- Domains ----------
+  listDomains: () => fetch(`${BASE}/paths/domains`, { headers: authHeaders() }).then(handle),
+
+  adminListDomains: () => fetch(`${BASE}/admin/domains`, { headers: authHeaders() }).then(handle),
+
+  adminCreateDomain: (data) =>
+    fetch(`${BASE}/admin/domains`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(data),
+    }).then(handle),
+
+  adminUpdateDomain: (id, data) =>
+    fetch(`${BASE}/admin/domains/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(data),
+    }).then(handle),
+
+  adminDeleteDomain: (id) =>
+    fetch(`${BASE}/admin/domains/${id}`, { method: 'DELETE', headers: authHeaders() }).then(handle),
 }

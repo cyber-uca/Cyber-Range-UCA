@@ -11,6 +11,37 @@ from .models import (
 )
 
 
+# ── Domains ───────────────────────────────────────────────────────────────────
+
+class DomainOut(BaseModel):
+    id: str
+    slug: str
+    title: str
+    description: Optional[str]
+    color: str
+    sort_order: int
+    is_active: bool
+    class Config: from_attributes = True
+
+
+class DomainCreate(BaseModel):
+    slug: str
+    title: str
+    description: Optional[str] = None
+    color: str = "#22D3EE"
+    sort_order: int = 0
+    is_active: bool = True
+
+
+class DomainUpdate(BaseModel):
+    slug: Optional[str] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    color: Optional[str] = None
+    sort_order: Optional[int] = None
+    is_active: Optional[bool] = None
+
+
 # ── Taxonomy ──────────────────────────────────────────────────────────────────
 
 class CategoryOut(BaseModel):
@@ -438,6 +469,7 @@ class ModuleUpdate(BaseModel):
 class PathOut(BaseModel):
     id: str
     slug: str
+    domain_id: Optional[str] = None
     title: str
     description: Optional[str]
     icon: Optional[str]
@@ -454,6 +486,7 @@ class PathCard(BaseModel):
     """Lightweight path for listing."""
     id: str
     slug: str
+    domain_id: Optional[str] = None
     title: str
     description: Optional[str]
     icon: Optional[str]
@@ -473,6 +506,7 @@ class PathCreate(BaseModel):
     color: str = "#22D3EE"
     cover_image: Optional[str] = None
     sort_order: int = 0
+    domain_id: Optional[str] = None
 
 
 class PathUpdate(BaseModel):

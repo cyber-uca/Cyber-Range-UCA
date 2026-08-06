@@ -18,6 +18,62 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 # ═══════════════════════════════════════════════════════════════════
+#  DOMAINS
+# ═══════════════════════════════════════════════════════════════════
+
+@router.get("/domains", response_model=List[schemas.DomainOut])
+def list_domains(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role(models.Role.ADMIN)),
+):
+    return db.query(models.Domain).order_by(models.Domain.sort_order).all()
+
+
+@router.post("/domains", response_model=schemas.DomainOut)
+def create_domain(
+    payload: schemas.DomainCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role(models.Role.ADMIN)),
+):
+    if db.query(models.Domain).filter(models.Domain.slug == payload.slug).first():
+        raise HTTPException(status_code=400, detail="A domain with this slug already exists")
+    domain = models.Domain(**payload.model_dump())
+    db.add(domain); db.commit(); db.refresh(domain)
+    return domain
+
+
+@router.patch("/domains/{domain_id}", response_model=schemas.DomainOut)
+def update_domain(
+    domain_id: str,
+    payload: schemas.DomainUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role(models.Role.ADMIN)),
+):
+    domain = db.query(models.Domain).filter(models.Domain.id == domain_id).first()
+    if not domain:
+        raise HTTPException(status_code=404, detail="Domain not found")
+    for k, v in payload.model_dump(exclude_unset=True).items():
+        setattr(domain, k, v)
+    db.commit(); db.refresh(domain)
+    return domain
+
+
+@router.delete("/domains/{domain_id}")
+def delete_domain(
+    domain_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role(models.Role.ADMIN)),
+):
+    domain = db.query(models.Domain).filter(models.Domain.id == domain_id).first()
+    if not domain:
+        raise HTTPException(status_code=404, detail="Domain not found")
+    # Unlink paths from this domain instead of blocking deletion
+    db.query(models.Path).filter(models.Path.domain_id == domain_id).update({"domain_id": None})
+    db.delete(domain); db.commit()
+    return {"status": "deleted"}
+
+
+# ═══════════════════════════════════════════════════════════════════
 #  STATS
 # ═══════════════════════════════════════════════════════════════════
 

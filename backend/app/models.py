@@ -120,6 +120,26 @@ class PlatformSettings(Base):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+#  DOMAINS  (top-level grouping above Paths)
+# ═══════════════════════════════════════════════════════════════════════════
+
+class Domain(Base):
+    """A top-level domain grouping paths: Automotive, Smart Grid, Banking, etc."""
+    __tablename__ = "domains"
+
+    id          = Column(String(36), primary_key=True, default=gen_uuid)
+    slug        = Column(String(128), unique=True, nullable=False)
+    title       = Column(String(256), nullable=False)
+    description = Column(Text, nullable=True)
+    color       = Column(String(32), default="#22D3EE")
+    sort_order  = Column(Integer, default=0)
+    is_active   = Column(Boolean, default=True)   # False = coming soon
+    created_at  = Column(DateTime, default=datetime.utcnow)
+
+    paths = relationship("Path", back_populates="domain", order_by="Path.sort_order")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 #  LEARNING HIERARCHY  Path → Module → Room → Task → Question
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -128,6 +148,7 @@ class Path(Base):
     __tablename__ = "paths"
 
     id           = Column(String(36), primary_key=True, default=gen_uuid)
+    domain_id    = Column(String(36), ForeignKey("domains.id"), nullable=True)
     slug         = Column(String(128), unique=True, nullable=False)
     title        = Column(String(256), nullable=False)
     description  = Column(Text, nullable=True)
@@ -142,6 +163,7 @@ class Path(Base):
     modules      = relationship("Module", back_populates="path",
                                 order_by="Module.sort_order", cascade="all, delete-orphan")
     user_progress = relationship("UserPathProgress", back_populates="path")
+    domain       = relationship("Domain", back_populates="paths")
 
 
 class Module(Base):
