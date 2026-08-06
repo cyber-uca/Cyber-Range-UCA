@@ -23,6 +23,7 @@ def _path_card(p: models.Path) -> dict:
         "cover_image": p.cover_image, "sort_order": p.sort_order,
         "status": p.status,
         "module_count": len(p.modules),
+        "domain_id": p.domain_id,
     }
 
 

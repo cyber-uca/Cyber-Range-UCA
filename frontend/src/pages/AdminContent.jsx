@@ -546,7 +546,7 @@ function QuizQuestionModal({ initial, onSave, onClose }) {
 /* ══════════════════════════════════════════════════════════════════
    PANEL: PATHS
 ══════════════════════════════════════════════════════════════════ */
-function PathsPanel({ selectedPath, onSelect }) {
+function PathsPanel({ selectedPath, onSelect, domain }) {
   const [paths, setPaths] = useState([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(null) // null | { mode:'create'|'edit', item? }
@@ -559,9 +559,15 @@ function PathsPanel({ selectedPath, onSelect }) {
 
   useEffect(() => { load() }, [load])
 
+  // Filter paths by selected domain
+  const visiblePaths = domain
+    ? paths.filter(p => p.domain_id === domain.id)
+    : paths
+
   const save = async (form) => {
-    if (modal.mode === 'create') await api.adminCreatePath(form)
-    else await api.adminUpdatePath(modal.item.id, form)
+    const payload = domain ? { ...form, domain_id: domain.id } : form
+    if (modal.mode === 'create') await api.adminCreatePath(payload)
+    else await api.adminUpdatePath(modal.item.id, payload)
     load()
   }
 
@@ -587,8 +593,12 @@ function PathsPanel({ selectedPath, onSelect }) {
       {err && <p style={{ color: 'var(--red)', fontSize: 12 }}>{err}</p>}
       {loading ? <div style={{ display:'flex', justifyContent:'center', paddingTop:40 }}><Spinner /></div> : (
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {paths.length === 0 && <p style={{ color: 'var(--text-4)', fontSize: 13, textAlign:'center', paddingTop: 40 }}>No paths yet. Create one to get started.</p>}
-          {paths.map(p => (
+          {visiblePaths.length === 0 && !loading && (
+            <p style={{ color: 'var(--text-4)', fontSize: 13, textAlign:'center', paddingTop: 40 }}>
+              {domain ? `No paths in ${domain.title} yet.` : 'No paths yet.'}
+            </p>
+          )}
+          {visiblePaths.map(p => (
             <div key={p.id} onClick={() => onSelect(p)} style={{
               padding: '10px 14px', borderRadius: 'var(--r-md)', cursor: 'pointer', transition: 'all .15s',
               background: selectedPath?.id === p.id ? 'var(--cyan-dim)' : 'var(--surface-2)',
@@ -858,8 +868,57 @@ function RoomsPanel({ module, selectedRoom, onSelect }) {
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   PANEL: TASKS + QUESTIONS
+   PANEL: DOMAINS (leftmost column)
 ══════════════════════════════════════════════════════════════════ */
+function DomainsPanel({ selectedDomain, onSelect }) {
+  const [domains, setDomains] = useState([])
+  const [loading, setLoading] = useState(false)
+
+  const load = () => {
+    setLoading(true)
+    api.adminListDomains().then(d => { setDomains(d); setLoading(false) }).catch(() => setLoading(false))
+  }
+  useEffect(() => { load() }, [])
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', height:'100%' }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16, flexShrink:0 }}>
+        <h2 style={{ margin:0, fontSize:15, fontWeight:700 }}>Domains</h2>
+      </div>
+      {loading ? <div style={{ display:'flex', justifyContent:'center', paddingTop:40 }}><Spinner /></div> : (
+        <div style={{ flex:1, overflowY:'auto', display:'flex', flexDirection:'column', gap:6 }}>
+          {domains.length === 0 && (
+            <p style={{ color:'var(--text-4)', fontSize:12, textAlign:'center', paddingTop:40 }}>
+              No domains. Add one in Admin → Domains.
+            </p>
+          )}
+          {domains.map(d => (
+            <div key={d.id} onClick={() => onSelect(d)} style={{
+              padding:'10px 14px', borderRadius:'var(--r-md)', cursor:'pointer', transition:'all .15s',
+              background: selectedDomain?.id === d.id ? `${d.color}15` : 'var(--surface-2)',
+              border:`1px solid ${selectedDomain?.id === d.id ? `${d.color}60` : 'var(--border)'}`,
+            }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3 }}>
+                <div style={{ width:8, height:8, borderRadius:2, background:d.color, flexShrink:0 }} />
+                <span style={{ fontWeight:600, fontSize:13, flex:1 }}>{d.title}</span>
+                <span style={{
+                  fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'.06em',
+                  padding:'1px 6px', borderRadius:3,
+                  color: d.is_active ? 'var(--green)' : 'var(--text-4)',
+                  background: d.is_active ? 'var(--green-dim)' : 'var(--surface-3)',
+                  border:`1px solid ${d.is_active ? 'rgba(52,211,153,0.2)' : 'var(--border)'}`,
+                }}>
+                  {d.is_active ? 'Active' : 'Soon'}
+                </span>
+              </div>
+              {d.description && <p style={{ margin:0, fontSize:11, color:'var(--text-4)', paddingLeft:16 }}>{d.description}</p>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 function TasksPanel({ room }) {
   const [roomData, setRoomData] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -968,6 +1027,7 @@ function TasksPanel({ room }) {
    ROOT PAGE EXPORT
 ══════════════════════════════════════════════════════════════════ */
 export default function AdminContent() {
+  const [selectedDomain, setSelectedDomain] = useState(null)
   const [selectedPath, setSelectedPath] = useState(null)
   const [selectedModule, setSelectedModule] = useState(null)
   const [selectedRoom, setSelectedRoom] = useState(null)
@@ -995,10 +1055,11 @@ export default function AdminContent() {
     display: 'flex', flexDirection: 'column', minWidth: 0,
   }
 
-  const TABS = ['Paths', 'Modules', 'Rooms', 'Tasks & Q']
+  const TABS = ['Domains', 'Paths', 'Modules', 'Rooms', 'Tasks & Q']
 
   const panels = [
-    <PathsPanel key="paths" selectedPath={selectedPath} onSelect={selectPath} />,
+    <DomainsPanel key="domains" selectedDomain={selectedDomain} onSelect={d => { setSelectedDomain(d); setSelectedPath(null); setSelectedModule(null); setSelectedRoom(null) }} />,
+    <PathsPanel key="paths" selectedPath={selectedPath} onSelect={selectPath} domain={selectedDomain} />,
     <ModulesPanel key="mods" path={selectedPath} selectedModule={selectedModule} onSelect={selectModule} />,
     <RoomsPanel key="rooms" module={selectedModule} selectedRoom={selectedRoom} onSelect={selectRoom} />,
     <TasksPanel key="tasks" room={selectedRoom} />,
@@ -1009,7 +1070,7 @@ export default function AdminContent() {
       <div style={{ padding: '16px 20px 12px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         <h1 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>Content Management</h1>
         <p style={{ margin: '4px 0 0', color: 'var(--text-4)', fontSize: 13 }}>
-          Paths → Modules → Rooms → Tasks → Questions
+          Domains → Paths → Modules → Rooms → Tasks → Questions
         </p>
       </div>
 
@@ -1017,12 +1078,13 @@ export default function AdminContent() {
       <div className="admin-tab-bar" style={{ display: 'none' }}>
         {TABS.map((t, i) => (
           <button key={t} onClick={() => setActiveTab(i)} style={{
-            flex: 1, padding: '10px 4px', fontSize: 12, fontWeight: 600,
+            flex: 1, padding: '10px 4px', fontSize: 11, fontWeight: 600,
             background: 'none', border: 'none', borderBottom: `2px solid ${activeTab === i ? 'var(--cyan)' : 'transparent'}`,
             color: activeTab === i ? 'var(--cyan)' : 'var(--text-4)',
             borderRadius: 0, cursor: 'pointer', transition: 'all .15s',
           }}>
             {t}
+            {i === 0 && selectedDomain && <span style={{ display:'block', fontSize:9, color:'var(--text-4)', marginTop:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:70 }}>{selectedDomain.title}</span>}
             {i === 1 && selectedPath && <span style={{ display:'block', fontSize:9, color:'var(--text-4)', marginTop:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:70 }}>{selectedPath.title}</span>}
             {i === 2 && selectedModule && <span style={{ display:'block', fontSize:9, color:'var(--text-4)', marginTop:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:70 }}>{selectedModule.title}</span>}
             {i === 3 && selectedRoom && <span style={{ display:'block', fontSize:9, color:'var(--text-4)', marginTop:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:70 }}>{selectedRoom.title}</span>}
@@ -1030,19 +1092,30 @@ export default function AdminContent() {
         ))}
       </div>
 
-      {/* Mobile/tablet: single panel shown at a time */}
+      {/* Mobile/tablet: single panel */}
       <div className="admin-tab-panel" style={{ display: 'none', flex: 1, overflow: 'hidden' }}>
         <div style={{ height: '100%', overflow: 'auto', padding: '16px 14px' }}>
           {panels[activeTab]}
         </div>
       </div>
 
-      {/* Desktop: 4-column layout */}
+      {/* Desktop: 5-column layout */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }} className="admin-content-shell">
-        <div style={col} className="admin-col"><PathsPanel selectedPath={selectedPath} onSelect={selectPath} /></div>
-        <div style={col} className="admin-col"><ModulesPanel path={selectedPath} selectedModule={selectedModule} onSelect={selectModule} /></div>
-        <div style={col} className="admin-col"><RoomsPanel module={selectedModule} selectedRoom={selectedRoom} onSelect={r => { setSelectedRoom(r) }} /></div>
-        <div style={last} className="admin-col-last"><TasksPanel room={selectedRoom} /></div>
+        <div style={col} className="admin-col">
+          <DomainsPanel selectedDomain={selectedDomain} onSelect={d => { setSelectedDomain(d); setSelectedPath(null); setSelectedModule(null); setSelectedRoom(null) }} />
+        </div>
+        <div style={col} className="admin-col">
+          <PathsPanel selectedPath={selectedPath} onSelect={selectPath} domain={selectedDomain} />
+        </div>
+        <div style={col} className="admin-col">
+          <ModulesPanel path={selectedPath} selectedModule={selectedModule} onSelect={selectModule} />
+        </div>
+        <div style={col} className="admin-col">
+          <RoomsPanel module={selectedModule} selectedRoom={selectedRoom} onSelect={r => { setSelectedRoom(r) }} />
+        </div>
+        <div style={last} className="admin-col-last">
+          <TasksPanel room={selectedRoom} />
+        </div>
       </div>
     </div>
   )
