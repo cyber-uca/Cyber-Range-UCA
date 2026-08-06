@@ -5,7 +5,6 @@ const empty = { slug: '', title: '', description: '', color: '#22D3EE', sort_ord
 
 export default function AdminDomains() {
   const [domains, setDomains]     = useState([])
-  const [paths, setPaths]         = useState([])
   const [form, setForm]           = useState(empty)
   const [editingId, setEditingId] = useState(null)
   const [error, setError]         = useState('')
@@ -13,7 +12,6 @@ export default function AdminDomains() {
 
   const refresh = () => {
     api.adminListDomains().then(setDomains).catch(() => {})
-    api.listPaths().then(setPaths).catch(() => {})
   }
   useEffect(() => { refresh() }, [])
 
@@ -48,13 +46,6 @@ export default function AdminDomains() {
     if (!confirm('Delete this domain? Paths assigned to it will become unassigned.')) return
     try { await api.adminDeleteDomain(id); refresh() }
     catch (err) { setError(err.message) }
-  }
-
-  const assignPath = async (pathId, domainId) => {
-    try {
-      await api.adminUpdatePath(pathId, { domain_id: domainId || null })
-      refresh()
-    } catch (err) { setError(err.message) }
   }
 
   return (
@@ -146,55 +137,6 @@ export default function AdminDomains() {
             </table>
         }
       </div>
-
-      {/* Assign paths to domains */}
-      {domains.length > 0 && paths.length > 0 && (
-        <div className="card fade-up-2" style={{ marginBottom: 24 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: 'var(--text-2)' }}>
-            Assign paths to domains
-          </h3>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Path</th>
-                <th>Current Domain</th>
-                <th>Change Domain</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paths.map(p => {
-                const currentDomain = domains.find(d => d.id === p.domain_id)
-                return (
-                  <tr key={p.id}>
-                    <td style={{ fontWeight: 600, color: 'var(--text-2)' }}>{p.title}</td>
-                    <td>
-                      {currentDomain
-                        ? <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <div style={{ width: 8, height: 8, borderRadius: 2, background: currentDomain.color }} />
-                            <span style={{ fontSize: 12 }}>{currentDomain.title}</span>
-                          </div>
-                        : <span style={{ color: 'var(--text-4)', fontSize: 12, fontStyle: 'italic' }}>Unassigned</span>
-                      }
-                    </td>
-                    <td>
-                      <select
-                        value={p.domain_id ?? ''}
-                        onChange={e => assignPath(p.id, e.target.value)}
-                        style={{ width: 'auto', padding: '4px 8px', fontSize: 12 }}
-                      >
-                        <option value="">— Unassigned —</option>
-                        {domains.map(d => (
-                          <option key={d.id} value={d.id}>{d.title}</option>
-                        ))}
-                      </select>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
 
       {/* Create / Edit form */}
       <div className="form-section fade-up-3"
