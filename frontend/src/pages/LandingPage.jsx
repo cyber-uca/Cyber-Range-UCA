@@ -193,22 +193,22 @@ export default function LandingPage() {
   useEffect(() => { if (user) navigate('/') }, [user, navigate])
 
   const cats = [
-    { label:'RISK MANAGEMENT', color:'var(--combined)', bg:'rgba(155,124,240,0.10)', hover:'rgba(155,124,240,0.35)', icon:<Layers c="var(--combined)" s={28}/>, desc:'Assess, model and manage cybersecurity risks in OT environments using IEC 62443 and STRIDE.', count:'8+' },
-    { label:'OFFENSIVE', color:'var(--offensive)', bg:'rgba(240,82,74,0.10)', hover:'rgba(240,82,74,0.35)', icon:<Hacker c="var(--offensive)" s={28}/>, desc:'Attack ICS/OT systems and exploit real vulnerabilities in PLC, SCADA and CAN bus environments.', count:'20+' },
-    { label:'DEFENSIVE', color:'var(--defensive)', bg:'rgba(74,144,240,0.10)', hover:'rgba(74,144,240,0.35)', icon:<Shield c="var(--defensive)" s={28}/>, desc:'Detect threats and protect industrial assets using Wazuh, Suricata and network segmentation.', count:'16+' },
-    { label:'MITIGATION', color:'var(--mitigation)', bg:'rgba(20,201,168,0.10)', hover:'rgba(20,201,168,0.35)', icon:<Wrench c="var(--mitigation)" s={28}/>, desc:'Respond to incidents, harden OT systems and recover from ICS attacks.', count:'14+' },
+    { label:'RISK MANAGEMENT', color:'var(--combined)', bg:'rgba(155,124,240,0.10)', hover:'rgba(155,124,240,0.35)', icon:<Layers c="var(--combined)" s={28}/>, desc:'Assess, model and manage cybersecurity risks in ICS/OT environments using IEC 62443 and industry frameworks.', count:'15+' },
+    { label:'OFFENSIVE', color:'var(--offensive)', bg:'rgba(240,82,74,0.10)', hover:'rgba(240,82,74,0.35)', icon:<Hacker c="var(--offensive)" s={28}/>, desc:'Attack industrial control systems — exploit real vulnerabilities in PLC, SCADA, CAN bus and field devices.', count:'20+' },
+    { label:'DEFENSIVE', color:'var(--defensive)', bg:'rgba(74,144,240,0.10)', hover:'rgba(74,144,240,0.35)', icon:<Shield c="var(--defensive)" s={28}/>, desc:'Detect and respond to threats in OT networks using SIEM, IDS, network segmentation and monitoring tools.', count:'16+' },
+    { label:'MITIGATION', color:'var(--mitigation)', bg:'rgba(20,201,168,0.10)', hover:'rgba(20,201,168,0.35)', icon:<Wrench c="var(--mitigation)" s={28}/>, desc:'Harden industrial systems, develop incident response plans and recover from ICS/OT attacks.', count:'14+' },
   ]
   const feats = [
-    { icon:<Zap c="#00C2E6" s={22}/>, title:'Real Attack Scenarios', desc:'CAN bus injection, ECU firmware reverse engineering, OBD-II exploitation — all in isolated VMs.' },
-    { icon:<Layers c="#9B7CF0" s={22}/>, title:'Multi-VM Topology', desc:'Drag-and-drop lab builder. Wire attacker, vehicle, IDS and backend nodes in minutes.' },
-    { icon:<Term c="#14C9A8" s={22}/>, title:'AI Tutor', desc:'Contextual hints and step-by-step guidance without spoiling the flag.' },
-    { icon:<Shield c="#F5A623" s={22}/>, title:'Skill Tracking', desc:'XP, leaderboard and per-category progress so you know exactly where to level up.' },
+    { icon:<Zap c="#00C2E6" s={22}/>, title:'Real Attack Scenarios', desc:'PLC exploitation, SCADA manipulation, CAN bus injection, grid attacks — all in isolated, production-grade VMs.' },
+    { icon:<Layers c="#9B7CF0" s={22}/>, title:'Multi-VM Topology', desc:'Each lab provisions a full network of virtual machines — attacker, target, monitoring — in under a minute.' },
+    { icon:<Term c="#14C9A8" s={22}/>, title:'Structured Learning', desc:'Guided tasks walk you through discovery, evidence collection, analysis, and mitigation — not just flag hunting.' },
+    { icon:<Shield c="#F5A623" s={22}/>, title:'Skill Tracking', desc:'XP, leaderboard and per-domain progress so you know exactly where to level up next.' },
   ]
   const steps = [
-    { n:'01', title:'Choose a Challenge', desc:'Browse offensive, defensive or mitigation labs by difficulty.' },
-    { n:'02', title:'Provision Your Lab', desc:'One click spins up an isolated VM network — no setup needed.' },
-    { n:'03', title:'Attack & Defend', desc:'Use real tools: candump, Metasploit, Wireshark, ICSim.' },
-    { n:'04', title:'Submit the Flag', desc:'Capture the flag, earn XP and climb the leaderboard.' },
+    { n:'01', title:'Choose a Domain', desc:'Pick from Automotive, Smart Grid, Aeronautics or Banking — more added continuously.' },
+    { n:'02', title:'Provision Your Lab', desc:'One click spins up an isolated VM network on Proxmox — no setup, no hardware.' },
+    { n:'03', title:'Attack & Defend', desc:'Use real tools on real protocols: Modbus, DNP3, CAN bus, SCADA-LTS, Wazuh.' },
+    { n:'04', title:'Submit & Progress', desc:'Answer questions, earn XP, complete modules and unlock domain certifications.' },
   ]
 
 
@@ -332,16 +332,16 @@ export default function LandingPage() {
             textTransform:'uppercase', color:'var(--accent)', marginBottom:22, fontWeight:700,
             background:'rgba(0,194,230,0.08)', border:'1px solid rgba(0,194,230,0.25)',
             borderRadius:999, padding:'6px 16px' }}>
-            <Zap c="var(--accent)" s={11}/>&nbsp;Automotive Cybersecurity Platform
+            <Zap c="var(--accent)" s={11}/>&nbsp;Multi-Domain ICS/OT Cyber Range
           </div>
           <h1 className="lp-hero-h1" style={{ fontSize:50, fontWeight:900, lineHeight:1.08, margin:'0 0 18px', letterSpacing:'-.025em' }}>
             REALISTIC<br/>
-            <TypeWriter words={['CAN BUS ATTACKS','ECU HACKING','FIRMWARE ANALYSIS','IDS EVASION','OBD-II EXPLOITS','V2X SECURITY']}/>
+            <TypeWriter words={['CAN BUS ATTACKS','SCADA EXPLOITS','PLC HACKING','GRID ATTACKS','OTA COMPROMISE','ICS DEFENSE']}/>
             <br/>TRAINING
           </h1>
           <p style={{ fontSize:15, color:'var(--text-muted)', lineHeight:1.85, maxWidth:430, margin:'0 0 38px' }}>
-            Train on real automotive attacks and defenses in a fully isolated environment.
-            No hardware. No setup. Just hack.
+            Train on real ICS/OT attacks and defenses in fully isolated environments.
+            Automotive, Smart Grid, Aeronautics and more — no hardware, no setup.
           </p>
           <div className="lp-hero-btns" style={{ display:'flex', gap:14 }}>
             <Link to="/register">
@@ -477,10 +477,10 @@ export default function LandingPage() {
         <div style={{ position:'relative', zIndex:1 }}>
           <div style={{ fontSize:11, textTransform:'uppercase', letterSpacing:'.14em', color:'var(--accent)', fontWeight:700, marginBottom:16 }}>Get Started Today</div>
           <h2 style={{ fontSize:42, fontWeight:900, margin:'0 0 16px', letterSpacing:'-.02em', lineHeight:1.1 }}>
-            Ready to Hack<br/>Your First Vehicle?
+            Ready to Master<br/>ICS/OT Security?
           </h2>
           <p style={{ color:'var(--text-muted)', fontSize:15, maxWidth:480, margin:'0 auto 40px', lineHeight:1.8 }}>
-            Join thousands of automotive security researchers. Free to start, no credit card required.
+            Join security researchers and engineers training on real industrial systems. Free to start, no credit card required.
           </p>
           <div style={{ display:'flex', gap:14, justifyContent:'center', flexWrap:'wrap' }}>
             <Link to="/register">
@@ -508,7 +508,7 @@ export default function LandingPage() {
           <Logo size={22}/>
           <span style={{ fontWeight:600, color:'var(--text-muted)' }}>CyberForge Cyber Range</span>
         </div>
-        <span>© 2026 CyberForge · Built for automotive cybersecurity education</span>
+        <span>© 2026 CyberForge · Open-source ICS/OT Cyber Range</span>
         <div className="lp-footer-links" style={{ display:'flex', gap:24 }}>
           {[['Log In','/login'],['Sign Up','/register']].map(([l,h])=>(
             <Link key={l} to={h} style={{ color:'var(--text-dim)', transition:'color .15s' }}

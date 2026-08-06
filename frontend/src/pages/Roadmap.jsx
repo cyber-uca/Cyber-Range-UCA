@@ -3,12 +3,48 @@ import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../api.js'
 import { useAuth } from '../App.jsx'
 
-const PATH_META = {
-  risk:       { label:'Risk Management', color:'var(--cat-risk)',       desc:'Assess and model OT cybersecurity risk' },
-  offensive:  { label:'Offensive',       color:'var(--cat-offensive)', desc:'Attack ICS/OT — PLC, SCADA, CAN bus' },
-  defensive:  { label:'Defensive',       color:'var(--cat-defensive)', desc:'Detect and respond with Wazuh, Suricata' },
-  mitigation: { label:'Mitigation',      color:'var(--cat-mitigation)', desc:'Harden systems, recover from incidents' },
-}
+// ── Domain definitions ─────────────────────────────────────────────────────
+// Each domain lists the path slugs that belong to it.
+// When a new domain is added to the platform, add an entry here.
+const DOMAINS = [
+  {
+    id: 'automotive',
+    label: 'Automotive',
+    icon: '🚗',
+    color: '#22D3EE',
+    desc: 'CAN bus, ECU, OTA updates, V2X — automotive cybersecurity from risk to exploit.',
+    pathSlugs: ['risk', 'offensive', 'defensive', 'mitigation'],
+    status: 'active',
+  },
+  {
+    id: 'smart-grid',
+    label: 'Smart Grid',
+    icon: '⚡',
+    color: '#FBBF24',
+    desc: 'Power grid SCADA, substation automation, smart meter attacks and grid resilience.',
+    pathSlugs: [],
+    status: 'coming',
+  },
+  {
+    id: 'aeronautics',
+    label: 'Aeronautics',
+    icon: '✈️',
+    color: '#60A5FA',
+    desc: 'Avionics systems, ACARS protocol exploitation, ground control security.',
+    pathSlugs: [],
+    status: 'coming',
+  },
+  {
+    id: 'banking',
+    label: 'Banking',
+    icon: '🏦',
+    color: '#34D399',
+    desc: 'Financial infrastructure attacks, fraud detection, SWIFT network security.',
+    pathSlugs: [],
+    status: 'coming',
+  },
+]
+
 const DIFF_COLOR = {
   beginner:'var(--green)', easy:'var(--green)',
   medium:'var(--amber)', hard:'var(--red)',
@@ -62,10 +98,12 @@ function RoomNode({ room, pathColor, isLast }) {
   )
 }
 
-function PathCol({ pathData, meta, isActive, onToggle, moduleProgress }) {
+function PathCol({ pathData, isActive, onToggle, moduleProgress }) {
+  // Use DB values directly — no hardcoded override
+  const color = pathData.color ?? 'var(--cyan)'
   const modules = pathData?.modules ?? []
   const allRooms = modules.flatMap(m => m.rooms ?? [])
-  // First module open by default, rest collapsed
+
   const [expanded, setExpanded] = useState(() => {
     const s = new Set()
     if (modules.length > 0) s.add(modules[0].id)
@@ -79,27 +117,25 @@ function PathCol({ pathData, meta, isActive, onToggle, moduleProgress }) {
 
   return (
     <div style={{ flex:1, minWidth:200, maxWidth:290, opacity:isActive?1:0.25, filter:isActive?'none':'grayscale(70%)', transition:'opacity .2s, filter .2s' }}>
-      {/* Path header */}
       <div onClick={onToggle} style={{
-        background: isActive ? `linear-gradient(135deg, ${meta.color}12, var(--surface))` : 'var(--surface)',
-        border:`1px solid ${isActive ? meta.color+'30' : 'var(--border)'}`,
+        background: isActive ? `linear-gradient(135deg, ${color}12, var(--surface))` : 'var(--surface)',
+        border:`1px solid ${isActive ? color+'30' : 'var(--border)'}`,
         borderRadius:'var(--r-lg)', padding:'18px 16px', marginBottom:16,
         cursor:'pointer', textAlign:'center', transition:'all .2s',
       }}>
-        <div style={{ fontWeight:800, fontSize:14, color:meta.color, textTransform:'uppercase', letterSpacing:'.06em', marginBottom:6 }}>
-          {meta.label}
+        <div style={{ fontWeight:800, fontSize:14, color, textTransform:'uppercase', letterSpacing:'.06em', marginBottom:6 }}>
+          {pathData.title}
         </div>
-        <p style={{ fontSize:11, color:'var(--text-4)', margin:'0 0 10px', lineHeight:1.6 }}>{meta.desc}</p>
+        <p style={{ fontSize:11, color:'var(--text-4)', margin:'0 0 10px', lineHeight:1.6 }}>{pathData.description}</p>
         <span style={{ fontSize:10, color:'var(--text-4)', fontFamily:'var(--mono)' }}>
           {allRooms.length} room{allRooms.length !== 1 ? 's' : ''} · {modules.length} module{modules.length !== 1 ? 's' : ''}
         </span>
       </div>
 
       <div style={{ display:'flex', justifyContent:'center', marginBottom:8 }}>
-        <div style={{ width:1, height:20, background:`linear-gradient(180deg, ${meta.color}50, transparent)` }} />
+        <div style={{ width:1, height:20, background:`linear-gradient(180deg, ${color}50, transparent)` }} />
       </div>
 
-      {/* Collapsible modules */}
       {modules.map((mod, mi) => {
         const modRooms = mod.rooms ?? []
         const mp = moduleProgress?.[mod.id]
@@ -111,25 +147,20 @@ function PathCol({ pathData, meta, isActive, onToggle, moduleProgress }) {
 
         return (
           <div key={mod.id} style={{ marginBottom:8 }}>
-            {/* Module header — always visible, clickable to expand */}
             <div onClick={() => toggle(mod.id)} style={{
               display:'flex', alignItems:'center', gap:8, padding:'8px 10px',
               borderRadius:'var(--r-md)', cursor:'pointer', transition:'all .15s',
-              background: isOpen ? `${meta.color}08` : 'var(--surface-2)',
-              border:`1px solid ${isOpen ? meta.color+'25' : 'var(--border)'}`,
+              background: isOpen ? `${color}08` : 'var(--surface-2)',
+              border:`1px solid ${isOpen ? color+'25' : 'var(--border)'}`,
               marginBottom: isOpen ? 8 : 0,
             }}>
-              {/* Expand/collapse arrow */}
-              <span style={{ fontSize:10, color:meta.color, flexShrink:0, transition:'transform .2s',
+              <span style={{ fontSize:10, color, flexShrink:0, transition:'transform .2s',
                 display:'inline-block', transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
-
-              <span style={{ fontSize:11, fontWeight:700, color:meta.color, flex:1,
+              <span style={{ fontSize:11, fontWeight:700, color, flex:1,
                 textTransform:'uppercase', letterSpacing:'.06em', overflow:'hidden',
                 textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                 {mod.title}
               </span>
-
-              {/* Progress pill */}
               {roomsTotal > 0 && (
                 <span style={{ fontSize:9, fontWeight:700, flexShrink:0,
                   color: allCompleted ? '#14C9A8' : 'var(--text-4)',
@@ -141,46 +172,42 @@ function PathCol({ pathData, meta, isActive, onToggle, moduleProgress }) {
               )}
             </div>
 
-            {/* Progress bar under header when collapsed */}
             {!isOpen && roomsTotal > 0 && roomsDone > 0 && (
               <div style={{ height:2, borderRadius:999, background:'var(--border)', overflow:'hidden', marginBottom:8 }}>
-                <div style={{ height:'100%', borderRadius:999, background:meta.color,
+                <div style={{ height:'100%', borderRadius:999, background:color,
                   width:`${pct}%`, transition:'width .4s' }} />
               </div>
             )}
 
-            {/* Expanded content — rooms */}
             {isOpen && (
               <div>
                 {modRooms.map((room, i) => {
                   const isLastRoom = i === modRooms.length - 1 && !allCompleted
-                  return <RoomNode key={room.id} room={room} pathColor={meta.color} isLast={isLastRoom} />
+                  return <RoomNode key={room.id} room={room} pathColor={color} isLast={isLastRoom} />
                 })}
                 {modRooms.length === 0 && (
                   <div style={{ textAlign:'center', padding:'10px 0', color:'var(--text-4)', fontSize:11, opacity:.6 }}>No rooms yet</div>
                 )}
-                {/* Quiz button */}
                 {allCompleted && (
                   <Link to={`/modules/${mod.id}/quiz`} style={{ textDecoration:'none' }}>
                     <div style={{
                       marginTop:8, padding:'9px 12px', borderRadius:'var(--r-md)',
-                      background:`linear-gradient(135deg, ${meta.color}12, transparent)`,
-                      border:`1px solid ${meta.color}40`,
+                      background:`linear-gradient(135deg, ${color}12, transparent)`,
+                      border:`1px solid ${color}40`,
                       display:'flex', alignItems:'center', justifyContent:'space-between',
                       cursor:'pointer',
                     }}>
                       <div>
-                        <div style={{ fontSize:11, fontWeight:700, color:meta.color }}>📝 Module Quiz</div>
+                        <div style={{ fontSize:11, fontWeight:700, color }}>📝 Module Quiz</div>
                         <div style={{ fontSize:10, color:'var(--text-4)', marginTop:1 }}>Test your knowledge</div>
                       </div>
-                      <span style={{ color:meta.color, fontSize:13 }}>→</span>
+                      <span style={{ color, fontSize:13 }}>→</span>
                     </div>
                   </Link>
                 )}
-                {/* Connector to next module */}
                 {mi < modules.length - 1 && (
                   <div style={{ display:'flex', justifyContent:'center', margin:'8px 0' }}>
-                    <div style={{ width:1, height:16, background:`linear-gradient(180deg, ${meta.color}30, transparent)` }} />
+                    <div style={{ width:1, height:16, background:`linear-gradient(180deg, ${color}30, transparent)` }} />
                   </div>
                 )}
               </div>
@@ -194,8 +221,45 @@ function PathCol({ pathData, meta, isActive, onToggle, moduleProgress }) {
       )}
 
       <div style={{ display:'flex', justifyContent:'center', marginTop:8 }}>
-        <div style={{ width:10, height:10, borderRadius:'50%', border:`1px solid ${meta.color}50`, display:'flex', alignItems:'center', justifyContent:'center' }}>
-          <div style={{ width:4, height:4, borderRadius:'50%', background:meta.color, animation:'pulse 2s ease-in-out infinite' }} />
+        <div style={{ width:10, height:10, borderRadius:'50%', border:`1px solid ${color}50`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ width:4, height:4, borderRadius:'50%', background:color, animation:'pulse 2s ease-in-out infinite' }} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Coming-soon domain placeholder ─────────────────────────────────────────
+function ComingSoonDomain({ domain }) {
+  return (
+    <div style={{
+      display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
+      minHeight:320, gap:16, padding:'40px 20px',
+    }}>
+      <div style={{
+        width:72, height:72, borderRadius:20,
+        background:`${domain.color}12`,
+        border:`1px dashed ${domain.color}40`,
+        display:'flex', alignItems:'center', justifyContent:'center',
+        fontSize:32,
+      }}>
+        {domain.icon}
+      </div>
+      <div style={{ textAlign:'center' }}>
+        <div style={{ fontSize:16, fontWeight:700, color:'var(--text-2)', marginBottom:8 }}>
+          {domain.label} Domain
+        </div>
+        <p style={{ fontSize:13, color:'var(--text-4)', maxWidth:400, lineHeight:1.7, margin:'0 auto 20px' }}>
+          {domain.desc}
+        </p>
+        <div style={{
+          display:'inline-flex', alignItems:'center', gap:6,
+          fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em',
+          color: domain.color, background:`${domain.color}10`,
+          border:`1px solid ${domain.color}30`,
+          padding:'5px 14px', borderRadius:999,
+        }}>
+          In development
         </div>
       </div>
     </div>
@@ -206,8 +270,9 @@ export default function Roadmap() {
   const { user } = useAuth()
   const [paths, setPaths] = useState([])
   const [loading, setLoading] = useState(true)
+  const [activeDomain, setActiveDomain] = useState('automotive')
   const [activePath, setActivePath] = useState(null)
-  const [moduleProgress, setModuleProgress] = useState({}) // moduleId → progress
+  const [moduleProgress, setModuleProgress] = useState({})
 
   useEffect(() => {
     api.listPaths()
@@ -217,14 +282,25 @@ export default function Roadmap() {
       .finally(() => setLoading(false))
   }, [])
 
-  // Fetch module-level progress for learners
   useEffect(() => {
     if (user?.role !== 'learner') return
     api.getMyModuleProgress().then(setModuleProgress).catch(() => {})
   }, [user])
 
-  const pathOrder = ['risk', 'offensive', 'defensive', 'mitigation']
-  const sorted = pathOrder.map(slug => paths.find(p => p.slug === slug)).filter(Boolean)
+  const currentDomain = DOMAINS.find(d => d.id === activeDomain) ?? DOMAINS[0]
+
+  // Get paths for the active domain, sorted by DB sort_order
+  const domainPaths = paths
+    .filter(p => currentDomain.pathSlugs.includes(p.slug))
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+
+  // Any paths not in any domain definition show in the active domain as fallback
+  const assignedSlugs = new Set(DOMAINS.flatMap(d => d.pathSlugs))
+  const unassigned = paths.filter(p => !assignedSlugs.has(p.slug))
+  const displayPaths = activeDomain === 'automotive'
+    ? [...domainPaths, ...unassigned]
+    : domainPaths
+
   const allRooms = paths.flatMap(p => (p.modules ?? []).flatMap(m => m.rooms ?? []))
   const totalTasks = allRooms.reduce((s, r) => s + (r.task_count ?? 0), 0)
 
@@ -236,48 +312,82 @@ export default function Roadmap() {
 
   return (
     <div className="page page-full fade-up" style={{ padding:'40px 44px' }}>
-      <div style={{ marginBottom:36 }}>
+
+      {/* Header */}
+      <div style={{ marginBottom:28 }}>
         <p style={{ fontSize:11, color:'var(--text-4)', textTransform:'uppercase', letterSpacing:'.1em', fontFamily:'var(--mono)', marginBottom:10 }}>
           Learning Roadmap
         </p>
         <h1 style={{ fontSize:30, marginBottom:10 }}>ICS/OT Cyber Range</h1>
         <p style={{ color:'var(--text-3)', fontSize:14, maxWidth:540, marginBottom:20 }}>
-          Four learning paths, each divided into modules and rooms. Click a path to focus it.
+          Multi-domain training across ICS/OT cybersecurity. Select a domain to explore its learning paths.
         </p>
         <div style={{ display:'flex', gap:20, flexWrap:'wrap', alignItems:'center' }}>
           {[
-            { val:4,               lbl:'Paths',  color:'var(--cyan)'  },
-            { val:allRooms.length, lbl:'Rooms',  color:'var(--teal)'  },
-            { val:totalTasks,      lbl:'Tasks',  color:'var(--amber)' },
+            { val: paths.length,        lbl:'Paths',  color:'var(--cyan)'  },
+            { val: allRooms.length,      lbl:'Rooms',  color:'var(--teal)'  },
+            { val: totalTasks,           lbl:'Tasks',  color:'var(--amber)' },
           ].map(s => (
             <div key={s.lbl} style={{ display:'flex', alignItems:'baseline', gap:7 }}>
               <span style={{ fontFamily:'var(--mono)', fontSize:20, fontWeight:800, color:s.color }}>{s.val}</span>
               <span style={{ fontSize:12, color:'var(--text-4)' }}>{s.lbl}</span>
             </div>
           ))}
-          {activePath && <button className="btn-ghost btn-sm" onClick={() => setActivePath(null)}>Show all</button>}
+          {activePath && (
+            <button className="btn-ghost btn-sm" onClick={() => setActivePath(null)}>Show all paths</button>
+          )}
         </div>
       </div>
 
-      <div style={{ display:'flex', gap:14, alignItems:'flex-start', overflowX:'auto', paddingBottom:32 }} className="roadmap-cols">
-        {sorted.map(pathData => {
-          const meta = PATH_META[pathData.slug] ?? { label:pathData.title, color:pathData.color ?? 'var(--cyan)', desc:pathData.description }
-          return (
-            <PathCol
-              key={pathData.slug}
-              pathData={pathData}
-              meta={meta}
-              isActive={activePath === null || activePath === pathData.slug}
-              onToggle={() => setActivePath(activePath === pathData.slug ? null : pathData.slug)}
-              moduleProgress={moduleProgress}
-            />
-          )
-        })}
+      {/* ── Domain tab bar ── */}
+      <div className="rm-domain-tabs">
+        {DOMAINS.map(d => (
+          <button
+            key={d.id}
+            className={`rm-domain-tab${activeDomain === d.id ? ' active' : ''}${d.status === 'coming' ? ' coming' : ''}`}
+            onClick={() => { setActiveDomain(d.id); setActivePath(null) }}
+            style={{ '--tab-color': d.color }}
+          >
+            <span className="rm-domain-tab-icon">{d.icon}</span>
+            <span className="rm-domain-tab-label">{d.label}</span>
+            {d.status === 'coming' && <span className="rm-domain-tab-soon">Soon</span>}
+          </button>
+        ))}
       </div>
 
-      <p style={{ textAlign:'center', fontSize:12, color:'var(--text-4)', marginTop:8 }}>
-        Faded paths are in development — rooms appear as they get deployed.
-      </p>
+      {/* ── Domain description strip ── */}
+      <div className="rm-domain-desc" style={{ '--tab-color': currentDomain.color }}>
+        <span className="rm-domain-desc-icon">{currentDomain.icon}</span>
+        <span className="rm-domain-desc-text">{currentDomain.desc}</span>
+      </div>
+
+      {/* ── Content ── */}
+      {currentDomain.status === 'coming' ? (
+        <ComingSoonDomain domain={currentDomain} />
+      ) : (
+        <>
+          <div style={{ display:'flex', gap:14, alignItems:'flex-start', overflowX:'auto', paddingBottom:32 }} className="roadmap-cols">
+            {displayPaths.map(pathData => (
+              <PathCol
+                key={pathData.slug}
+                pathData={pathData}
+                isActive={activePath === null || activePath === pathData.slug}
+                onToggle={() => setActivePath(activePath === pathData.slug ? null : pathData.slug)}
+                moduleProgress={moduleProgress}
+              />
+            ))}
+            {displayPaths.length === 0 && (
+              <div style={{ color:'var(--text-4)', fontSize:13, padding:'40px 0' }}>
+                No paths deployed yet for this domain.
+              </div>
+            )}
+          </div>
+
+          <p style={{ textAlign:'center', fontSize:12, color:'var(--text-4)', marginTop:8 }}>
+            Faded paths are in development — rooms appear as they get deployed.
+          </p>
+        </>
+      )}
     </div>
   )
 }

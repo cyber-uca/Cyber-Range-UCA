@@ -3198,3 +3198,82 @@ textarea { resize: vertical; line-height: 1.6; }
   background: #F0F4FF !important;
   border-color: var(--border) !important;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   ROADMAP — DOMAIN TABS
+═══════════════════════════════════════════════════════════════ */
+
+.rm-domain-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 0;
+}
+.rm-domain-tabs::-webkit-scrollbar { display: none; }
+
+.rm-domain-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: none;
+  border: none;
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
+  padding: 12px 18px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-4);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+  margin-bottom: -1px;
+  position: relative;
+}
+.rm-domain-tab:hover { color: var(--text-2); }
+.rm-domain-tab.active {
+  color: var(--tab-color, var(--cyan));
+  border-bottom-color: var(--tab-color, var(--cyan));
+  font-weight: 600;
+}
+.rm-domain-tab.coming {
+  opacity: 0.6;
+}
+.rm-domain-tab.coming:hover { opacity: 0.85; }
+
+.rm-domain-tab-icon { font-size: 15px; }
+.rm-domain-tab-label { }
+
+.rm-domain-tab-soon {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-4);
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+/* Domain description strip */
+.rm-domain-desc {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0 20px;
+  font-size: 13px;
+  color: var(--text-3);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+.rm-domain-desc-icon { font-size: 18px; flex-shrink: 0; }
+.rm-domain-desc-text { line-height: 1.5; }
+
+@media (max-width: 768px) {
+  .rm-domain-tab { padding: 10px 12px 8px; font-size: 12px; }
+  .rm-domain-tab-icon { font-size: 14px; }
+}
