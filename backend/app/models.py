@@ -112,7 +112,7 @@ class PlatformSettings(Base):
     __tablename__ = "platform_settings"
 
     id                         = Column(String(36), primary_key=True, default=lambda: "singleton")
-    platform_name              = Column(String(256), default="CyberForge")
+    platform_name = Column(String(256), default="UCA CyRange")
     default_task_points        = Column(Integer, default=100)
     default_time_limit_minutes = Column(Integer, default=120)
     hint_penalties_enabled     = Column(Boolean, default=True)

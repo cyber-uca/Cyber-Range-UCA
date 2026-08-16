@@ -34,16 +34,16 @@ ensure_schema_upgrades()
 test_connection()
 
 app = FastAPI(
-    title="CyberForge API",
+    title="UCA CyRange API",
     version="2.0.0",
     description="OT/ICS Cybersecurity Learning Management System — Path→Module→Room→Task→Question",
     docs_url="/api-docs",
     redoc_url="/api-redoc",
     openapi_url="/api-openapi.json",
     contact={
-        "name": "CyberForge Support",
-        "email": "support@cyberforge.local",
-        "url": "http://192.168.37.50",
+        "name": "UCA CyRange Support",
+        "email": "support@uca-cyrange.local",
+        "url": "http://192.168.37.23",
     },
     license_info={
         "name": "MIT License",
@@ -173,7 +173,7 @@ def custom_openapi():
         return app.openapi_schema
     
     openapi_schema = get_openapi(
-        title="CyberForge API",
+        title="UCA CyRange API",
         version="2.0.0",
         description="OT/ICS Cybersecurity Learning Management System",
         routes=app.routes,

@@ -10,7 +10,7 @@ const Zap   = ({c='currentColor',s=24})=><svg width={s} height={s} viewBox="0 0 
 const Layers= ({c='currentColor',s=24})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
 const Term  = ({c='currentColor',s=24})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
 
-const Logo = ({size=32})=><img src="/logo.jpeg" alt="CyberForge" style={{ width:size, height:size, borderRadius:8, objectFit:'cover' }} />
+const Logo = ({size=32})=><img src="/logo.jpeg" alt="UCA CyRange" style={{ width:size, height:size, borderRadius:8, objectFit:'cover' }} />
 
 /* ─────────── typewriter ─────────── */
 function TypeWriter({ words }) {
@@ -113,7 +113,7 @@ function FakeTerminal() {
       {/* title bar */}
       <div style={{ display:'flex', alignItems:'center', gap:7, padding:'10px 16px', borderBottom:'1px solid var(--border)', background:'#060B12' }}>
         {['#F0524A','#F5A623','#22C55E'].map(col=><div key={col} style={{width:10,height:10,borderRadius:'50%',background:col}}/>)}
-        <span style={{ marginLeft:8, color:'var(--text-dim)', fontSize:11 }}>cyberforge — bash — CAN Bus Attacker</span>
+        <span style={{ marginLeft:8, color:'var(--text-dim)', fontSize:11 }}>uca-cyrange — bash — CAN Bus Attacker</span>
       </div>
       <div style={{ padding:'16px 20px', minHeight:190 }}>
         {shown.map((l,i) => (
@@ -288,7 +288,7 @@ export default function LandingPage() {
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           <Logo size={34}/>
           <div>
-            <div style={{ fontWeight:800, fontSize:15, lineHeight:1.2, letterSpacing:'-.01em' }}>CyberForge</div>
+            <div style={{ fontWeight:800, fontSize:15, lineHeight:1.2, letterSpacing:'-.01em' }}>UCA CyRange</div>
             <div style={{ fontSize:9, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'.1em' }}>Cyber Range</div>
           </div>
         </div>
@@ -506,9 +506,9 @@ export default function LandingPage() {
         fontSize:12, color:'var(--text-dim)', background:'var(--surface)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           <Logo size={22}/>
-          <span style={{ fontWeight:600, color:'var(--text-muted)' }}>CyberForge Cyber Range</span>
+          <span style={{ fontWeight:600, color:'var(--text-muted)' }}>UCA CyRange</span>
         </div>
-        <span>© 2026 CyberForge · Open-source ICS/OT Cyber Range</span>
+        <span>© 2026 UCA CyRange · Open-source ICS/OT Cyber Range</span>
         <div className="lp-footer-links" style={{ display:'flex', gap:24 }}>
           {[['Log In','/login'],['Sign Up','/register']].map(([l,h])=>(
             <Link key={l} to={h} style={{ color:'var(--text-dim)', transition:'color .15s' }}
