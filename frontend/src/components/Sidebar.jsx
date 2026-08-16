@@ -98,11 +98,13 @@ export default function Sidebar() {
       <div className={`sidebar${open ? ' open' : ''}`}>
         {/* Brand */}
         <div className="sidebar-brand">
-          <img src="/logo.png" alt="UCA CyRange" style={{ width: 32, height: 32, borderRadius: 9, objectFit: 'contain', flexShrink: 0, background: 'transparent' }} />
-          <div>
-            <div className="brand-name">UCA CyRange</div>
-            <div className="brand-sub">Cyber Range</div>
-          </div>
+          <Link to="/" style={{ display:'flex', alignItems:'center', gap:10, textDecoration:'none' }}>
+            <img src="/logo.png" alt="UCA CyRange" style={{ width: 32, height: 32, borderRadius: 9, objectFit: 'contain', flexShrink: 0, background: 'transparent' }} />
+            <div>
+              <div className="brand-name">UCA CyRange</div>
+              <div className="brand-sub">Cyber Range</div>
+            </div>
+          </Link>
         </div>
 
         {/* Nav */}

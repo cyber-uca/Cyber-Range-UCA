@@ -285,13 +285,14 @@ export default function LandingPage() {
       <nav className="lp-nav-wrap lp-nav" style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 52px', height:66,
         borderBottom:'1px solid var(--border)', background:'rgba(7,13,22,0.85)', backdropFilter:'blur(20px)',
         position:'sticky', top:0, zIndex:200 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+        <a href="#" onClick={e => { e.preventDefault(); window.scrollTo({ top:0, behavior:'smooth' }) }}
+          style={{ display:'flex', alignItems:'center', gap:10, textDecoration:'none', color:'inherit' }}>
           <Logo size={34}/>
           <div>
             <div style={{ fontWeight:800, fontSize:15, lineHeight:1.2, letterSpacing:'-.01em' }}>UCA CyRange</div>
             <div style={{ fontSize:9, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'.1em' }}>Cyber Range</div>
           </div>
-        </div>
+        </a>
         <div className="lp-nav-links" style={{ display:'flex', gap:36, fontSize:13, color:'var(--text-muted)' }}>
           {[
             { label:'Features',     href:'#features'     },
