@@ -103,7 +103,7 @@ export default function Register() {
 
         {/* logo */}
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <img src="/logo.jpeg" alt="UCA CyRange" style={{ width: 52, height: 52, borderRadius: 14, objectFit: 'cover', marginBottom: 14, boxShadow: '0 0 24px rgba(0,194,230,0.18)' }} />
+          <img src="/logo.png" alt="UCA CyRange" style={{ width: 52, height: 52, borderRadius: 14, objectFit: 'contain', marginBottom: 14, boxShadow: '0 0 24px rgba(0,194,230,0.18)' }} />
           <div style={{ fontWeight: 800, fontSize: 17 }}>UCA CyRange</div>
           <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginTop: 2 }}>Cyber Range</div>
         </div>

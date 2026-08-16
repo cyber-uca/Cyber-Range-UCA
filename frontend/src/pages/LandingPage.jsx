@@ -10,7 +10,7 @@ const Zap   = ({c='currentColor',s=24})=><svg width={s} height={s} viewBox="0 0 
 const Layers= ({c='currentColor',s=24})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
 const Term  = ({c='currentColor',s=24})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
 
-const Logo = ({size=32})=><img src="/logo.jpeg" alt="UCA CyRange" style={{ width:size, height:size, borderRadius:8, objectFit:'cover' }} />
+const Logo = ({size=32})=><img src="/logo.png" alt="UCA CyRange" style={{ width:size, height:size, objectFit:'contain' }} />
 
 /* ─────────── typewriter ─────────── */
 function TypeWriter({ words }) {
