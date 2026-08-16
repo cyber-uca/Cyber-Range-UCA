@@ -392,20 +392,20 @@ function QuestionBlock({ q, idx, answer, onAnswer, submitted, result }) {
                 display:'flex', gap:10, padding:'9px 12px', borderRadius:8,
                 background: isCorrectOpt ? 'rgba(20,201,168,0.1)'
                   : isWrongPick  ? 'rgba(240,82,74,0.08)'
-                  : selected     ? 'rgba(0,194,230,0.1)' : 'rgba(7,13,22,0.5)',
+                  : selected     ? 'var(--lab-opt-bg-selected)' : 'var(--lab-opt-bg)',
                 border:`1px solid ${
                   isCorrectOpt ? 'rgba(20,201,168,0.5)'
                   : isWrongPick  ? 'rgba(240,82,74,0.4)'
-                  : selected     ? 'rgba(0,194,230,0.4)' : 'var(--border)'}`,
+                  : selected     ? 'var(--lab-opt-border-sel)' : 'var(--lab-opt-border)'}`,
                 cursor: submitted ? 'default' : 'pointer', transition:'all .15s',
                 position:'relative',
               }}>
                 <span style={{ fontFamily:'var(--mono)', fontWeight:700, fontSize:12, minWidth:18,
-                  color: isCorrectOpt ? '#14C9A8' : isWrongPick ? 'var(--red)' : selected ? 'var(--cyan)' : 'var(--text-4)' }}>
+                  color: isCorrectOpt ? '#14C9A8' : isWrongPick ? 'var(--red)' : selected ? 'var(--cyan)' : 'var(--lab-opt-text-muted)' }}>
                   {o.text.charAt(0)}
                 </span>
                 <span style={{ fontSize:13, flex:1,
-                  color: isCorrectOpt ? '#14C9A8' : isWrongPick ? 'var(--red)' : selected ? 'var(--text)' : 'var(--text-4)' }}>
+                  color: isCorrectOpt ? '#14C9A8' : isWrongPick ? 'var(--red)' : selected ? 'var(--text)' : 'var(--lab-opt-text)' }}>
                   {o.text.slice(3)}
                 </span>
                 {isCorrectOpt && <span style={{ fontSize:10, color:'#14C9A8', fontWeight:700, flexShrink:0 }}>← correct</span>}

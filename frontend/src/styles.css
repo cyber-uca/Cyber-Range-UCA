@@ -61,6 +61,14 @@
   /* Layout */
   --sidebar-w: 224px;
   --topbar-h:  56px;
+
+  /* Lab MCQ option colors */
+  --lab-opt-bg:          rgba(7,13,22,0.5);
+  --lab-opt-bg-selected: rgba(0,194,230,0.1);
+  --lab-opt-border:      var(--border);
+  --lab-opt-border-sel:  rgba(0,194,230,0.4);
+  --lab-opt-text:        var(--text-4);
+  --lab-opt-text-muted:  var(--text-4);
 }
 
 /* ─── Base ───────────────────────────────────────────────────── */
@@ -2789,7 +2797,7 @@ textarea { resize: vertical; line-height: 1.6; }
 ═══════════════════════════════════════════════════════════════ */
 
 [data-theme="light"] {
-  /* Backgrounds — warm white layered */
+  /* Backgrounds */
   --bg:        #F0F4FF;
   --bg-up:     #E8EEFF;
   --surface:   #FFFFFF;
@@ -2797,7 +2805,7 @@ textarea { resize: vertical; line-height: 1.6; }
   --surface-3: #E0E7FF;
   --surface-4: #C7D2FE;
 
-  /* Borders — blue-tinted */
+  /* Borders */
   --border:    rgba(99,102,241,0.12);
   --border-md: rgba(99,102,241,0.20);
   --border-hi: rgba(99,102,241,0.32);
@@ -2808,7 +2816,7 @@ textarea { resize: vertical; line-height: 1.6; }
   --text-3:    #475569;
   --text-4:    #94A3B8;
 
-  /* Accent — deeper cyan for contrast on white */
+  /* Accent */
   --cyan:      #0284C7;
   --cyan-dim:  rgba(2,132,199,0.10);
   --cyan-glow: rgba(2,132,199,0.22);
@@ -2828,13 +2836,21 @@ textarea { resize: vertical; line-height: 1.6; }
   --cat-mitigation: #047857;
   --cat-risk:       #6D28D9;
 
-  /* Shadows — crisp on white */
+  /* Shadows */
   --shadow-sm: 0 1px 4px rgba(15,23,42,0.08), 0 0 0 1px rgba(99,102,241,0.06);
   --shadow:    0 4px 16px rgba(15,23,42,0.10), 0 0 0 1px rgba(99,102,241,0.08);
   --shadow-lg: 0 12px 40px rgba(15,23,42,0.14);
   --shadow-xl: 0 24px 80px rgba(15,23,42,0.18);
   --glow-cyan: 0 0 24px rgba(2,132,199,0.22);
   --glow-sm:   0 0 12px rgba(2,132,199,0.16);
+
+  /* ── Lab MCQ option colors (referenced in inline styles) ── */
+  --lab-opt-bg:          #E8EEF8;
+  --lab-opt-bg-selected: rgba(2,132,199,0.12);
+  --lab-opt-border:      #C5D5EC;
+  --lab-opt-border-sel:  rgba(2,132,199,0.5);
+  --lab-opt-text:        #1E3A5F;
+  --lab-opt-text-muted:  #3A5A7A;
 }
 
 /* Light mode — remove dark noise, add subtle gradient */
