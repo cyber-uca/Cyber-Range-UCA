@@ -293,8 +293,25 @@ export default function LandingPage() {
           </div>
         </div>
         <div className="lp-nav-links" style={{ display:'flex', gap:36, fontSize:13, color:'var(--text-muted)' }}>
-          {['Features','Challenges','How It Works','About'].map(item=>(
-            <span key={item} className="nav-link" style={{ cursor:'pointer', transition:'color .15s' }}>{item}</span>
+          {[
+            { label:'Features',     href:'#features'     },
+            { label:'Challenges',   href:'#challenges'   },
+            { label:'How It Works', href:'#how-it-works' },
+            { label:'About',        href:'/docs', external: false },
+          ].map(item => (
+            item.href.startsWith('#')
+              ? <a key={item.label} href={item.href} className="nav-link"
+                  style={{ cursor:'pointer', transition:'color .15s', textDecoration:'none', color:'inherit' }}
+                  onClick={e => {
+                    e.preventDefault()
+                    document.getElementById(item.href.slice(1))?.scrollIntoView({ behavior:'smooth' })
+                  }}>
+                  {item.label}
+                </a>
+              : <Link key={item.label} to={item.href} className="nav-link"
+                  style={{ cursor:'pointer', transition:'color .15s', textDecoration:'none', color:'inherit' }}>
+                  {item.label}
+                </Link>
           ))}
         </div>
         <div style={{ display:'flex', gap:10, alignItems:'center' }}>
@@ -382,7 +399,7 @@ export default function LandingPage() {
       </div>
 
       {/* ════ CATEGORIES ════ */}
-      <section className="lp-cats" style={{ padding:'80px 80px 64px', background:'linear-gradient(180deg,var(--bg) 0%,var(--surface) 100%)' }}>
+      <section id="challenges" className="lp-cats" style={{ padding:'80px 80px 64px', background:'linear-gradient(180deg,var(--bg) 0%,var(--surface) 100%)' }}>
         <div style={{ textAlign:'center', marginBottom:52 }}>
           <div style={{ fontSize:11, textTransform:'uppercase', letterSpacing:'.14em', color:'var(--accent)', fontWeight:700, marginBottom:12 }}>Challenge Tracks</div>
           <h2 style={{ fontSize:34, fontWeight:900, margin:0, letterSpacing:'-.01em' }}>Pick Your Attack Surface</h2>
@@ -416,7 +433,7 @@ export default function LandingPage() {
       </section>
 
       {/* ════ HOW IT WORKS ════ */}
-      <section className="lp-how-section lp-how" style={{ padding:'80px', background:'var(--surface)', borderTop:'1px solid var(--border)' }}>
+      <section id="how-it-works" className="lp-how-section lp-how" style={{ padding:'80px', background:'var(--surface)', borderTop:'1px solid var(--border)' }}>
         <div style={{ textAlign:'center', marginBottom:52 }}>
           <div style={{ fontSize:11, textTransform:'uppercase', letterSpacing:'.14em', color:'var(--accent)', fontWeight:700, marginBottom:12 }}>How It Works</div>
           <h2 style={{ fontSize:34, fontWeight:900, margin:0, letterSpacing:'-.01em' }}>From Zero to Flag in 4 Steps</h2>
@@ -440,7 +457,7 @@ export default function LandingPage() {
       </section>
 
       {/* ════ TERMINAL DEMO + FEATURES ════ */}
-      <section className="lp-demo" style={{ padding:'80px', background:'var(--bg)', borderTop:'1px solid var(--border)' }}>
+      <section id="features" className="lp-demo" style={{ padding:'80px', background:'var(--bg)', borderTop:'1px solid var(--border)' }}>
         <div className="lp-demo-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:56, alignItems:'center' }}>
           {/* left — terminal */}
           <div style={{ animation:'fadeUp .7s ease both' }}>
