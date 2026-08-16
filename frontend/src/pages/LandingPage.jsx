@@ -192,6 +192,9 @@ export default function LandingPage() {
   const navigate = useNavigate()
   useEffect(() => { if (user) navigate('/') }, [user, navigate])
 
+  const [stats, setStats] = useState({ total_rooms: 0, total_paths: 0, total_learners: 0, total_questions: 0 })
+  useEffect(() => { api.publicStats().then(setStats).catch(() => {}) }, [])
+
   const cats = [
     { label:'RISK MANAGEMENT', color:'var(--combined)', bg:'rgba(155,124,240,0.10)', hover:'rgba(155,124,240,0.35)', icon:<Layers c="var(--combined)" s={28}/>, desc:'Assess, model and manage cybersecurity risks in ICS/OT environments using IEC 62443 and industry frameworks.', count:'15+' },
     { label:'OFFENSIVE', color:'var(--offensive)', bg:'rgba(240,82,74,0.10)', hover:'rgba(240,82,74,0.35)', icon:<Hacker c="var(--offensive)" s={28}/>, desc:'Attack industrial control systems — exploit real vulnerabilities in PLC, SCADA, CAN bus and field devices.', count:'20+' },
@@ -384,13 +387,13 @@ export default function LandingPage() {
       {/* ════ STATS BAR ════ */}
       <div className="lp-stats" style={{ background:'var(--surface)', borderTop:'1px solid var(--border)', borderBottom:'1px solid var(--border)', padding:'36px 80px' }}>
         <div className="lp-stats-inner" style={{ display:'flex', alignItems:'center', justifyContent:'space-around' }}>
-          <Stat target={50} suffix="+" label="Challenges" color="var(--accent)"/>
+          <Stat target={stats.total_rooms}     suffix=""  label="Published Rooms"  color="var(--accent)"/>
           <div className="lp-stats-divider" style={{width:1,height:48,background:'var(--border)'}}/>
-          <Stat target={3} suffix="" label="Categories" color="var(--defensive)"/>
+          <Stat target={stats.total_paths}     suffix=""  label="Learning Paths"   color="var(--defensive)"/>
           <div className="lp-stats-divider" style={{width:1,height:48,background:'var(--border)'}}/>
-          <Stat target={4250} suffix="+" label="Learners" color="var(--mitigation)"/>
+          <Stat target={stats.total_learners}  suffix="+" label="Learners"         color="var(--mitigation)"/>
           <div className="lp-stats-divider" style={{width:1,height:48,background:'var(--border)'}}/>
-          <Stat target={98} suffix="%" label="Hands-on Labs" color="var(--warning)"/>
+          <Stat target={stats.total_questions} suffix="+" label="Questions"        color="var(--warning)"/>
           <div className="lp-stats-divider" style={{width:1,height:48,background:'var(--border)'}}/>
           <div style={{textAlign:'center'}}>
             <div style={{fontFamily:'var(--font-mono)',fontSize:36,fontWeight:900,color:'var(--combined)',lineHeight:1}}>24/7</div>

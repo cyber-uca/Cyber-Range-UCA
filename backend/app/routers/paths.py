@@ -85,6 +85,21 @@ def list_domains_public(
 
 
 # ═══════════════════════════════════════════════════════════════════
+#  PUBLIC PLATFORM STATS — no auth required (landing page)
+# ═══════════════════════════════════════════════════════════════════
+
+@router.get("/public-stats")
+def public_stats(db: Session = Depends(get_db)):
+    """Public stats for the landing page — no authentication needed."""
+    return {
+        "total_rooms":    db.query(models.Room).filter(models.Room.status == models.PublicationStatus.PUBLISHED).count(),
+        "total_paths":    db.query(models.Path).filter(models.Path.status == models.PublicationStatus.PUBLISHED).count(),
+        "total_learners": db.query(models.User).filter(models.User.role == models.Role.LEARNER).count(),
+        "total_questions":db.query(models.Question).count(),
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════
 
 @router.get("", response_model=List[schemas.PathCard])
 def list_paths(

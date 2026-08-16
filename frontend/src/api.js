@@ -443,6 +443,9 @@ export const api = {
   // ---------- Domains ----------
   listDomains: () => fetch(`${BASE}/paths/domains`, { headers: authHeaders() }).then(handle),
 
+  // ---------- Public (no auth) ----------
+  publicStats: () => fetch(`${BASE}/paths/public-stats`).then(handle),
+
   adminListDomains: () => fetch(`${BASE}/admin/domains`, { headers: authHeaders() }).then(handle),
 
   adminCreateDomain: (data) =>
