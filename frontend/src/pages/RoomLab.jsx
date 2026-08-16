@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { api } from '../api.js'
-import { useAuth } from '../App.jsx'
+import { useAuth, useThemeCtx } from '../App.jsx'
 
 const ANIM = `
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -79,7 +79,7 @@ function VMCard({ vmTemplate, envVm, env, onStart, onStop, onPause, onResume, st
 
   return (
     <div style={{
-      background: running ? 'rgba(20,201,168,0.07)' : 'rgba(13,24,38,0.75)',
+      background: running ? 'rgba(20,201,168,0.07)' : 'var(--surface-2)',
       border:`1px solid ${running ? (urgent ? 'rgba(240,82,74,0.5)' : 'rgba(20,201,168,0.35)') : 'var(--border)'}`,
       borderRadius:12, padding:'14px 16px', transition:'all .2s', marginBottom:10,
     }}>
@@ -134,7 +134,7 @@ function VMCard({ vmTemplate, envVm, env, onStart, onStop, onPause, onResume, st
         <div style={{ marginTop:12, display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, flexWrap:'wrap' }}>
           {secsLeft !== null && (
             <div style={{ display:'flex', alignItems:'center', gap:6,
-              background:urgent?'rgba(240,82,74,0.1)':warn?'rgba(245,166,35,0.1)':'rgba(13,24,38,0.5)',
+              background:urgent?'rgba(240,82,74,0.1)':warn?'rgba(245,166,35,0.1)':'var(--surface-2)',
               border:`1px solid ${urgent?'rgba(240,82,74,0.3)':warn?'rgba(245,166,35,0.3)':'var(--border)'}`,
               borderRadius:8, padding:'5px 12px' }}>
               <span style={{ fontFamily:'var(--mono)', fontSize:12, fontWeight:700,
@@ -345,7 +345,7 @@ function QuestionBlock({ q, idx, answer, onAnswer, submitted, result }) {
   const isMcq    = q.question_type === 'mcq_single' || q.question_type === 'mcq_multi'
   const correct  = result?.is_correct
   const border   = !submitted ? 'var(--border)' : correct ? 'rgba(20,201,168,0.5)' : 'rgba(240,82,74,0.4)'
-  const bg       = !submitted ? 'rgba(13,24,38,0.6)' : correct ? 'rgba(20,201,168,0.06)' : 'rgba(240,82,74,0.05)'
+  const bg = !submitted ? 'var(--surface-2)' : correct ? 'rgba(20,201,168,0.06)' : 'rgba(240,82,74,0.05)'
 
   // Determine which option is correct (for reveal after wrong answer)
   const correctOptId = q.validation_data?.correct_option_id
@@ -454,6 +454,7 @@ function QuestionBlock({ q, idx, answer, onAnswer, submitted, result }) {
 export default function RoomLab() {
   const { slug } = useParams()
   const { user } = useAuth()
+  const { theme, toggle } = useThemeCtx()
   const [room, setRoom] = useState(null)
   const [activeTaskIdx, setActiveTaskIdx] = useState(0)
   const [answers, setAnswers] = useState({})
@@ -676,7 +677,7 @@ export default function RoomLab() {
       {/* topbar */}
       <div style={{ height:52, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'space-between',
         padding:'0 20px', borderBottom:'1px solid var(--border)',
-        background:'rgba(7,12,20,0.97)', backdropFilter:'blur(20px)',
+        background:'var(--surface)', backdropFilter:'blur(20px)',
         position:'sticky', top:0, zIndex:100,
         boxShadow:'0 1px 0 var(--border), 0 4px 20px rgba(0,0,0,0.4)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:14 }}>
@@ -728,6 +729,18 @@ export default function RoomLab() {
               display:'flex', alignItems:'center', gap:4, opacity: resetting ? 0.6 : 1 }}>
             {resetting ? <><Spin size={10}/> Resetting…</> : '↺ Reset'}
           </button>
+
+          {/* Theme toggle */}
+          <button
+            className="theme-toggle"
+            onClick={toggle}
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            style={{ marginLeft: 4 }}
+          >
+            <div className="theme-toggle-thumb">
+              <span className="theme-toggle-icon">{theme === 'dark' ? '🌙' : '☀️'}</span>
+            </div>
+          </button>
         </div>
       </div>
 
@@ -735,7 +748,7 @@ export default function RoomLab() {
 
         {/* task sidebar */}
         <div className="lab-task-sidebar" style={{ width:240, flexShrink:0, borderRight:'1px solid var(--border)',
-          background:'rgba(7,12,20,0.98)', overflowY:'auto', padding:'16px 10px' }}>
+          background:'var(--surface)', overflowY:'auto', padding:'16px 10px' }}>
           <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'.1em',
             color:'var(--text-4)', fontWeight:700, marginBottom:14, paddingLeft:4,
             display:'flex', alignItems:'center', gap:6 }}>
@@ -812,7 +825,7 @@ export default function RoomLab() {
                   <p style={{ fontSize:13, color:'var(--text-3)', lineHeight:1.75, margin:'0 0 16px' }}>{task.description}</p>
                 )}
                 {task.objectives && (
-                  <div style={{ background:'rgba(13,24,38,0.55)', border:'1px solid var(--border)', borderRadius:10, padding:'12px 16px', marginBottom:20 }}>
+                  <div style={{ background:'var(--surface-2)', border:'1px solid var(--border)', borderRadius:10, padding:'12px 16px', marginBottom:20 }}>
                     <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'.08em', color:'var(--text-4)', fontWeight:700, marginBottom:8 }}>Objectives</div>
                     {task.objectives.split(';').filter(Boolean).map((o,i) => (
                       <div key={i} style={{ display:'flex', gap:8, marginBottom:5 }}>
@@ -848,8 +861,8 @@ export default function RoomLab() {
               {/* Activity log */}
               <div style={{ marginTop:22 }}>
                 <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'.08em', color:'var(--text-4)', fontWeight:700, marginBottom:8 }}>Activity log</div>
-                <div style={{ background:'#04070C', border:'1px solid var(--border)', borderRadius:10, overflow:'hidden' }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 12px', borderBottom:'1px solid var(--border)', background:'#060B12' }}>
+                <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:10, overflow:'hidden' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 12px', borderBottom:'1px solid var(--border)', background:'var(--surface-2)' }}>
                     {['#F0524A','#F5A623','#22C55E'].map(c=><div key={c} style={{ width:8, height:8, borderRadius:'50%', background:c }}/>)}
                     <span style={{ marginLeft:6, fontSize:10, color:'var(--text-4)', fontFamily:'var(--mono)' }}>lab</span>
                   </div>

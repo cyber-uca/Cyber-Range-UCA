@@ -3277,3 +3277,37 @@ textarea { resize: vertical; line-height: 1.6; }
   .rm-domain-tab { padding: 10px 12px 8px; font-size: 12px; }
   .rm-domain-tab-icon { font-size: 14px; }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   LIGHT MODE — LAB (RoomLab / Workspace bare layout)
+═══════════════════════════════════════════════════════════════ */
+
+/* Terminal/log area stays dark intentionally in light mode — it's a terminal */
+[data-theme="light"] .lab-log,
+[data-theme="light"] .lab-log pre,
+[data-theme="light"] .lab-log code {
+  background: #0D1117;
+  color: #C9D1D9;
+}
+
+/* Lab shell outer */
+[data-theme="light"] .lab-shell {
+  background: var(--bg);
+}
+
+/* MCQ option hover */
+[data-theme="light"] .mcq-option:hover {
+  background: var(--surface-2) !important;
+}
+
+/* Question block */
+[data-theme="light"] .question-block {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* VM panel */
+[data-theme="light"] .lab-vm-panel {
+  background: var(--surface) !important;
+}
