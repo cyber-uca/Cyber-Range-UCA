@@ -3311,3 +3311,194 @@ textarea { resize: vertical; line-height: 1.6; }
 [data-theme="light"] .lab-vm-panel {
   background: var(--surface) !important;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   LIGHT THEME — ANSWER OPTIONS + DOCUMENTATION
+═══════════════════════════════════════════════════════════════ */
+
+/* ── MCQ / matching / quiz option cards ── */
+[data-theme="light"] .mq-option {
+  background: #E8EEF8;
+  border-color: #C5D5EC;
+  color: #1E3A5F;
+}
+[data-theme="light"] .mq-option:hover {
+  background: #D7E5F7;
+  border-color: #A8C4E8;
+  color: #1E3A5F;
+}
+[data-theme="light"] .mq-option.selected {
+  background: #C7DDF5;
+  border-color: #0284C7;
+  color: #1E3A5F;
+}
+[data-theme="light"] .mq-option.selected .mq-radio {
+  border-color: #0284C7;
+  background: #0284C7;
+}
+[data-theme="light"] .mq-option-text {
+  color: #1E3A5F;
+}
+[data-theme="light"] .mq-option.selected .mq-option-text {
+  color: #1E3A5F;
+  font-weight: 600;
+}
+
+/* ── Module quiz question block ── */
+[data-theme="light"] .mq-question {
+  background: #FFFFFF;
+  border-color: #C5D5EC;
+}
+[data-theme="light"] .mq-question.answered {
+  border-left-color: #0284C7;
+  background: #F4F8FF;
+}
+[data-theme="light"] .mq-q-text {
+  color: #1E3A5F;
+}
+[data-theme="light"] .mq-q-num {
+  color: #0284C7;
+  background: rgba(2,132,199,0.10);
+}
+
+/* ── Lab question block MCQ options (RoomLab) ── */
+[data-theme="light"] .mcq-opt,
+[data-theme="light"] [class*="mcq-option"],
+[data-theme="light"] [class*="answer-option"] {
+  background: #E8EEF8;
+  border-color: #C5D5EC;
+  color: #1E3A5F;
+}
+[data-theme="light"] .mcq-opt:hover,
+[data-theme="light"] [class*="mcq-option"]:hover {
+  background: #D7E5F7;
+  border-color: #A8C4E8;
+}
+
+/* ── Documentation page ── */
+[data-theme="light"] .doc-page {
+  background: #F0F4FF;
+}
+[data-theme="light"] .doc-tabs-wrap {
+  background: rgba(240,244,255,0.95);
+  border-bottom-color: #C5D5EC;
+}
+[data-theme="light"] .doc-tab {
+  color: #64748B;
+}
+[data-theme="light"] .doc-tab:hover {
+  color: #1E3A5F;
+}
+[data-theme="light"] .doc-tab.active {
+  color: #0284C7;
+  border-bottom-color: #0284C7;
+}
+[data-theme="light"] .doc-scroll {
+  background: #F0F4FF;
+}
+[data-theme="light"] .doc-body {
+  color: #1E3A5F;
+}
+[data-theme="light"] .doc-h1 {
+  color: #0F2A4A;
+}
+[data-theme="light"] .doc-h2 {
+  color: #1E3A5F;
+  border-bottom-color: #C5D5EC;
+}
+[data-theme="light"] .doc-h3 {
+  color: #3A5A7A;
+}
+[data-theme="light"] .doc-p {
+  color: #334E6F;
+}
+[data-theme="light"] .doc-p strong {
+  color: #1E3A5F;
+}
+[data-theme="light"] .doc-ul,
+[data-theme="light"] .doc-ol {
+  color: #334E6F;
+}
+[data-theme="light"] .doc-callout {
+  background: #E8EEF8;
+  border-left-color: #0284C7;
+  color: #1E3A5F;
+}
+[data-theme="light"] .doc-ic,
+[data-theme="light"] .doc-inline-code {
+  background: #D7E5F7;
+  border-color: #A8C4E8;
+  color: #0284C7;
+}
+[data-theme="light"] .doc-code,
+[data-theme="light"] .doc-code-block {
+  background: #F8FAFF;
+  border-color: #C5D5EC;
+}
+[data-theme="light"] .doc-code-bar,
+[data-theme="light"] .doc-code-header {
+  background: #E8EEF8;
+  border-bottom-color: #C5D5EC;
+}
+[data-theme="light"] .doc-code code,
+[data-theme="light"] .doc-code pre code {
+  color: #1E3A5F;
+}
+[data-theme="light"] .doc-table-wrap {
+  border-color: #C5D5EC;
+}
+[data-theme="light"] .doc-table th {
+  background: #E8EEF8;
+  color: #3A5A7A;
+  border-bottom-color: #C5D5EC;
+}
+[data-theme="light"] .doc-table td {
+  color: #334E6F;
+  border-bottom-color: #DCE8F5;
+}
+[data-theme="light"] .doc-table tbody tr:hover td {
+  background: #EEF4FC;
+}
+[data-theme="light"] .doc-section-bar {
+  border-bottom-color: #C5D5EC;
+}
+[data-theme="light"] .doc-section-name {
+  color: #0284C7;
+}
+[data-theme="light"] .doc-section-time {
+  color: #64748B;
+}
+[data-theme="light"] .doc-reading-time {
+  color: #64748B;
+}
+[data-theme="light"] .doc-back {
+  color: #64748B;
+}
+[data-theme="light"] .doc-back:hover {
+  background: #E8EEF8;
+  color: #1E3A5F;
+}
+[data-theme="light"] .doc-divider span {
+  background: linear-gradient(90deg, transparent, #C5D5EC 20%, #C5D5EC 80%, transparent);
+}
+
+/* ── Documentation sidebar ── */
+[data-theme="light"] .doc-sidebar {
+  background: #FFFFFF;
+  border-right-color: #C5D5EC;
+}
+[data-theme="light"] .doc-sidebar-heading {
+  color: #3A5A7A;
+}
+[data-theme="light"] .doc-nav-item {
+  color: #334E6F;
+}
+[data-theme="light"] .doc-nav-item:hover {
+  background: #E8EEF8;
+  color: #1E3A5F;
+}
+[data-theme="light"] .doc-nav-item.active {
+  background: #D7E5F7;
+  color: #0284C7;
+}
