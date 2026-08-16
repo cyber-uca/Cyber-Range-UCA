@@ -103,7 +103,7 @@ npm run build
 log "Creating systemd service..."
 cat > /etc/systemd/system/cyberrange-backend.service <<SVCEOF
 [Unit]
-Description=AutoRange Cyber Range Backend
+Description=UCA CyRange Backend
 After=network.target mysql.service
 
 [Service]
@@ -200,7 +200,7 @@ ufw --force enable
 
 echo ""
 echo -e "${GREEN}============================================${NC}"
-echo -e "${GREEN}  AutoRange installed successfully!${NC}"
+echo -e "${GREEN}  UCA CyRange installed successfully!${NC}"
 echo -e "${GREEN}============================================${NC}"
 echo ""
 echo -e "  URL      : ${YELLOW}http://${VM_IP}${NC}"

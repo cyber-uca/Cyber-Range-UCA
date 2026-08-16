@@ -181,7 +181,7 @@ function DocsLanding({ sections, onSelect }) {
       <div className="doc-landing-header">
         <h1 className="doc-landing-title">Documentation</h1>
         <p className="doc-landing-sub">
-          Everything you need to use, understand, and operate the AutoRange platform.
+          Everything you need to use, understand, and operate the UCA CyRange platform.
         </p>
       </div>
       <div className="doc-landing-grid">

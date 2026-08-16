@@ -1,4 +1,4 @@
-# AutoRange Cyber Range — Deployment Guide 
+# UCA CyRange — Deployment Guide 
 
 ## Architecture
 A dedicated Ubuntu VM runs on Proxmox and hosts the entire platform.

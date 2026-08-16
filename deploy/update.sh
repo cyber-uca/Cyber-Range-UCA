@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-# AutoRange — Update script (run after git pull)
+# UCA CyRange — Update script (run after git pull)
 # Usage: sudo GITHUB_TOKEN=ghp_xxx ./update.sh
 #        sudo ./update.sh ghp_xxx
 # ============================================================

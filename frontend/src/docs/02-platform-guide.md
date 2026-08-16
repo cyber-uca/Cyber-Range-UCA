@@ -1,12 +1,12 @@
 # Platform Guide
 
-This page covers how AutoRange works mechanically — how content is structured, how your progress is recorded, and what the different parts of the interface do. Think of it as the reference you come back to when something isn't behaving the way you expected.
+This page covers how UCA CyRange works mechanically — how content is structured, how your progress is recorded, and what the different parts of the interface do. Think of it as the reference you come back to when something isn't behaving the way you expected.
 
 ---
 
 ## Content hierarchy
 
-Everything in AutoRange follows the same structure:
+Everything in UCA CyRange follows the same structure:
 
 ```
 Path  →  Module  →  Room  →  Task  →  Question

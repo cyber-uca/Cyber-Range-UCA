@@ -1,4 +1,4 @@
-# AutoRange Cyber Range — Backend
+# UCA CyRange — Backend
 
 FastAPI + SQLAlchemy backend. Auth, challenges, flag submission, tutor
 monitoring, and two explicit **gateways** — one for VM provisioning, one

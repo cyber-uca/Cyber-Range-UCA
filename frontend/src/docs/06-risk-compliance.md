@@ -1,12 +1,12 @@
 # Risk & Compliance
 
-The Risk Management path on AutoRange isn't about memorizing standards. It's about developing the judgment to look at an industrial system, think clearly about what could go wrong, and respond proportionally when something does. The standards and frameworks here are the vocabulary that lets you communicate that judgment to other people — to engineers, to management, to regulators.
+The Risk Management path on UCA CyRange isn't about memorizing standards. It's about developing the judgment to look at an industrial system, think clearly about what could go wrong, and respond proportionally when something does. The standards and frameworks here are the vocabulary that lets you communicate that judgment to other people — to engineers, to management, to regulators.
 
 ---
 
 ## The four risk categories
 
-AutoRange's Risk Management path is organized around four types of risk. They come from how practitioners in the field actually classify failures:
+UCA CyRange's Risk Management path is organized around four types of risk. They come from how practitioners in the field actually classify failures:
 
 ### Accidental Risk
 
@@ -73,7 +73,7 @@ The key difference from IEC 62443: NIST 800-82 is a guide, not a certifiable sta
 
 ## Doing a risk assessment
 
-The rooms on AutoRange are built around a simplified version of the risk assessment process. Here's how the formal process maps to what you do in the lab:
+The rooms on UCA CyRange are built around a simplified version of the risk assessment process. Here's how the formal process maps to what you do in the lab:
 
 **1. Asset identification** — Task 1 of most rooms asks you to scope what's affected. Which subsystem failed? What VMs are involved? This is the ICS equivalent of "know your inventory."
 

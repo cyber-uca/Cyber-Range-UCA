@@ -1,5 +1,5 @@
 """
-Security configuration and utilities for AutoRange Cyber Range.
+Security configuration and utilities for UCA CyRange.
 Includes CORS, security headers, rate limiting, and input validation.
 """
 import os

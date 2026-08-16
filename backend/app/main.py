@@ -1,5 +1,5 @@
 """
-AutoRange Cyber Range — FastAPI application entry point.
+UCA CyRange — FastAPI application entry point.
 New architecture: Path → Module → Room → Task → Question
 """
 import logging

@@ -1,6 +1,6 @@
 # API Documentation Guide
 
-Interactive, auto-generated API documentation for the AutoRange Cyber Range platform.
+Interactive, auto-generated API documentation for the UCA CyRange platform.
 
 ## Table of Contents
 

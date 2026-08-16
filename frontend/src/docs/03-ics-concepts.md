@@ -1,6 +1,6 @@
 # ICS/OT Concepts
 
-Industrial control systems are different from the IT infrastructure most security people learn on. The differences matter — in how attacks work, in what "protecting a system" even means, and in what you're allowed to do when something goes wrong. This page covers the foundational concepts behind every room on AutoRange.
+Industrial control systems are different from the IT infrastructure most security people learn on. The differences matter — in how attacks work, in what "protecting a system" even means, and in what you're allowed to do when something goes wrong. This page covers the foundational concepts behind every room on UCA CyRange.
 
 ---
 
@@ -89,4 +89,4 @@ This changes how you think about incidents. In IT, a ransomware infection that e
 
 It also changes how carefully you act during incident response. In IT, you can pull a server offline to investigate. In ICS, pulling the SCADA server offline might mean the operators lose visibility entirely, which could be more dangerous than the original incident.
 
-Every room on AutoRange asks you to think about which security property is at stake — confidentiality, integrity, or availability — before deciding how to respond.
+Every room on UCA CyRange asks you to think about which security property is at stake — confidentiality, integrity, or availability — before deciding how to respond.

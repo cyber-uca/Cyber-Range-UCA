@@ -1,8 +1,8 @@
-# AutoRange Cyber Range — Security Hardening Guide
+# UCA CyRange — Security Hardening Guide
 
 ## Overview
 
-This document outlines the security improvements implemented in v2.1 of AutoRange Cyber Range and provides best practices for secure deployment and operation.
+This document outlines the security improvements implemented in v2.1 of UCA CyRange and provides best practices for secure deployment and operation.
 
 ---
 

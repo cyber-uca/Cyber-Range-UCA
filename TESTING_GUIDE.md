@@ -1,4 +1,4 @@
-# Testing Guide for AutoRange Cyber Range
+# Testing Guide for UCA CyRange
 
 Complete guide to running and writing tests for the platform.
 

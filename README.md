@@ -1,4 +1,4 @@
-# AutoRange Cyber Range — v2
+# UCA CyRange — v2
 
 A working scaffold for an automotive cybersecurity training platform:
 learner/tutor/admin roles, a data-driven challenge library, flag
@@ -9,7 +9,7 @@ This is v2 of the project: the backend has been rebuilt around two
 explicit **gateways** (for infrastructure provisioning and for challenge
 grading) instead of one hardcoded implementation, categories/difficulties
 are now database rows instead of fixed enums, and the frontend has been
-redesigned to match the AutoRange visual design (dark navy, cyan accent,
+redesigned to match the UCA CyRange visual design (dark navy, cyan accent,
 sidebar navigation).
 
 ```

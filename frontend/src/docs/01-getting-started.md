@@ -1,12 +1,12 @@
 # Getting Started
 
-Welcome to AutoRange. This is a hands-on cyber range built around industrial control systems — the kind of infrastructure that runs power grids, water treatment plants, factory floors, and modern vehicles. If you've never touched an ICS environment before, that's fine. The platform is designed to walk you in gradually.
+Welcome to UCA CyRange. This is a hands-on cyber range built around industrial control systems — the kind of infrastructure that runs power grids, water treatment plants, factory floors, and modern vehicles. If you've never touched an ICS environment before, that's fine. The platform is designed to walk you in gradually.
 
 ---
 
 ## What you'll find here
 
-AutoRange is organized around four learning paths: **Risk Management**, **Offensive**, **Defensive**, and **Mitigation**. Each path contains modules, and each module contains rooms. A room is a self-contained scenario — you get a story, a set of tasks, and real virtual machines to work with. You don't watch videos or read slides. You investigate, explore, and figure things out by doing.
+UCA CyRange is organized around four learning paths: **Risk Management**, **Offensive**, **Defensive**, and **Mitigation**. Each path contains modules, and each module contains rooms. A room is a self-contained scenario — you get a story, a set of tasks, and real virtual machines to work with. You don't watch videos or read slides. You investigate, explore, and figure things out by doing.
 
 The first room available is **Interrupted OTA Update**, inside the Accidental Risk module of the Risk Management path. It's a good place to start regardless of your background. The scenario is realistic, the evidence is ambiguous, and the point isn't to find the right answer quickly — it's to learn how to think through an incident properly.
 

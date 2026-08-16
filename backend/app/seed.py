@@ -1,5 +1,5 @@
 """
-AutoRange Cyber Range — Seed Data (v2)
+UCA CyRange — Seed Data (v2)
 Hierarchy: Path → Module → Room → Task → Question
 
 Run with:  python -m app.seed

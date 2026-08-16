@@ -1,5 +1,5 @@
 """
-AutoRange Cyber Range — Pydantic Schemas
+UCA CyRange — Pydantic Schemas
 """
 from datetime import datetime
 from typing import Optional, List, Any, Dict

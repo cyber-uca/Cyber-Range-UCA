@@ -1,6 +1,6 @@
 """Initial database schema migration.
 
-Creates all core tables for AutoRange Cyber Range platform.
+Creates all core tables for UCA CyRange platform.
 
 Revision ID: 001_initial_schema
 Revises: 
